@@ -5,6 +5,7 @@ fm_synth fm_new_synth(int n_ops) {
 
     s.channels = malloc(sizeof(float) * N_CHANNELS);
     s.channels_back = malloc(sizeof(float) * N_CHANNELS);
+    s.hold_index = HOLD_BUFFER_SIZE;
     
     s.ops = malloc(sizeof(fm_operator) * n_ops);
     s.n_ops = n_ops;
@@ -50,4 +51,27 @@ void fm_synth_frame(fm_synth *s, float time) {
     }
 
     fm_synth_swap_buffers(s);
+}
+
+void fm_synth_fill_hold_buffer(fm_synth *s, float start_time, float seconds_per_frame) {
+    for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
+        float time = start_time + seconds_per_frame * frame;
+        fm_synth_frame(s, time);
+
+        for (int c = 0; c < N_CHANNELS; c++) {
+            s->hold_buf[frame][c] = s->channels[c];
+        }
+    }
+
+    s->hold_index = 0;
+}
+
+float fm_synth_get_next_output(fm_synth *s, float start_time, float seconds_per_frame) {
+    if (s->hold_index >= HOLD_BUFFER_SIZE) {
+        fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
+    }
+
+    float out = s->hold_buf[s->hold_index][0];
+    s->hold_index++;
+    return out;
 }

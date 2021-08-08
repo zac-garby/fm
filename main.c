@@ -36,9 +36,9 @@ static void write_callback(struct SoundIoOutStream *outstream,
         float pitch = 440.0f;
         float radians_per_second = pitch * 2.0f * PI;
         for (int frame = 0; frame < frame_count; frame += 1) {
-            fm_synth_frame(&synth, seconds_offset + frame * seconds_per_frame);
-             
-            float sample = synth.channels[0];
+            float sample = fm_synth_get_next_output(&synth,
+                                                    seconds_offset + frame * seconds_per_frame,
+                                                    seconds_per_frame);
             
             for (int channel = 0; channel < layout->channel_count; channel += 1) {
                 float *ptr = (float*)(areas[channel].ptr + areas[channel].step * frame);
@@ -62,16 +62,16 @@ int main() {
     synth = fm_new_synth(2);
     synth.freq = 440.0f;
     
-    fm_operator op = fm_new_op(0, 1, true, 440.0f);
+    fm_operator op = fm_new_op(0, 1, false, 1.25f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     synth.ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
     op2.recv[0] = 1;
-    op2.recv_level[0] = 0.5f;
+    op2.recv_level[0] = 1.0f;
     op2.send[0] = 0;
-    op2.send_level[0] = 0.6f;
+    op2.send_level[0] = 0.1f;
     synth.ops[1] = op2;
     
     int err;
