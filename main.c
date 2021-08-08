@@ -62,7 +62,7 @@ int main() {
     synth = fm_new_synth(2);
     synth.freq = 440.0f;
     
-    fm_operator op = fm_new_op(0, 1, false, 1.25f);
+    fm_operator op = fm_new_op(0, 1, false, 1.05f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     synth.ops[0] = op;

@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <kissfft/kiss_fft.h>
 
 #include "operator.h"
 

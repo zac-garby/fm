@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Winline --std=c99
-CLIBS = -lsoundio
+CLIBS = -lsoundio -lkissfft-float
 OBJECTS = $(addprefix bin/,synth.o operator.o)
 
 bin:
