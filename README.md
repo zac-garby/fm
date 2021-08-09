@@ -6,8 +6,7 @@ The goal is to have a synth which can immitate lots of different instruments, an
 
 ## Installation
 
-First, you'll need to install [libsoundio](http://libsound.io) and [kissfft](https://github.com/mborgerding/kissff
-t). libsoundio is easy enough to install through package managers usually, but kissfft doesn't have very good instructions so this is what I'd suggest:
+First, you'll need to install [libsoundio](http://libsound.io) and [kissfft](https://github.com/mborgerding/kissfft). libsoundio is easy enough to install through package managers usually, but kissfft doesn't have very good instructions so this is what I'd suggest:
 
 ```sh
 git clone https://github.com/mborgerding/kissfft
