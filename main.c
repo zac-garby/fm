@@ -11,9 +11,6 @@
 #include "src/operator.h"
 #include "src/window.h"
 
-static float seconds_offset = 0.0f;
-
-static fm_synth synth;
 static fm_player player;
 
 struct SoundIoDevice* init_audio();

@@ -1,6 +1,8 @@
 #include "player.h"
 
-void* fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_count_min, int frame_count_max) {
+void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_count_min, int frame_count_max) {
+    UNUSED(frame_count_min);
+    
     fm_player *p = (fm_player*) outstream->userdata;
 
     const struct SoundIoChannelLayout *layout = &outstream->layout;
@@ -33,7 +35,7 @@ void* fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame
         p->playhead += time_per_frame * frame_count;
 
         if ((err = soundio_outstream_end_write(outstream))) {
-            fprintf("error: %s\n", soundio_strerror(err));
+            fprintf(stderr, "error: %s\n", soundio_strerror(err));
             exit(1);
         }
 

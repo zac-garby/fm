@@ -6,6 +6,8 @@
 
 #include "synth.h"
 
+#define UNUSED(x) (void)(x)
+
 typedef struct fm_player {
     // an array of synths
     fm_synth *synths;
