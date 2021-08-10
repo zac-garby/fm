@@ -9,6 +9,7 @@ fm_synth fm_new_synth(int n_ops) {
     
     s.ops = malloc(sizeof(fm_operator) * n_ops);
     s.n_ops = n_ops;
+    s.stop = false;
     
     for (int i = 0; i < N_CHANNELS; i++) {
         s.channels[i] = 0;
@@ -59,7 +60,7 @@ void fm_synth_fill_hold_buffer(fm_synth *s, float start_time, float seconds_per_
         fm_synth_frame(s, time);
 
         for (int c = 0; c < N_CHANNELS; c++) {
-            s->hold_buf[frame][c] = s->channels[c];
+            s->hold_buf[c][frame] = s->channels[c];
         }
     }
 
@@ -71,7 +72,8 @@ float fm_synth_get_next_output(fm_synth *s, float start_time, float seconds_per_
         fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
     }
 
-    float out = s->hold_buf[s->hold_index][0];
+    float out = s->hold_buf[0][s->hold_index];
     s->hold_index++;
     return out;
 }
+

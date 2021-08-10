@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Winline --std=c99
-CLIBS = -lsoundio -lkissfft-float
-OBJECTS = $(addprefix bin/,synth.o operator.o)
+CLIBS = -lsoundio -lkissfft-float -lsdl2
+OBJECTS = $(addprefix bin/,synth.o operator.o window.o player.o)
 
 bin:
 	mkdir -p bin
