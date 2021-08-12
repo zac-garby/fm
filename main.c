@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "src/synth.h"
 #include "src/player.h"
@@ -21,6 +22,11 @@ int main() {
         exit(1);
     }
 
+    if (TTF_Init() < 0) {
+        fprintf(stderr, "SDL ttf failed to initialise\n");
+        exit(1);
+    }
+
     struct SoundIoDevice *device = init_audio();
 
     player = fm_new_player(1, device);
@@ -30,7 +36,7 @@ int main() {
     player.synths[0] = fm_new_synth(2);
     player.synths[0].freq = 1000.0f;
     
-    fm_operator op = fm_new_op(0, 1, false, 1.7f);
+    fm_operator op = fm_new_op(0, 1, false, 1.5f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     player.synths[0].ops[0] = op;

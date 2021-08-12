@@ -2,6 +2,7 @@
 #define H_FM_WINDOW
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include <kissfft/kiss_fftr.h>
 #include <math.h>
@@ -13,6 +14,12 @@
 #define SCREEN_HEIGHT 300
 
 #define FRAMES_PER_FFT 5
+
+#define FFT_SCALE_STEP 100
+#define FFT_SCALE_SKIP 5
+#define FFT_SCALE_MAX (48000 / 2)
+
+static TTF_Font *font;
 
 typedef struct fm_window {
     SDL_Window *window;
