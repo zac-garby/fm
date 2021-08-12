@@ -13,6 +13,7 @@ First, you'll need to install a few libraries:
  - [libsoundio](http://libsound.io)
  - [kissfft](https://github.com/mborgerding/kissfft)
  - [SDL](https://www.libsdl.org)
+ - [SDL TTF](https://www.libsdl.org/projects/SDL_ttf/)
  
 libsoundio and SDL are easy enough to install through package managers usually, but kissfft doesn't have very good instructions so this is what I'd suggest:
 
