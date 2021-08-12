@@ -2,6 +2,8 @@
 
 This is a barely functional [FM synthesizer](https://en.wikipedia.org/wiki/Frequency_modulation_synthesis).
 
+![](assets/screenshot.png)
+
 The goal is to have a synth which can immitate lots of different instruments, and a sequencer to play it. MIDI input should be pretty straightforward too, since I'm using libsoundio.
 
 ## Installation
