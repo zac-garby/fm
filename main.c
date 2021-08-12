@@ -30,14 +30,14 @@ int main() {
     player.synths[0] = fm_new_synth(2);
     player.synths[0].freq = 1000.0f;
     
-    fm_operator op = fm_new_op(0, 1, false, 1.5f);
+    fm_operator op = fm_new_op(0, 1, false, 1.7f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     player.synths[0].ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
     op2.recv[0] = 1;
-    op2.recv_level[0] = 0.0f;
+    op2.recv_level[0] = 0.5f;
     op2.send[0] = 0;
     op2.send_level[0] = 1.0f;
     player.synths[0].ops[1] = op2;
