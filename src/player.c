@@ -6,7 +6,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
     fm_player *p = (fm_player*) outstream->userdata;
 
     const struct SoundIoChannelLayout *layout = &outstream->layout;
-    float time_per_frame = 1.0f / outstream->sample_rate;
+    double time_per_frame = 1.0 / outstream->sample_rate;
     struct SoundIoChannelArea *areas;
     int frames_left = frame_count_max;
     int err;

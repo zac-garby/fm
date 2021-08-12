@@ -29,11 +29,11 @@ void fm_synth_swap_buffers(fm_synth *s) {
     }
 }
 
-void fm_synth_frame(fm_synth *s, float time) {
+void fm_synth_frame(fm_synth *s, double time) {
     for (int i = 0; i < s->n_ops; i++) {
         fm_operator *op = &s->ops[i];
         float freq;
-        float mod = 0;
+        double mod = 0;
         if (op->fixed) {
             freq = op->transpose;
         } else {
@@ -54,9 +54,9 @@ void fm_synth_frame(fm_synth *s, float time) {
     fm_synth_swap_buffers(s);
 }
 
-void fm_synth_fill_hold_buffer(fm_synth *s, float start_time, float seconds_per_frame) {
+void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_per_frame) {
     for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
-        float time = start_time + seconds_per_frame * frame;
+        double time = start_time + seconds_per_frame * frame;
         fm_synth_frame(s, time);
 
         for (int c = 0; c < N_CHANNELS; c++) {
@@ -67,7 +67,7 @@ void fm_synth_fill_hold_buffer(fm_synth *s, float start_time, float seconds_per_
     s->hold_index = 0;
 }
 
-float fm_synth_get_next_output(fm_synth *s, float start_time, float seconds_per_frame) {
+float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame) {
     if (s->hold_index >= HOLD_BUFFER_SIZE) {
         fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
     }

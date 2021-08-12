@@ -50,8 +50,8 @@ fm_synth fm_new_synth(int n_ops);
 void fm_synth_start(fm_synth *s);
 void fm_synth_stop(fm_synth *s);
 void fm_synth_swap_buffers(fm_synth *s);
-void fm_synth_frame(fm_synth *s, float time);
-void fm_synth_fill_hold_buffer(fm_synth *s, float start_time, float seconds_per_frame);
-float fm_synth_get_next_output(fm_synth *s, float start_time, float seconds_per_frame);
+void fm_synth_frame(fm_synth *s, double time);
+void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_per_frame);
+float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame);
 
 #endif

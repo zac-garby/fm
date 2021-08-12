@@ -17,7 +17,7 @@ typedef struct fm_player {
     struct SoundIoOutStream *outstream;
 
     // the playhead position in seconds
-    float playhead;
+    double playhead;
 
     // whether or not the player is playing at the moment.
     // set this to false to stop the play loop.
