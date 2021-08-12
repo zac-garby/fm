@@ -22,7 +22,7 @@ fm_window fm_create_window(fm_player *player) {
 void fm_window_loop(fm_window *win) {
     bool quit = false;
     SDL_Event e;
-    kiss_fft_cpx *freq = malloc(sizeof(kiss_fft_cpx) * (HOLD_BUFFER_SIZE / 2 + 1));
+    kiss_fft_cpx *freq = malloc(sizeof(kiss_fft_cpx) * FREQ_DOMAIN);
     SDL_Rect rect;
     int fft_timer = 0;
     float fft_peak = 0;
@@ -42,7 +42,7 @@ void fm_window_loop(fm_window *win) {
             kiss_fftr(win->fft_cfg, win->player->synths[0].hold_buf[0], freq);
             fft_peak = 0;
 
-            for (int i = 0; i < HOLD_BUFFER_SIZE / 2 + 1; i++) {
+            for (int i = 0; i < FREQ_DOMAIN; i++) {
                 double m = hypot(freq[i].r, freq[i].i);
                 if (m > fft_peak) {
                     fft_peak = m;
@@ -52,7 +52,7 @@ void fm_window_loop(fm_window *win) {
 
         fft_timer = (fft_timer + 1) % FRAMES_PER_FFT;
 
-        for (int i = 0; i < HOLD_BUFFER_SIZE / 2 + 1; i++) {
+        for (int i = 0; i < FREQ_DOMAIN; i++) {
             double h = hypotf(freq[i].r, freq[i].i) * (280.0f / fft_peak);
             rect.x = i;
             rect.y = 300 - (int) h;
