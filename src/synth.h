@@ -12,7 +12,7 @@
 static const float PI = 3.1415926535f;
 
 #define N_CHANNELS 16
-#define HOLD_BUFFER_SIZE 1024
+#define HOLD_BUFFER_SIZE 4096
 
 typedef struct fm_synth {
     // the array of recv/send channels.

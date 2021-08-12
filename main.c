@@ -23,11 +23,12 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    fm_window win = fm_create_window();
     player = fm_new_player(1, device);
     
+    fm_window win = fm_create_window(&player);
+    
     player.synths[0] = fm_new_synth(2);
-    player.synths[0].freq = 440.0f;
+    player.synths[0].freq = 1000.0f;
     
     fm_operator op = fm_new_op(0, 1, false, 1.5f);
     op.send[0] = 1;
@@ -36,9 +37,9 @@ int main() {
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
     op2.recv[0] = 1;
-    op2.recv_level[0] = 1.0f;
+    op2.recv_level[0] = 0.0f;
     op2.send[0] = 0;
-    op2.send_level[0] = 0.3f;
+    op2.send_level[0] = 1.0f;
     player.synths[0].ops[1] = op2;
 
     pthread_t player_thread;
