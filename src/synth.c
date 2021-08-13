@@ -5,6 +5,7 @@ fm_synth fm_new_synth(int n_ops) {
 
     s.channels = malloc(sizeof(float) * N_CHANNELS);
     s.channels_back = malloc(sizeof(float) * N_CHANNELS);
+    s.integrals = malloc(sizeof(double) * N_CHANNELS);
     s.hold_index = HOLD_BUFFER_SIZE;
     s.hold_buf_dirty = false;
     
@@ -15,6 +16,7 @@ fm_synth fm_new_synth(int n_ops) {
     for (int i = 0; i < N_CHANNELS; i++) {
         s.channels[i] = 0;
         s.channels_back[i] = 0;
+        s.integrals[i] = 0;
     }
 
     return s;
@@ -30,7 +32,7 @@ void fm_synth_swap_buffers(fm_synth *s) {
     }
 }
 
-void fm_synth_frame(fm_synth *s, double time) {
+void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
     for (int i = 0; i < s->n_ops; i++) {
         fm_operator *op = &s->ops[i];
         float freq;
@@ -42,15 +44,21 @@ void fm_synth_frame(fm_synth *s, double time) {
         }
 
         for (int n = 0; n < op->recv_n; n++) {
-            mod += s->channels[op->recv[n]] * op->recv_level[n];
+            mod += s->integrals[op->recv[n]] * op->recv_level[n];
         }
 
-        float sample = sin(freq * time * 2.0 * PI + mod);
+        float sample = cos(2.0f * PI * (freq*time + mod));
 
         for (int n = 0; n < op->send_n; n++) {
             s->channels_back[op->send[n]] += op->send_level[n] * sample;
+            s->integrals[op->send[n]] += (double) (op->send_level[n] * sample) * seconds_per_frame;
+            if (i == 1) {
+                //printf("%f %f\n", sample, (double) (op->send_level[n] * sample) * seconds_per_frame);
+            }
         }
     }
+
+    //printf("%f\n", s->integrals[1]);
 
     fm_synth_swap_buffers(s);
 }
@@ -59,7 +67,7 @@ void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_pe
     s->hold_buf_dirty = true;
     for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
         double time = start_time + seconds_per_frame * frame;
-        fm_synth_frame(s, time);
+        fm_synth_frame(s, time, seconds_per_frame);
 
         for (int c = 0; c < N_CHANNELS; c++) {
             s->hold_buf[c][frame] = s->channels[c];
