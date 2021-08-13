@@ -112,7 +112,6 @@ void fm_window_loop(fm_window *win) {
 
 static SDL_Texture* render_text_scale(fm_window *win) {
     SDL_Color fg = { 0x00, 0x00, 0x00, 0xff };
-    SDL_Color bg = { 0xff, 0xff, 0xff, 0xff };
     SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(0, SCREEN_WIDTH, 20, 32, SDL_PIXELFORMAT_RGBA32);
     char *label = malloc(8);
     if (surf == NULL) {
