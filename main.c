@@ -43,7 +43,7 @@ int main() {
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
     op2.recv[0] = 1;
-    op2.recv_level[0] = 2000.0f;
+    op2.recv_level[0] = 500.0f;
     op2.send[0] = 0;
     op2.send_level[0] = 0.1f;
     player.synths[0].ops[1] = op2;

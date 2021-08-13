@@ -93,7 +93,7 @@ void fm_window_loop(fm_window *win) {
             float p = (float) x / (float) WAVEFORM_RESOLUTION;
             int i = (int) ((float) WAVEFORM_SEGMENT * p);
             waveform[x].x = (int) ((float) SCREEN_WIDTH * p);
-            waveform[x].y = (int) (win->player->synths[0].hold_buf[0][i] * 100) + 150;
+            waveform[x].y = (int) (win->player->synths[0].hold_buf[0][i] * 500) + 150;
         }
 
         SDL_RenderDrawLines(win->renderer, waveform, WAVEFORM_RESOLUTION);
