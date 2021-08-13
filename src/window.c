@@ -89,11 +89,19 @@ void fm_window_loop(fm_window *win) {
         SDL_RenderCopy(win->renderer, scale, NULL, &scaleRect);
 
         // render the output (channel 0) waveform
+        float wave_peak = 0;
+        for (int x = 0; x < HOLD_BUFFER_SIZE; x++) {
+            float sample = win->player->synths[0].hold_buf[0][x];
+            if (sample > wave_peak) {
+                wave_peak = sample;
+            }
+        }
+        
         for (int x = 0; x < WAVEFORM_RESOLUTION; x++) {
             float p = (float) x / (float) WAVEFORM_RESOLUTION;
             int i = (int) ((float) WAVEFORM_SEGMENT * p);
             waveform[x].x = (int) ((float) SCREEN_WIDTH * p);
-            waveform[x].y = (int) (win->player->synths[0].hold_buf[0][i] * 500) + 150;
+            waveform[x].y = (int) (130.0f * win->player->synths[0].hold_buf[0][i] / wave_peak) + 150;
         }
 
         SDL_RenderDrawLines(win->renderer, waveform, WAVEFORM_RESOLUTION);

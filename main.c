@@ -33,34 +33,41 @@ int main() {
     
     fm_window win = fm_create_window(&player);
     
-    player.synths[0] = fm_new_synth(4);
-    player.synths[0].freq = 250.0f;
+    player.synths[0] = fm_new_synth(5);
+    player.synths[0].freq = 440.0f;
     
-    fm_operator op = fm_new_op(0, 1, true, 10.0f);
+    fm_operator op = fm_new_op(0, 1, true, 300.0f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     player.synths[0].ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.recv[0] = 1;
+    op2.recv[0] = 0;
     op2.recv_level[0] = 0.0f;
     op2.send[0] = 0;
-    op2.send_level[0] = 0.1f;
+    op2.send_level[0] = 0.43f;
     player.synths[0].ops[1] = op2;
 
-    fm_operator op3 = fm_new_op(1, 1, false, 1.2f);
+    fm_operator op3 = fm_new_op(1, 1, false, 2.0f);
     op3.recv[0] = 1;
     op3.recv_level[0] = 0.0f;
     op3.send[0] = 0;
-    op3.send_level[0] = 0.1f;
+    op3.send_level[0] = 0.3f;
     player.synths[0].ops[2] = op3;
 
-    fm_operator op4 = fm_new_op(1, 1, false, 1.5f);
+    fm_operator op4 = fm_new_op(1, 1, false, 4.0f);
     op4.recv[0] = 1;
     op4.recv_level[0] = 0.0f;
     op4.send[0] = 0;
-    op4.send_level[0] = 0.1f;
+    op4.send_level[0] = 0.3f;
     player.synths[0].ops[3] = op4;
+
+    fm_operator op5 = fm_new_op(1, 1, false, 8.0f);
+    op5.recv[0] = 0;
+    op5.recv_level[0] = 500.0f;
+    op5.send[0] = 0;
+    op5.send_level[0] = 0.28f;
+    player.synths[0].ops[4] = op5;
 
     pthread_t player_thread;
     pthread_create(&player_thread, 0, fm_player_loop, &player);
