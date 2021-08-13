@@ -10,20 +10,24 @@
 #include "player.h"
 #include "synth.h"
 
-#define SCREEN_WIDTH 1026
-#define SCREEN_HEIGHT 300
+#define SCREEN_WIDTH 1024
+#define SCREEN_HEIGHT 600
 
-#define FRAMES_PER_FFT 5
+#define FRAMES_PER_FFT 1
 
+#define FFT_RESOLUTION 512
 #define FFT_SCALE_STEP 100
 #define FFT_SCALE_SKIP 5
 #define FFT_SCALE_MAX (48000 / 2)
+
+#define WAVEFORM_RESOLUTION SCREEN_WIDTH
+#define WAVEFORM_SEGMENT (HOLD_BUFFER_SIZE / 2)
 
 static TTF_Font *font;
 
 typedef struct fm_window {
     SDL_Window *window;
-    SDL_Surface *surface;
+    SDL_Renderer *renderer;
 
     fm_player *player;
     kiss_fftr_cfg fft_cfg;

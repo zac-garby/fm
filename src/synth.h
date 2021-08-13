@@ -12,7 +12,7 @@
 static const float PI = 3.1415926535f;
 
 #define N_CHANNELS 16
-#define HOLD_BUFFER_SIZE 4096
+#define HOLD_BUFFER_SIZE 1024
 #define FREQ_DOMAIN (HOLD_BUFFER_SIZE / 2 + 1)
 
 typedef struct fm_synth {
