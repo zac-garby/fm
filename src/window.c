@@ -55,7 +55,7 @@ void fm_window_loop(fm_window *win) {
 
         SDL_FillRect(win->surface, NULL, SDL_MapRGB(win->surface->format, 0x00, 0x00, 0x00));
 
-        if (fft_timer == 0) {
+        if (fft_timer == 0 && !win->player->synths[0].hold_buf_dirty) {
             kiss_fftr(win->fft_cfg, win->player->synths[0].hold_buf[0], freq);
             fft_peak = 0;
 

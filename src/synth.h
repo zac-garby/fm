@@ -29,6 +29,8 @@ typedef struct fm_synth {
     // to allow spectral analysis on the synth output.
     float hold_buf[N_CHANNELS][HOLD_BUFFER_SIZE];
 
+    bool hold_buf_dirty;
+
     // the current playhead into the hold buffer.
     int hold_index;
 
