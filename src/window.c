@@ -88,10 +88,12 @@ void fm_window_loop(fm_window *win) {
         // render the frequency domain x-axis scale
         SDL_RenderCopy(win->renderer, scale, NULL, &scaleRect);
 
-        // render the output (channel 0) waveform
+        // render the output (channel 0) waveform, once the hold buffer is written.
+        while (!win->player->synths[0].hold_buf_dirty);
+        
         float wave_peak = 0;
         for (int x = 0; x < HOLD_BUFFER_SIZE; x++) {
-            float sample = win->player->synths[0].hold_buf[0][x];
+            float sample = fabs(win->player->synths[0].hold_buf[0][x]);
             if (sample > wave_peak) {
                 wave_peak = sample;
             }

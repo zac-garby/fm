@@ -5,8 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define RECV_MAX 8
-#define SEND_MAX 8
+#include "envelope.h"
 
 typedef struct fm_operator {
     // an array of channels to receive from, and
@@ -25,6 +24,9 @@ typedef struct fm_operator {
 
     // a frequency scaling factor.
     float transpose;
+
+    // the envelope that the operator follows.
+    fm_envelope envelope;
 } fm_operator;
 
 fm_operator fm_new_op(int recv_n, int send_n, int fixed, float transpose);
