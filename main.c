@@ -35,7 +35,9 @@ int main() {
     fm_window win = fm_create_window(&player);
     
     player.synths[0] = fm_new_synth(5);
-    player.synths[0].freq = 440.0f;
+    player.synths[0].notes[0] = 440.0f;
+    player.synths[0].notes[1] = 6000.0f;
+    player.synths[0].num_notes = 2;
     
     fm_operator op = fm_new_op(0, 1, true, 80.0f);
     op.envelope = fm_make_envelope(0.2, 0.4, 0.3, 1.0);

@@ -12,6 +12,9 @@ fm_synth fm_new_synth(int n_ops) {
     s.ops = malloc(sizeof(fm_operator) * n_ops);
     s.n_ops = n_ops;
     s.stop = false;
+
+    s.notes = malloc(sizeof(float) * MAX_POLYPHONY);
+    s.num_notes = 0;
     
     for (int i = 0; i < N_CHANNELS; i++) {
         s.channels[i] = 0;
@@ -35,19 +38,20 @@ void fm_synth_swap_buffers(fm_synth *s) {
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
     for (int i = 0; i < s->n_ops; i++) {
         fm_operator *op = &s->ops[i];
-        float freq;
+        
         double mod = 0;
-        if (op->fixed) {
-            freq = op->transpose;
-        } else {
-            freq = s->freq * op->transpose;
-        }
-
         for (int n = 0; n < op->recv_n; n++) {
             mod += s->integrals[op->recv[n]] * op->recv_level[n];
         }
 
-        float sample = cos(2.0f * PI * (freq*time + mod));
+        float sample = 0;
+        if (op->fixed) {
+            sample = cos(2.0f * PI * (op->transpose*time + mod));
+        } else {
+            for (int n = 0; n < MIN(MAX_POLYPHONY, s->num_notes); n++) {
+                sample += cos(2.0f * PI * (s->notes[n]*op->transpose*time + mod));
+            }
+        }
 
         float env = fm_envelope_evaluate(&op->envelope, time, 5.0f);
         sample *= env;

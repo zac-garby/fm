@@ -14,6 +14,7 @@ static const float PI = 3.1415926535f;
 #define N_CHANNELS 16
 #define HOLD_BUFFER_SIZE 1024
 #define FREQ_DOMAIN (HOLD_BUFFER_SIZE / 2 + 1)
+#define MAX_POLYPHONY 8
 
 typedef struct fm_synth {
     // the array of recv/send channels.
@@ -43,8 +44,12 @@ typedef struct fm_synth {
     fm_operator *ops;
     int n_ops;
 
-    // the frequency of the current note to play.
-    float freq;
+    // the frequencies of the current notes to play.
+    float *notes;
+
+    // the amount of notes to play. (will use the first n frequencies
+    // from notes.) must be less than MAX_POLYPHONY
+    int num_notes;
 
     // the thread to run the synth in.
     pthread_t thread;

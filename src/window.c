@@ -106,6 +106,8 @@ void fm_window_loop(fm_window *win) {
             waveform[x].y = (int) (130.0f * win->player->synths[0].hold_buf[0][i] / wave_peak) + 150;
         }
 
+        SDL_RenderDrawLine(win->renderer, 0, 150, SCREEN_WIDTH, 150);
+
         SDL_RenderDrawLines(win->renderer, waveform, WAVEFORM_RESOLUTION);
 
         SDL_RenderPresent(win->renderer);
