@@ -4,6 +4,7 @@
 #define MIN(x, y) ((x)<(y)?(x):(y))
 #define MAX(x, y) ((x)<(y)?(y):(x))
 
+// an envelope. if attack < 0, the envelope is treated specially as a constant "1"
 typedef struct fm_envelope {
     float attack;
     float decay;

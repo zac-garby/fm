@@ -8,6 +8,7 @@
 #include <pthread.h>
 
 #include "operator.h"
+#include "note.h"
 
 static const float PI = 3.1415926535f;
 
@@ -45,7 +46,7 @@ typedef struct fm_synth {
     int n_ops;
 
     // the frequencies of the current notes to play.
-    float *notes;
+    fm_note *notes;
 
     // the amount of notes to play. (will use the first n frequencies
     // from notes.) must be less than MAX_POLYPHONY

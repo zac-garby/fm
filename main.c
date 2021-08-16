@@ -12,6 +12,7 @@
 #include "src/operator.h"
 #include "src/window.h"
 #include "src/envelope.h"
+#include "src/note.h"
 
 static fm_player player;
 
@@ -35,18 +36,18 @@ int main() {
     fm_window win = fm_create_window(&player);
     
     player.synths[0] = fm_new_synth(5);
-    player.synths[0].notes[0] = 440.0f;
-    player.synths[0].notes[1] = 6000.0f;
+    player.synths[0].notes[0] = fm_make_note(440.0f, 0.0, 2.0f);
+    player.synths[0].notes[1] = fm_make_note(440.0f / 8, 1.0, 4.0f);
     player.synths[0].num_notes = 2;
     
     fm_operator op = fm_new_op(0, 1, true, 80.0f);
-    op.envelope = fm_make_envelope(0.2, 0.4, 0.3, 1.0);
+    op.envelope = fm_make_envelope(0.2, 0.98, 0.3, 1.0);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     player.synths[0].ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.envelope = fm_make_envelope(0.2, 0.4, 0.3, 1.0);
+    op2.envelope = fm_make_envelope(0.05, 0.95, 0.9, 1.0);
     op2.recv[0] = 0;
     op2.recv_level[0] = 0.0f;
     op2.send[0] = 0;
@@ -54,7 +55,7 @@ int main() {
     player.synths[0].ops[1] = op2;
 
     fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
-    op3.envelope = fm_make_envelope(0.2, 0.4, 0.3, 1.0);
+    op3.envelope = fm_make_envelope(0.05, 0.9, 0.85, 1.0);
     op3.recv[0] = 1;
     op3.recv_level[0] = 0.0f;
     op3.send[0] = 0;
@@ -62,7 +63,7 @@ int main() {
     player.synths[0].ops[2] = op3;
 
     fm_operator op4 = fm_new_op(1, 1, false, 4.01f);
-    op4.envelope = fm_make_envelope(0.2, 0.4, 0.3, 1.0);
+    op4.envelope = fm_make_envelope(0.05, 0.9, 0.8, 1.0);
     op4.recv[0] = 1;
     op4.recv_level[0] = 0.0f;
     op4.send[0] = 0;
@@ -70,7 +71,7 @@ int main() {
     player.synths[0].ops[3] = op4;
 
     fm_operator op5 = fm_new_op(1, 1, false, 8.01f);
-    op5.envelope = fm_make_envelope(0.2, 0.4, 0.3, 1.0);
+    op5.envelope = fm_make_envelope(0.1, 0.85, 0.8, 1.0);
     op5.recv[0] = 0;
     op5.recv_level[0] = 250.0f;
     op5.send[0] = 0;

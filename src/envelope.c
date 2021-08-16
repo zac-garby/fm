@@ -10,6 +10,9 @@ fm_envelope fm_make_envelope(float attack, float decay, float sustain, float rel
 }
 
 float fm_envelope_evaluate(fm_envelope *env, float t, float hold_time) {
+    if (t < 0) return 0;
+    if (env->attack < 0) return 1;
+    
     if (hold_time < env->attack + env->decay && t > hold_time && t < hold_time + env->release) {
         float rf = (1 - (t - hold_time) / env->release);
         if (hold_time < env->attack) return (hold_time / env->attack) * rf;

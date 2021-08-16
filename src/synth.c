@@ -13,7 +13,7 @@ fm_synth fm_new_synth(int n_ops) {
     s.n_ops = n_ops;
     s.stop = false;
 
-    s.notes = malloc(sizeof(float) * MAX_POLYPHONY);
+    s.notes = malloc(sizeof(fm_note) * MAX_POLYPHONY);
     s.num_notes = 0;
     
     for (int i = 0; i < N_CHANNELS; i++) {
@@ -49,12 +49,11 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
             sample = cos(2.0f * PI * (op->transpose*time + mod));
         } else {
             for (int n = 0; n < MIN(MAX_POLYPHONY, s->num_notes); n++) {
-                sample += cos(2.0f * PI * (s->notes[n]*op->transpose*time + mod));
+                fm_note note = s->notes[n];
+                float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
+                sample += cos(2.0f * PI * (note.freq*op->transpose * time + mod)) * env;
             }
         }
-
-        float env = fm_envelope_evaluate(&op->envelope, time, 5.0f);
-        sample *= env;
 
         for (int n = 0; n < op->send_n; n++) {
             s->channels_back[op->send[n]] += op->send_level[n] * sample;
