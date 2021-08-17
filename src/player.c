@@ -9,6 +9,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
     double time_per_frame = 1.0 / outstream->sample_rate;
     struct SoundIoChannelArea *areas;
     int frames_left = frame_count_max;
+    int frames_per_quanta = outstream->sample_rate / TIME_QUANTIZE;
     int err;
 
     while (frames_left > 0) {
@@ -22,6 +23,11 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
         if (!frame_count) break;
 
         for (int frame = 0; frame < frame_count; frame++) {
+            if (p->quantize_counter++ >= frames_per_quanta) {
+                fm_player_schedule(p);
+                p->quantize_counter = 0;
+            }
+            
             float sample = fm_synth_get_next_output(&p->synths[0],
                                                     p->playhead + frame * time_per_frame,
                                                     time_per_frame);
@@ -50,6 +56,9 @@ fm_player fm_new_player(int num_synths, struct SoundIoDevice *device) {
 
     p.synths = malloc(sizeof(fm_synth) * num_synths);
     p.num_synths = num_synths;
+    p.song_parts = malloc(sizeof(fm_song_part) * num_synths);
+    p.next_notes = calloc(num_synths, sizeof(int));
+    p.bps = 2.0;
     
     p.outstream = soundio_outstream_create(device);
     if (!p.outstream) {
@@ -60,6 +69,7 @@ fm_player fm_new_player(int num_synths, struct SoundIoDevice *device) {
     p.outstream->format = SoundIoFormatFloat32NE;
     p.outstream->userdata = &p;
     p.outstream->write_callback = fm_player_outstream_callback;
+    p.quantize_counter = p.outstream->sample_rate;
     
     return p;
 }
@@ -84,4 +94,35 @@ void fm_player_loop(void *player_ptr) {
     }
 }
 
+void fm_player_schedule(fm_player *p) {    
+    for (int i = 0; i < p->num_synths; i++) {        
+        fm_synth *s = &p->synths[i];
+        fm_song_part part = p->song_parts[i];
 
+        // while there are notes remaining in this part which have a start time before or
+        // at the current playhead, play them.
+        while (p->next_notes[i] < part.num_notes) {            
+            if (part.notes[p->next_notes[i]].start > p->playhead * p->bps) {
+                break;
+            }
+            
+            // find the best candidate note to remove from the synth, which
+            // ideally will be one which has already finished playing.
+            double earliest_finish = DBL_MAX;
+            int earliest_idx = 0;
+
+            for (int n = 0; n < MAX_POLYPHONY; n++) {
+                fm_note candidate = s->notes[n];
+                double finish = candidate.start + (double) candidate.duration;
+                if (finish < earliest_finish) {
+                    earliest_finish = finish;
+                    earliest_idx = n;
+                }
+            }
+
+            // replace the note that finished longest ago
+            s->notes[earliest_idx] = part.notes[p->next_notes[i]];
+            p->next_notes[i]++;
+        }
+    }
+}

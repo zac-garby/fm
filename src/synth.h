@@ -48,10 +48,6 @@ typedef struct fm_synth {
     // the frequencies of the current notes to play.
     fm_note *notes;
 
-    // the amount of notes to play. (will use the first n frequencies
-    // from notes.) must be less than MAX_POLYPHONY
-    int num_notes;
-
     // the thread to run the synth in.
     pthread_t thread;
 
