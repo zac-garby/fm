@@ -103,7 +103,7 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
         // while there are notes remaining in this part which have a start time before or
         // at the current playhead, play them.
         while (p->next_notes[i] < part.num_notes) {            
-            if (part.notes[p->next_notes[i]].start > (p->playhead - time_per_quantum) * p->bps) {
+            if (part.notes[p->next_notes[i]].start >= (p->playhead + time_per_quantum) * p->bps) {
                 break;
             }
             
@@ -123,7 +123,7 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
 
             // replace the note that finished longest ago
             fm_note note = part.notes[p->next_notes[i]];
-            note.start /= p->bps;
+            note.start = p->playhead;
             note.duration /= p->bps;
             s->notes[earliest_idx] = note;
             p->next_notes[i]++;

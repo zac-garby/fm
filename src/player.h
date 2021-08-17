@@ -9,7 +9,7 @@
 
 #define UNUSED(x) (void)(x)
 
-#define TIME_QUANTIZE 1000
+#define TIME_QUANTIZE 1024
 
 typedef struct fm_song_part {
     int num_notes;
