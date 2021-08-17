@@ -9,7 +9,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
     double time_per_frame = 1.0 / outstream->sample_rate;
     struct SoundIoChannelArea *areas;
     int frames_left = frame_count_max;
-    int frames_per_quanta = outstream->sample_rate / TIME_QUANTIZE;
+    int frames_per_quantum = outstream->sample_rate / TIME_QUANTIZE;
     int err;
 
     while (frames_left > 0) {
@@ -23,8 +23,8 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
         if (!frame_count) break;
 
         for (int frame = 0; frame < frame_count; frame++) {
-            if (p->quantize_counter++ >= frames_per_quanta) {
-                fm_player_schedule(p);
+            if (p->quantize_counter++ >= frames_per_quantum) {
+                fm_player_schedule(p, time_per_frame * frames_per_quantum);
                 p->quantize_counter = 0;
             }
             
@@ -51,25 +51,26 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
     }
 }
 
-fm_player fm_new_player(int num_synths, struct SoundIoDevice *device) {
-    fm_player p;
+fm_player* fm_new_player(int num_synths, struct SoundIoDevice *device) {
+    fm_player *p = malloc(sizeof(fm_player));
 
-    p.synths = malloc(sizeof(fm_synth) * num_synths);
-    p.num_synths = num_synths;
-    p.song_parts = malloc(sizeof(fm_song_part) * num_synths);
-    p.next_notes = calloc(num_synths, sizeof(int));
-    p.bps = 2.0;
+    p->synths = malloc(sizeof(fm_synth) * num_synths);
+    p->num_synths = num_synths;
+    p->song_parts = malloc(sizeof(fm_song_part) * num_synths);
+    p->next_notes = calloc(num_synths, sizeof(int));
+    p->bps = 1.0;
+    p->playhead = 0;
     
-    p.outstream = soundio_outstream_create(device);
-    if (!p.outstream) {
+    p->outstream = soundio_outstream_create(device);
+    if (!p->outstream) {
         fprintf(stderr, "out of memory\n");
         exit(1);
     }
 
-    p.outstream->format = SoundIoFormatFloat32NE;
-    p.outstream->userdata = &p;
-    p.outstream->write_callback = fm_player_outstream_callback;
-    p.quantize_counter = p.outstream->sample_rate;
+    p->outstream->format = SoundIoFormatFloat32NE;
+    p->outstream->userdata = p;
+    p->outstream->write_callback = fm_player_outstream_callback;
+    p->quantize_counter = p->outstream->sample_rate;
     
     return p;
 }
@@ -94,7 +95,7 @@ void fm_player_loop(void *player_ptr) {
     }
 }
 
-void fm_player_schedule(fm_player *p) {    
+void fm_player_schedule(fm_player *p, double time_per_quantum) {
     for (int i = 0; i < p->num_synths; i++) {        
         fm_synth *s = &p->synths[i];
         fm_song_part part = p->song_parts[i];
@@ -102,7 +103,7 @@ void fm_player_schedule(fm_player *p) {
         // while there are notes remaining in this part which have a start time before or
         // at the current playhead, play them.
         while (p->next_notes[i] < part.num_notes) {            
-            if (part.notes[p->next_notes[i]].start > p->playhead * p->bps) {
+            if (part.notes[p->next_notes[i]].start > (p->playhead - time_per_quantum) * p->bps) {
                 break;
             }
             
@@ -121,7 +122,11 @@ void fm_player_schedule(fm_player *p) {
             }
 
             // replace the note that finished longest ago
-            s->notes[earliest_idx] = part.notes[p->next_notes[i]];
+            fm_note note = part.notes[p->next_notes[i]];
+            note.start /= p->bps;
+            note.duration /= p->bps;
+            printf("scheudling note (%d) @ %f: %f %f %f\n", earliest_idx, p->playhead, note.freq, note.start, note.duration);
+            s->notes[earliest_idx] = note;
             p->next_notes[i]++;
         }
     }

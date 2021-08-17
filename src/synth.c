@@ -39,7 +39,7 @@ void fm_synth_swap_buffers(fm_synth *s) {
 }
 
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
-    for (int i = 0; i < s->n_ops; i++) {
+    for (int i = 0; i < s->n_ops; i++) {        
         fm_operator *op = &s->ops[i];
         
         double mod = 0;
@@ -84,13 +84,14 @@ void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_pe
     s->hold_buf_dirty = false;
 }
 
-float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame) {
+float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame) {    
     if (s->hold_index >= HOLD_BUFFER_SIZE) {
         fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
     }
 
     float out = s->hold_buf[0][s->hold_index];
     s->hold_index++;
+
     return out;
 }
 

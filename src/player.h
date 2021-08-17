@@ -49,9 +49,9 @@ typedef struct fm_player {
     bool playing;
 } fm_player;
 
-fm_player fm_new_player(int num_synths, struct SoundIoDevice *device);
+fm_player* fm_new_player(int num_synths, struct SoundIoDevice *device);
 
 void fm_player_loop(void *player_ptr);
-void fm_player_schedule(fm_player *p);
+void fm_player_schedule(fm_player *p, double time_per_quantum);
 
 #endif
