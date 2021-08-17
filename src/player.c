@@ -125,7 +125,6 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
             fm_note note = part.notes[p->next_notes[i]];
             note.start /= p->bps;
             note.duration /= p->bps;
-            printf("scheudling note (%d) @ %f: %f %f %f\n", earliest_idx, p->playhead, note.freq, note.start, note.duration);
             s->notes[earliest_idx] = note;
             p->next_notes[i]++;
         }

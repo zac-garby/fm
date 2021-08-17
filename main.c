@@ -32,24 +32,26 @@ int main() {
     struct SoundIoDevice *device = init_audio();
 
     player = fm_new_player(1, device);
-    player->bps = 4.0;
-    player->song_parts[0].num_notes = 20;
-    player->song_parts[0].notes = malloc(sizeof(fm_note) * 20);
+    player->bps = 2.0;
+    player->song_parts[0].num_notes = 40;
+    player->song_parts[0].notes = malloc(sizeof(fm_note) * 40);
     
     for (int s = 0; s < 20; s++) {
-        player->song_parts[0].notes[s] = fm_make_note(50.0f + fmodf(100.0f * s, 325.0f), s * 4, 1.0f);
+        player->song_parts[0].notes[3*s] = fm_make_note(200.0f + fmodf(100.0f * s, 325.0f), s, 0.9f);
+        player->song_parts[0].notes[3*s+1] = fm_make_note(1.25f * (200.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
+        player->song_parts[0].notes[3*s+1] = fm_make_note(1.5f * (200.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
     }
     
     player->synths[0] = fm_new_synth(5);
     
     fm_operator op = fm_new_op(0, 1, true, 80.0f);
-    op.envelope = fm_make_envelope(0.2, 0.98, 0.3, 0.2f);
+    op.envelope = fm_make_envelope(0.2, 0.7, 0.3, 0.2f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     player->synths[0].ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.envelope = fm_make_envelope(0.05, 0.95, 0.9, 0.2f);
+    op2.envelope = fm_make_envelope(0.05, 0.7, 0.9, 0.2f);
     op2.recv[0] = 0;
     op2.recv_level[0] = 0.0f;
     op2.send[0] = 0;
@@ -57,7 +59,7 @@ int main() {
     player->synths[0].ops[1] = op2;
 
     fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
-    op3.envelope = fm_make_envelope(0.05, 0.9, 0.85, 0.2f);
+    op3.envelope = fm_make_envelope(0.05, 0.7, 0.85, 0.2f);
     op3.recv[0] = 1;
     op3.recv_level[0] = 0.0f;
     op3.send[0] = 0;
@@ -65,7 +67,7 @@ int main() {
     player->synths[0].ops[2] = op3;
 
     fm_operator op4 = fm_new_op(1, 1, false, 4.01f);
-    op4.envelope = fm_make_envelope(0.05, 0.9, 0.8, 0.2f);
+    op4.envelope = fm_make_envelope(0.05, 0.7, 0.8, 0.2f);
     op4.recv[0] = 1;
     op4.recv_level[0] = 0.0f;
     op4.send[0] = 0;
@@ -73,7 +75,7 @@ int main() {
     player->synths[0].ops[3] = op4;
 
     fm_operator op5 = fm_new_op(1, 1, false, 8.01f);
-    op5.envelope = fm_make_envelope(0.1, 0.85, 0.8, 0.2f);
+    op5.envelope = fm_make_envelope(0.1, 0.7, 0.8, 0.2f);
     op5.recv[0] = 0;
     op5.recv_level[0] = 250.0f;
     op5.send[0] = 0;
