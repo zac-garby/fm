@@ -1,7 +1,5 @@
 #include "window.h"
 
-static SDL_Texture* render_text_scale(fm_window *win);
-
 fm_window fm_create_window(fm_player *player) {
     fm_window win;
 
@@ -17,6 +15,9 @@ fm_window fm_create_window(fm_player *player) {
     win.renderer = SDL_CreateRenderer(win.window, -1, SDL_RENDERER_ACCELERATED);
     win.player = player;
     win.fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
+    win.num_panels = 3;
+    win.panels = malloc(sizeof(fm_gui_panel) * win.num_panels);
+    setup_panels(&win);
 
     // TODO: maybe move font stuff to some other file?
     font = TTF_OpenFont("assets/NotoSansJP-Regular.otf", 10);
@@ -54,61 +55,17 @@ void fm_window_loop(fm_window *win) {
             }
         }
 
-        SDL_SetRenderDrawColor(win->renderer, 0x00, 0x00, 0x00, 0xff);
+        SDL_SetRenderDrawColor(win->renderer, WINDOW_BACKGROUND_COLOUR);
         SDL_RenderClear(win->renderer);
 
-        // recompute the FFT every n frames, if the hold buffer is not being computed.
-        if (fft_timer == 0 && !win->player->synths[0].hold_buf_dirty) {
-            kiss_fftr(win->fft_cfg, win->player->synths[0].hold_buf[0], freq);
-            fft_peak = 0;
+        for (int i = 0; i < win->num_panels; i++) {
+            fm_gui_panel *panel = &win->panels[i];
 
-            for (int i = 0; i < FREQ_DOMAIN; i++) {
-                double m = hypot(freq[i].r, freq[i].i);
-                if (m > fft_peak) {
-                    fft_peak = m;
-                }
+            if (panel->render != NULL) {
+                panel_render_background(win, panel);
+                panel->render(win, panel);
             }
         }
-
-        fft_timer = (fft_timer + 1) % FRAMES_PER_FFT;
-
-        SDL_SetRenderDrawColor(win->renderer, 0xff, 0xff, 0xff, 0xff);
-        
-        // render the FFT frequency domain
-        for (int x = 0; x < FFT_RESOLUTION; x++) {
-            float p = (float) x / (float) FFT_RESOLUTION;
-            int i = (int) ((float) FREQ_DOMAIN * p);
-            double h = hypotf(freq[i].r, freq[i].i) * (280.0f / fft_peak);
-            rect.x = x * rect.w;
-            rect.y = SCREEN_HEIGHT - 20 - (int) h;
-            rect.h = (int) h;
-            SDL_RenderFillRect(win->renderer, &rect);
-        }
-
-        // render the frequency domain x-axis scale
-        SDL_RenderCopy(win->renderer, scale, NULL, &scaleRect);
-
-        // render the output (channel 0) waveform, once the hold buffer is written.
-        while (!win->player->synths[0].hold_buf_dirty);
-        
-        float wave_peak = 0;
-        for (int x = 0; x < HOLD_BUFFER_SIZE; x++) {
-            float sample = fabs(win->player->synths[0].hold_buf[0][x]);
-            if (sample > wave_peak) {
-                wave_peak = sample;
-            }
-        }
-        
-        for (int x = 0; x < WAVEFORM_RESOLUTION; x++) {
-            float p = (float) x / (float) WAVEFORM_RESOLUTION;
-            int i = (int) ((float) WAVEFORM_SEGMENT * p);
-            waveform[x].x = (int) ((float) SCREEN_WIDTH * p);
-            waveform[x].y = (int) (130.0f * win->player->synths[0].hold_buf[0][i] / wave_peak) + 150;
-        }
-
-        SDL_RenderDrawLine(win->renderer, 0, 150, SCREEN_WIDTH, 150);
-
-        SDL_RenderDrawLines(win->renderer, waveform, WAVEFORM_RESOLUTION);
 
         SDL_RenderPresent(win->renderer);
     }
@@ -173,3 +130,63 @@ static SDL_Texture* render_text_scale(fm_window *win) {
     return tex;
 }
 
+static SDL_Rect panel_safe_area(fm_gui_panel *panel) {
+    SDL_Rect r;
+    int d = PANEL_BORDER_WIDTH + PANEL_BORDER_INSET + PANEL_BORDER_PADDING;
+    r.x = panel->rect.x + d;
+    r.y = panel->rect.y + d;
+    r.w = panel->rect.w - 2*d;
+    r.h = panel->rect.h - 2*d;
+    return r;
+}
+
+static void panel_render_background(fm_window *win, fm_gui_panel *panel) {
+    SDL_SetRenderDrawColor(win->renderer, GUI_BACKGROUND_COLOUR);
+    SDL_RenderFillRect(win->renderer, &panel->rect);
+
+    SDL_SetRenderDrawColor(win->renderer, GUI_BORDER_COLOUR);
+    
+    SDL_Rect r;
+    r.x = panel->rect.x + PANEL_BORDER_INSET;
+    r.y = panel->rect.y + PANEL_BORDER_INSET;
+    r.w = PANEL_BORDER_WIDTH;
+    r.h = panel->rect.h - PANEL_BORDER_INSET * 2;
+    SDL_RenderFillRect(win->renderer, &r);
+    r.x = panel->rect.x + panel->rect.w - PANEL_BORDER_INSET - PANEL_BORDER_WIDTH;
+    SDL_RenderFillRect(win->renderer, &r);
+
+    r.x = panel->rect.x + PANEL_BORDER_INSET;
+    r.w = panel->rect.w - PANEL_BORDER_INSET * 2;
+    r.h = PANEL_BORDER_WIDTH;
+    SDL_RenderFillRect(win->renderer, &r);
+    r.y = panel->rect.y + panel->rect.h - PANEL_BORDER_INSET - PANEL_BORDER_WIDTH;
+    SDL_RenderFillRect(win->renderer, &r);
+}
+
+void render_spectrum_panel(fm_window *win, fm_gui_panel *panel) {
+    SDL_Rect area = panel_safe_area(panel);
+}
+
+void render_right_panel(fm_window *win, fm_gui_panel *panel) {
+    SDL_Rect area = panel_safe_area(panel);
+}
+
+void render_control_panel(fm_window *win, fm_gui_panel *panel) {
+    SDL_Rect area = panel_safe_area(panel);
+}
+
+static void setup_panels(fm_window *win) {
+    SDL_Rect r1 = {0, 0, WINDOW_LEFT_WIDTH, SPECTRUM_PANEL_HEIGHT};
+    SDL_Rect r2 = {WINDOW_LEFT_WIDTH, 0, SCREEN_WIDTH - WINDOW_LEFT_WIDTH, SCREEN_HEIGHT};
+    SDL_Rect r3 = {0, SPECTRUM_PANEL_HEIGHT, WINDOW_LEFT_WIDTH,
+        SCREEN_HEIGHT - SPECTRUM_PANEL_HEIGHT};
+    
+    win->panels[0].rect = r1;
+    win->panels[0].render = render_spectrum_panel;
+    
+    win->panels[1].rect = r2;
+    win->panels[1].render = render_right_panel;
+
+    win->panels[2].rect = r3;
+    win->panels[2].render = render_control_panel;
+}
