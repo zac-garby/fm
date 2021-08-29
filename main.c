@@ -37,9 +37,9 @@ int main() {
     player->song_parts[0].notes = malloc(sizeof(fm_note) * 60);
     
     for (int s = 0; s < 20; s++) {
-        player->song_parts[0].notes[3*s] = fm_make_note(200.0f + fmodf(100.0f * s, 325.0f), s, 0.9f);
-        player->song_parts[0].notes[3*s+1] = fm_make_note(1.25f * (200.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
-        player->song_parts[0].notes[3*s+2] = fm_make_note(1.5f * (200.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
+        player->song_parts[0].notes[3*s] = fm_make_note(800.0f + fmodf(100.0f * s, 325.0f), s, 0.9f);
+        player->song_parts[0].notes[3*s+1] = fm_make_note(1.25f * (800.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
+        player->song_parts[0].notes[3*s+2] = fm_make_note(1.5f * (800.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
     }
     
     player->synths[0] = fm_new_synth(5);

@@ -17,18 +17,21 @@
 #define PANEL_BORDER_INSET 4
 #define PANEL_BORDER_PADDING 2
 
+#define SPECTRUM_VERTICAL_SCALE 0.5
+
 #define WINDOW_BACKGROUND_COLOUR 0, 0, 0, 255
 #define GUI_BACKGROUND_COLOUR 0, 0, 0, 255
 #define GUI_BORDER_COLOUR 200, 200, 200, 255
+#define SPECTRUM_BAR_COLOUR 255, 255, 255, 255
 
 #define WINDOW_LEFT_WIDTH 650
 #define SPECTRUM_PANEL_HEIGHT 300
 
 #define FRAMES_PER_FFT 1
 
-#define FFT_RESOLUTION 512
+#define FFT_BAR_WIDTH 2
 #define FFT_SCALE_STEP 100
-#define FFT_SCALE_SKIP 5
+#define FFT_SCALE_SKIP 10
 #define FFT_SCALE_MAX (48000 / 2)
 
 #define WAVEFORM_RESOLUTION SCREEN_WIDTH
@@ -62,7 +65,7 @@ fm_window fm_create_window(fm_player *player);
 // needs to be called in the main thread
 void fm_window_loop(fm_window *win);
 
-static SDL_Texture* render_text_scale(fm_window *win);
+static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area);
 static SDL_Rect panel_safe_area(fm_gui_panel *panel);
 static void panel_render_background(fm_window *win, fm_gui_panel *panel);
 static void setup_panels(fm_window *win);

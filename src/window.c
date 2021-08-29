@@ -14,7 +14,6 @@ fm_window fm_create_window(fm_player *player) {
 
     win.renderer = SDL_CreateRenderer(win.window, -1, SDL_RENDERER_ACCELERATED);
     win.player = player;
-    win.fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
     win.num_panels = 3;
     win.panels = malloc(sizeof(fm_gui_panel) * win.num_panels);
     setup_panels(&win);
@@ -33,7 +32,6 @@ void fm_window_loop(fm_window *win) {
     bool quit = false;
     SDL_Event e;
     kiss_fft_cpx *freq = malloc(sizeof(kiss_fft_cpx) * FREQ_DOMAIN);
-    SDL_Rect rect;
     int fft_timer = 0;
     float fft_peak = 0;
     
@@ -43,10 +41,7 @@ void fm_window_loop(fm_window *win) {
     scaleRect.w = SCREEN_WIDTH;
     scaleRect.h = 20;
         
-    SDL_Texture *scale = render_text_scale(win);
     SDL_Point *waveform = malloc(sizeof(SDL_Point) * WAVEFORM_RESOLUTION);
-
-    rect.w = SCREEN_WIDTH / FFT_RESOLUTION;
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -77,57 +72,6 @@ void fm_window_loop(fm_window *win) {
 
     TTF_CloseFont(font);
     TTF_Quit();
-}
-
-static SDL_Texture* render_text_scale(fm_window *win) {
-    SDL_Color fg = { 0x00, 0x00, 0x00, 0xff };
-    SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(0, SCREEN_WIDTH, 20, 32, SDL_PIXELFORMAT_RGBA32);
-    char *label = malloc(8);
-    if (surf == NULL) {
-        fprintf(stderr, "could not create surface. %s\n", SDL_GetError());
-        exit(1);
-    }
-
-    int ppb = SCREEN_WIDTH / FFT_RESOLUTION;
-    
-    SDL_Rect tick;
-    tick.w = 1;
-    tick.y = 0;
-
-    SDL_FillRect(surf, NULL, 0xffffffff);
-
-    int i = 0;
-    for (int f = 0; f <= FFT_SCALE_MAX; f += FFT_SCALE_STEP * ppb) {
-        int x = (int) (((float) f / (float) FFT_SCALE_MAX) * (float) FREQ_DOMAIN) * ppb;
-        tick.x = x;
-        tick.h = i % FFT_SCALE_SKIP == 0 ? 15 : 5;
-        SDL_FillRect(surf, &tick, 0x000000ff);
-
-        if (i % FFT_SCALE_SKIP == 0) {
-            if (f >= 1000) {
-                sprintf(label, "%.1fk", (float) f / 1000.0f);
-            } else {
-                sprintf(label, "%dHz", f);
-            }
-            
-            SDL_Surface *text = TTF_RenderText_Blended(font, label, fg);
-            SDL_Rect dest;
-            dest.x = x + 2;
-            dest.y = 5;
-            dest.w = text->w;
-            dest.h = text->h;
-            SDL_BlitSurface(text, NULL, surf, &dest);
-            SDL_FreeSurface(text);
-        }
-
-        i++;
-    }
-
-    free(label);
-
-    SDL_Texture *tex = SDL_CreateTextureFromSurface(win->renderer, surf);
-    SDL_FreeSurface(surf);
-    return tex;
 }
 
 static SDL_Rect panel_safe_area(fm_gui_panel *panel) {
@@ -165,6 +109,98 @@ static void panel_render_background(fm_window *win, fm_gui_panel *panel) {
 
 void render_spectrum_panel(fm_window *win, fm_gui_panel *panel) {
     SDL_Rect area = panel_safe_area(panel);
+
+    static kiss_fft_cpx *freq = NULL;
+    if (freq == NULL) freq = malloc(sizeof(kiss_fft_cpx) * FREQ_DOMAIN);
+
+    static SDL_Texture *scale = NULL;
+    if (scale == NULL) scale = render_text_scale(win, area);
+    
+    kiss_fft_cfg fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
+
+    int fft_resolution = area.w / FFT_BAR_WIDTH;
+    
+    SDL_Rect rect;
+    rect.w = FFT_BAR_WIDTH;
+
+    SDL_Rect scaleRect;
+    scaleRect.x = area.x;
+    scaleRect.y = area.y + area.h - 20;
+    scaleRect.w = area.w;
+    scaleRect.h = 20;
+
+    kiss_fftr(fft_cfg, win->player->synths[0].hold_buf[0], freq);
+
+    SDL_SetRenderDrawColor(win->renderer, SPECTRUM_BAR_COLOUR);
+
+    for (int x = 0; x < fft_resolution; x++) {
+        SDL_RenderCopy(win->renderer, scale, NULL, &scaleRect);
+        float p = (float) x / (float) fft_resolution;
+        int i = (int) ((float) FREQ_DOMAIN * p);
+        int h = (int) (hypotf(freq[i].r, freq[i].i) * SPECTRUM_VERTICAL_SCALE);
+        rect.x = x * rect.w + area.x;
+        rect.y = area.h - 20 - h + area.y;
+        rect.h = h;
+        SDL_RenderFillRect(win->renderer, &rect);
+    }
+}
+
+static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area) {
+    SDL_Color fg = { 0x00, 0x00, 0x00, 0xff };
+    SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(0, area.w, 20, 32, SDL_PIXELFORMAT_RGBA32);
+    char *label = malloc(8);
+    if (surf == NULL) {
+        fprintf(stderr, "could not create surface. %s\n", SDL_GetError());
+        exit(1);
+    }
+
+    SDL_Rect tick;
+    tick.w = 1;
+    tick.y = 0;
+
+    int fft_resolution = area.w / FFT_BAR_WIDTH;
+
+    SDL_FillRect(surf, NULL, 0xffffffff);
+
+    int i = 0;
+    float lastTick = -FFT_SCALE_STEP;
+    for (int x = 0; x < fft_resolution; x += 1) {
+        float p = (float) x / (float) fft_resolution;
+        float f = p * FFT_SCALE_MAX;
+
+        if (f >= lastTick + FFT_SCALE_STEP) {
+            lastTick = f;
+            
+            tick.x = x * FFT_BAR_WIDTH;
+            tick.h = i % FFT_SCALE_SKIP == 0 ? 15 : 5;
+            SDL_FillRect(surf, &tick, 0x000000ff);
+            
+            if (i % FFT_SCALE_SKIP == 0) {
+                if (f >= 1000) {
+                    sprintf(label, "%.1fk", (float) f / 1000.0f);
+                } else {
+                    sprintf(label, "%dHz", f);
+                }
+                
+                SDL_Surface *text = TTF_RenderText_Blended(font, label, fg);
+                SDL_Rect dest;
+                dest.x = x * FFT_BAR_WIDTH + 2;
+                dest.y = 5;
+                dest.w = text->w;
+                dest.h = text->h;
+                SDL_BlitSurface(text, NULL, surf, &dest);
+                SDL_FreeSurface(text);
+            }
+            
+            i++;
+        }
+    }
+
+    free(label);
+
+    SDL_Texture *tex = SDL_CreateTextureFromSurface(win->renderer, surf);
+    SDL_FreeSurface(surf);
+    return tex;
 }
 
 void render_right_panel(fm_window *win, fm_gui_panel *panel) {
