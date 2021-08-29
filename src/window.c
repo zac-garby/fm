@@ -1,5 +1,10 @@
 #include "window.h"
 
+static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area);
+static SDL_Rect panel_safe_area(fm_gui_panel *panel);
+static void panel_render_background(fm_window *win, fm_gui_panel *panel);
+static void setup_panels(fm_window *win);
+
 fm_window fm_create_window(fm_player *player) {
     fm_window win;
 
@@ -31,18 +36,7 @@ fm_window fm_create_window(fm_player *player) {
 void fm_window_loop(fm_window *win) {
     bool quit = false;
     SDL_Event e;
-    kiss_fft_cpx *freq = malloc(sizeof(kiss_fft_cpx) * FREQ_DOMAIN);
-    int fft_timer = 0;
-    float fft_peak = 0;
-    
-    SDL_Rect scaleRect;
-    scaleRect.x = 0;
-    scaleRect.y = SCREEN_HEIGHT - 20;
-    scaleRect.w = SCREEN_WIDTH;
-    scaleRect.h = 20;
-        
-    SDL_Point *waveform = malloc(sizeof(SDL_Point) * WAVEFORM_RESOLUTION);
-
+   
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
@@ -65,8 +59,6 @@ void fm_window_loop(fm_window *win) {
         SDL_RenderPresent(win->renderer);
     }
 
-    kiss_fftr_free(win->fft_cfg);
-    free(waveform);
     SDL_DestroyWindow(win->window);
     SDL_Quit();
 
@@ -116,7 +108,7 @@ void render_spectrum_panel(fm_window *win, fm_gui_panel *panel) {
     static SDL_Texture *scale = NULL;
     if (scale == NULL) scale = render_text_scale(win, area);
     
-    kiss_fft_cfg fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
+    kiss_fftr_cfg fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
 
     int fft_resolution = area.w / FFT_BAR_WIDTH;
     
@@ -179,7 +171,7 @@ static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area) {
                 if (f >= 1000) {
                     sprintf(label, "%.1fk", (float) f / 1000.0f);
                 } else {
-                    sprintf(label, "%dHz", f);
+                    sprintf(label, "%.1fHz", f);
                 }
                 
                 SDL_Surface *text = TTF_RenderText_Blended(font, label, fg);
@@ -204,11 +196,11 @@ static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area) {
 }
 
 void render_right_panel(fm_window *win, fm_gui_panel *panel) {
-    SDL_Rect area = panel_safe_area(panel);
+    //SDL_Rect area = panel_safe_area(panel);
 }
 
 void render_control_panel(fm_window *win, fm_gui_panel *panel) {
-    SDL_Rect area = panel_safe_area(panel);
+    //SDL_Rect area = panel_safe_area(panel);
 }
 
 static void setup_panels(fm_window *win) {

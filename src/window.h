@@ -65,9 +65,4 @@ fm_window fm_create_window(fm_player *player);
 // needs to be called in the main thread
 void fm_window_loop(fm_window *win);
 
-static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area);
-static SDL_Rect panel_safe_area(fm_gui_panel *panel);
-static void panel_render_background(fm_window *win, fm_gui_panel *panel);
-static void setup_panels(fm_window *win);
-
 #endif
