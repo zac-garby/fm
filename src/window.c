@@ -169,9 +169,9 @@ static SDL_Texture* render_text_scale(fm_window *win, SDL_Rect area) {
             
             if (i % FFT_SCALE_SKIP == 0) {
                 if (f >= 1000) {
-                    sprintf(label, "%.1fk", (float) f / 1000.0f);
+                    sprintf(label, "%.2fk", (float) f / 1000.0f);
                 } else {
-                    sprintf(label, "%.1fHz", f);
+                    sprintf(label, "%dHz", (int) f);
                 }
                 
                 SDL_Surface *text = TTF_RenderText_Blended(font, label, fg);

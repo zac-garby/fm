@@ -10,8 +10,8 @@
 #include "player.h"
 #include "synth.h"
 
-#define SCREEN_WIDTH 1000
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 1300
+#define SCREEN_HEIGHT 800
 
 #define PANEL_BORDER_WIDTH 3
 #define PANEL_BORDER_INSET 4
@@ -24,7 +24,7 @@
 #define GUI_BORDER_COLOUR 200, 200, 200, 255
 #define SPECTRUM_BAR_COLOUR 255, 255, 255, 255
 
-#define WINDOW_LEFT_WIDTH 650
+#define WINDOW_LEFT_WIDTH 900
 #define SPECTRUM_PANEL_HEIGHT 300
 
 #define FRAMES_PER_FFT 1
@@ -54,7 +54,6 @@ typedef struct fm_window {
     SDL_Renderer *renderer;
 
     fm_player *player;
-    kiss_fftr_cfg fft_cfg;
 
     fm_gui_panel *panels;
     int num_panels;
