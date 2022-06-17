@@ -1,5 +1,10 @@
 #include "synth.h"
 
+float sine_wave(float);
+float square_wave(float);
+float triangle_wave(float);
+float noise_wave(float);
+
 fm_synth fm_new_synth(int n_ops) {
     fm_synth s;
 
@@ -47,16 +52,32 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
             mod += s->integrals[op->recv[n]] * op->recv_level[n];
         }
 
+		float (*wave)(float);
+		switch (op->wave_type) {
+		case FN_SIN:
+			wave = sine_wave;
+			break;
+		case FN_SQUARE:
+			wave = square_wave;
+			break;
+		case FN_TRIANGLE:
+			wave = triangle_wave;
+			break;
+		case FN_NOISE:
+			wave = noise_wave;
+			break;
+		}
+
         float sample = 0;
         if (op->fixed) {
-            sample = cos(2.0f * PI * (op->transpose*time + mod));
+            sample = wave(op->transpose*time + mod);
         } else {
             for (int n = 0; n < MAX_POLYPHONY; n++) {
                 fm_note note = s->notes[n];
                 if (note.freq == 0) continue;
                 
                 float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
-                sample += cos(2.0f * PI * (note.freq*op->transpose * time + mod)) * env;
+                sample += wave(note.freq*op->transpose * time + mod) * env;
             }
         }
 
@@ -95,3 +116,18 @@ float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_pe
     return out;
 }
 
+float sine_wave(float t) {
+	return -cos(2.0f * PI * t);
+}
+
+float square_wave(float t) {
+	return 2 * ((int)(2 * t) % 2) - 1;
+}
+
+float triangle_wave(float t) {
+	return 1 - 2 * fabs(2 * (t - floor(t)) - 1);
+}
+
+float noise_wave(float t) {
+	return 2 * (rand() % 2) - 1;
+}

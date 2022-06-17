@@ -7,6 +7,7 @@ fm_operator fm_new_op(int recv_n, int send_n, int fixed, float transpose) {
     op.send_n = send_n;
     op.fixed = fixed;
     op.transpose = transpose;
+    op.wave_type = FN_SIN;
 
     op.recv = malloc(sizeof(int) * recv_n);
     op.recv_level = malloc(sizeof(float) * recv_n);
