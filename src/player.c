@@ -32,6 +32,8 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
                                                     p->playhead + frame * time_per_frame,
                                                     time_per_frame);
 
+			sample *= p->volume;
+
             for (int channel = 0; channel < layout->channel_count; channel++) {
                 float *ptr = (float*) (areas[channel].ptr + areas[channel].step * frame);
                 *ptr = sample;
@@ -58,6 +60,7 @@ fm_player* fm_new_player(int num_synths, struct SoundIoDevice *device) {
     p->next_notes = calloc(num_synths, sizeof(int));
     p->bps = 1.0;
     p->playhead = 0;
+	p->volume = 1.0;
     
     p->outstream = soundio_outstream_create(device);
     if (!p->outstream) {

@@ -33,6 +33,7 @@ int main() {
 
     player = fm_new_player(1, device);
     player->bps = 2.0;
+	player->volume = 0.05;
     player->song_parts[0].num_notes = 60;
     player->song_parts[0].notes = malloc(sizeof(fm_note) * 60);
     

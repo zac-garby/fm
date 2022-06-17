@@ -32,6 +32,9 @@ typedef struct fm_player {
     // real time which is required to play them.
     double bps;
 
+    // the volume of the player. 0 is silent, 1 is maximum.
+    double volume;
+
     // the song to play, represented as a number (num_synths) of song parts.
     // each part corresponds to the synth with the same index.
     fm_song_part *song_parts;
