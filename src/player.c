@@ -32,8 +32,6 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
                                                     p->playhead + frame * time_per_frame,
                                                     time_per_frame);
 
-            sample = 0;
-
             for (int channel = 0; channel < layout->channel_count; channel++) {
                 float *ptr = (float*) (areas[channel].ptr + areas[channel].step * frame);
                 *ptr = sample;
