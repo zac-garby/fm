@@ -27,10 +27,14 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
                 fm_player_schedule(p, time_per_frame * frames_per_quantum);
                 p->quantize_counter = 0;
             }
-            
-            float sample = fm_synth_get_next_output(&p->synths[0],
-                                                    p->playhead + frame * time_per_frame,
-                                                    time_per_frame);
+
+			float sample = 0;
+
+			for (int i = 0; i < p->num_synths; i++) {
+			    sample += fm_synth_get_next_output(&p->synths[i],
+												   p->playhead + frame * time_per_frame,
+												   time_per_frame);
+			}
 
 			sample *= p->volume;
 
