@@ -18,6 +18,9 @@ static fm_player *player;
 
 struct SoundIoDevice* init_audio();
 
+void crab_canon(fm_player *p);
+fm_synth make_synth();
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
@@ -31,57 +34,14 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(1, device);
+    player = fm_new_player(2, device);
     player->bps = 2.0;
-	player->volume = 0.05;
-    player->song_parts[0].num_notes = 60;
-    player->song_parts[0].notes = malloc(sizeof(fm_note) * 60);
+	player->volume = 0.1;
+
+	crab_canon(player);
     
-    for (int s = 0; s < 20; s++) {
-        player->song_parts[0].notes[3*s] = fm_make_note(800.0f + fmodf(100.0f * s, 325.0f), s, 0.9f);
-        player->song_parts[0].notes[3*s+1] = fm_make_note(1.25f * (800.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
-        player->song_parts[0].notes[3*s+2] = fm_make_note(1.5f * (800.0f + fmodf(100.0f * s, 325.0f)), s, 0.9f);
-    }
-    
-    player->synths[0] = fm_new_synth(5);
-    
-    fm_operator op = fm_new_op(0, 1, true, 80.0f);
-    op.envelope = fm_make_envelope(0.2, 0.7, 0.3, 0.2f);
-    op.send[0] = 1;
-    op.send_level[0] = 1.0f;
-    player->synths[0].ops[0] = op;
-
-    fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.envelope = fm_make_envelope(0.05, 0.7, 0.9, 0.2f);
-    op2.recv[0] = 0;
-    op2.recv_level[0] = 0.0f;
-    op2.send[0] = 0;
-    op2.send_level[0] = 0.43f;
-    player->synths[0].ops[1] = op2;
-
-    fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
-    op3.envelope = fm_make_envelope(0.05, 0.7, 0.85, 0.2f);
-    op3.recv[0] = 1;
-    op3.recv_level[0] = 0.0f;
-    op3.send[0] = 0;
-    op3.send_level[0] = 0.30f;
-    player->synths[0].ops[2] = op3;
-
-    fm_operator op4 = fm_new_op(1, 1, false, 4.01f);
-    op4.envelope = fm_make_envelope(0.05, 0.7, 0.8, 0.2f);
-    op4.recv[0] = 1;
-    op4.recv_level[0] = 0.0f;
-    op4.send[0] = 0;
-    op4.send_level[0] = 0.22f;
-    player->synths[0].ops[3] = op4;
-
-    fm_operator op5 = fm_new_op(1, 1, false, 8.01f);
-    op5.envelope = fm_make_envelope(0.1, 0.7, 0.8, 0.2f);
-    op5.recv[0] = 0;
-    op5.recv_level[0] = 250.0f;
-    op5.send[0] = 0;
-    op5.send_level[0] = 0.15f;
-    player->synths[0].ops[4] = op5;
+    player->synths[0] = make_synth();
+	player->synths[1] = make_synth();
 
     fm_window win = fm_create_window(player);
         
@@ -124,4 +84,222 @@ struct SoundIoDevice* init_audio() {
     fprintf(stderr, "Output device: %s\n", device->name);
 
     return device;
+}
+
+void crab_canon(fm_player *p) {
+    float notes[90];
+	double durs[90];
+
+	// notes (forwards)
+	notes[0] = C4;
+	notes[1] = EB4;
+	
+	notes[2] = G4;
+	notes[3] = AB4;
+
+	notes[4] = B3;
+	notes[5] = G4;
+	
+	notes[6] = FS4;
+	notes[7] = F4;
+
+	notes[8] = E4;
+	notes[9] = EB4;
+
+	notes[10] = D4;
+	notes[11] = DB4;
+	notes[12] = C4;
+
+	notes[13] = B3;
+	notes[14] = G3;
+	notes[15] = C4;
+	notes[16] = F4;
+
+	notes[17] = EB4;
+	notes[18] = D4;
+
+	notes[19] = C4;
+	notes[20] = EB4;
+
+	notes[21] = G4;
+	notes[22] = F4;
+	notes[23] = G4;
+	notes[24] = C5;
+	notes[25] = G4;
+	notes[26] = EB4;
+	notes[27] = D4;
+	notes[28] = EB4;
+
+	notes[29] = F4;
+	notes[30] = G4;
+	notes[31] = A4;
+	notes[32] = B4;
+	notes[33] = C5;
+	notes[34] = EB4;
+	notes[35] = F4;
+	notes[36] = G4;
+
+	notes[37] = AB4;
+	notes[38] = D4;
+	notes[39] = EB4;
+	notes[40] = F4;
+	notes[41] = G4;
+	notes[42] = F4;
+	notes[43] = EB4;
+	notes[44] = D4;
+
+	notes[45] = EB4;
+	notes[46] = F4;
+	notes[47] = G4;
+	notes[48] = AB4;
+	notes[49] = BB4;
+	notes[50] = AB4;
+	notes[51] = G4;
+	notes[52] = F4;
+
+	notes[53] = G4;
+	notes[54] = AB4;
+	notes[55] = BB4;
+	notes[56] = C5;
+	notes[57] = DB5;
+	notes[58] = BB4;
+	notes[59] = AB4;
+	notes[60] = G4;
+
+	notes[61] = A4;
+	notes[62] = B4;
+	notes[63] = C5;
+	notes[64] = D5;
+	notes[65] = EB5;
+	notes[66] = C5;
+	notes[67] = B4;
+	notes[68] = A4;
+
+	notes[69] = B4;
+	notes[70] = C5;
+	notes[71] = D5;
+	notes[72] = EB5;
+	notes[73] = F5;
+	notes[74] = D5;
+	notes[75] = G4;
+	notes[76] = D5;
+
+	notes[77] = C5;
+	notes[78] = D5;
+	notes[79] = EB5;
+	notes[80] = F5;
+	notes[81] = EB5;
+	notes[82] = D5;
+	notes[83] = C5;
+	notes[84] = B4;
+	
+	notes[85] = C5;
+	notes[86] = G4;
+	notes[87] = EB4;
+	notes[88] = C4;
+
+
+	// durations (forwards)
+	durs[0] = 2;
+	durs[1] = 2;
+	
+	durs[2] = 2;
+	durs[3] = 2;
+
+	durs[4] = 3;
+	durs[5] = 2;
+
+	durs[6] = 2;
+	durs[7] = 2;
+	
+	durs[8] = 2;
+	durs[9] = 2;
+
+	durs[10] = 1;
+	durs[11] = 1;
+	durs[12] = 1;
+
+	durs[13] = 1;
+	durs[14] = 1;
+	durs[15] = 1;
+	durs[16] = 1;
+
+	durs[17] = 2;
+	durs[18] = 2;
+
+	durs[19] = 2;
+	durs[20] = 2;
+
+	for (int i = 21; i < 85; i++) {
+	    durs[i] = 0.5f;
+	}
+
+	durs[85] = 1;
+	durs[86] = 1;
+	durs[87] = 1;
+	durs[88] = 1;
+
+
+	// set the notes
+	
+	p->song_parts[0].num_notes = 89;
+	p->song_parts[0].notes = malloc(sizeof(fm_note) * 89);
+
+	p->song_parts[1].num_notes = 89;
+	p->song_parts[1].notes = malloc(sizeof(fm_note) * 89);
+
+	double pos1 = 0;
+	double pos2 = 0;
+	
+	for (int i = 0; i < 89; i++) {
+	    int j = 88 - i;
+        p->song_parts[0].notes[i] = fm_make_note(notes[i], pos1, durs[i]);
+		p->song_parts[1].notes[i] = fm_make_note(notes[j], pos2, durs[j]);
+		pos1 += durs[i];
+		pos2 += durs[j];
+	}
+}
+
+fm_synth make_synth() {
+    fm_synth s = fm_new_synth(5);
+    
+    fm_operator op = fm_new_op(0, 1, true, 80.0f);
+    op.envelope = fm_make_envelope(0.2, 0.7, 0.3, 0.2f);
+    op.send[0] = 1;
+    op.send_level[0] = 1.0f;
+    s.ops[0] = op;
+
+    fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
+    op2.envelope = fm_make_envelope(0.05, 0.7, 0.9, 0.2f);
+    op2.recv[0] = 0;
+    op2.recv_level[0] = 0.0f;
+    op2.send[0] = 0;
+    op2.send_level[0] = 0.43f;
+    s.ops[1] = op2;
+
+    fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
+    op3.envelope = fm_make_envelope(0.05, 0.7, 0.85, 0.2f);
+    op3.recv[0] = 1;
+    op3.recv_level[0] = 0.0f;
+    op3.send[0] = 0;
+    op3.send_level[0] = 0.30f;
+    s.ops[2] = op3;
+
+    fm_operator op4 = fm_new_op(1, 1, false, 4.01f);
+    op4.envelope = fm_make_envelope(0.05, 0.7, 0.8, 0.2f);
+    op4.recv[0] = 1;
+    op4.recv_level[0] = 0.0f;
+    op4.send[0] = 0;
+    op4.send_level[0] = 0.22f;
+    s.ops[3] = op4;
+
+    fm_operator op5 = fm_new_op(1, 1, false, 8.01f);
+    op5.envelope = fm_make_envelope(0.1, 0.7, 0.8, 0.2f);
+    op5.recv[0] = 0;
+    op5.recv_level[0] = 250.0f;
+    op5.send[0] = 0;
+    op5.send_level[0] = 0.15f;
+    s.ops[4] = op5;
+
+	return s;
 }
