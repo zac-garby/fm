@@ -270,35 +270,35 @@ fm_synth make_synth() {
     s.ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.envelope = fm_make_envelope(0.05, 0.7, 0.9, 0.2f);
+    op2.envelope = fm_make_envelope(0.05, 0.8, 0.2, 0.2f);
     op2.recv[0] = 0;
     op2.recv_level[0] = 0.0f;
     op2.send[0] = 0;
-    op2.send_level[0] = 0.43f;
+    op2.send_level[0] = 0.6f;
     s.ops[1] = op2;
 
     fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
-    op3.envelope = fm_make_envelope(0.05, 0.7, 0.85, 0.2f);
+    op3.envelope = fm_make_envelope(0.05, 0.3, 0.15, 0.2f);
     op3.recv[0] = 1;
     op3.recv_level[0] = 0.0f;
     op3.send[0] = 0;
     op3.send_level[0] = 0.30f;
     s.ops[2] = op3;
 
-    fm_operator op4 = fm_new_op(1, 1, false, 4.01f);
-    op4.envelope = fm_make_envelope(0.05, 0.7, 0.8, 0.2f);
+    fm_operator op4 = fm_new_op(1, 1, false, 0.5f);
+    op4.envelope = fm_make_envelope(0.1, 0.7, 0.6, 0.4f);
     op4.recv[0] = 1;
     op4.recv_level[0] = 0.0f;
     op4.send[0] = 0;
-    op4.send_level[0] = 0.22f;
+    op4.send_level[0] = 0.14f;
     s.ops[3] = op4;
 
     fm_operator op5 = fm_new_op(1, 1, false, 8.01f);
-    op5.envelope = fm_make_envelope(0.1, 0.7, 0.8, 0.2f);
+    op5.envelope = fm_make_envelope(0.02, 0.3, 0.0, 0.2f);
     op5.recv[0] = 0;
     op5.recv_level[0] = 250.0f;
     op5.send[0] = 0;
-    op5.send_level[0] = 0.15f;
+    op5.send_level[0] = 0.3f;
     s.ops[4] = op5;
 
 	return s;
