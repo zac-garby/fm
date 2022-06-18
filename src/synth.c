@@ -4,6 +4,7 @@ float sine_wave(float);
 float square_wave(float);
 float triangle_wave(float);
 float noise_wave(float);
+float sawtooth_wave(float);
 
 fm_synth fm_new_synth(int n_ops) {
     fm_synth s;
@@ -66,17 +67,22 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
 		case FN_NOISE:
 			wave = noise_wave;
 			break;
+        case FN_SAWTOOTH:
+            wave = sawtooth_wave;
+            break;
 		}
 
         float sample = 0;
-        if (op->fixed) {
-            sample = wave(op->transpose*time + mod);
-        } else {
-            for (int n = 0; n < MAX_POLYPHONY; n++) {
-                fm_note note = s->notes[n];
-                if (note.freq == 0) continue;
-                
-                float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
+
+        for (int n = 0; n < MAX_POLYPHONY; n++) {
+            fm_note note = s->notes[n];
+            if (note.freq == 0) continue;
+
+            float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
+            
+            if (op->fixed) {
+                sample += wave(op->transpose * time + mod) * env;
+            } else {
                 sample += wave(note.freq*op->transpose * time + mod) * env;
             }
         }
@@ -130,4 +136,8 @@ float triangle_wave(float t) {
 
 float noise_wave(float t) {
 	return 2 * (rand() % 2) - 1;
+}
+
+float sawtooth_wave(float t) {
+    return t - floor(t);
 }

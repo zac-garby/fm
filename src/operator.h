@@ -11,6 +11,7 @@
 #define FN_SQUARE 1
 #define FN_TRIANGLE 2
 #define FN_NOISE 3
+#define FN_SAWTOOTH 4
 
 typedef struct fm_operator {
     // an array of channels to receive from, and
