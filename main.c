@@ -19,7 +19,8 @@ static fm_player *player;
 struct SoundIoDevice* init_audio();
 
 void crab_canon(fm_player *p);
-fm_synth make_synth();
+fm_synth make_synth1();
+fm_synth make_synth2();
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -40,8 +41,8 @@ int main() {
 
 	crab_canon(player);
     
-    player->synths[0] = make_synth();
-	player->synths[1] = make_synth();
+    player->synths[0] = make_synth1();
+	player->synths[1] = make_synth2();
 
     fm_window win = fm_create_window(player);
         
@@ -260,17 +261,17 @@ void crab_canon(fm_player *p) {
 	}
 }
 
-fm_synth make_synth() {
+fm_synth make_synth1() {
     fm_synth s = fm_new_synth(5);
     
-    fm_operator op = fm_new_op(0, 1, true, 150.0f);
-    op.envelope = fm_make_envelope(0.2, 0.7, 0.3, 0.2f);
+    fm_operator op = fm_new_op(0, 1, true, 440.0f);
+    op.envelope = fm_make_envelope(0.1, 0.7, 0.3, 0.2f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     s.ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.envelope = fm_make_envelope(0.05, 0.8, 0.2, 0.2f);
+    op2.envelope = fm_make_envelope(0.22, 0.8, 0.2, 0.2f);
     op2.recv[0] = 0;
     op2.recv_level[0] = 0.0f;
     op2.send[0] = 0;
@@ -278,7 +279,7 @@ fm_synth make_synth() {
     s.ops[1] = op2;
 
     fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
-    op3.envelope = fm_make_envelope(0.05, 0.3, 0.15, 0.2f);
+    op3.envelope = fm_make_envelope(0.22, 0.3, 0.15, 0.2f);
     op3.recv[0] = 1;
     op3.recv_level[0] = 0.0f;
     op3.send[0] = 0;
@@ -286,16 +287,61 @@ fm_synth make_synth() {
     s.ops[2] = op3;
 
     fm_operator op4 = fm_new_op(1, 1, false, 0.5f);
-    op4.envelope = fm_make_envelope(0.1, 0.7, 0.6, 0.3f);
+    op4.envelope = fm_make_envelope(0.22, 0.7, 0.6, 0.3f);
+    op4.recv[0] = 1;
+    op4.recv_level[0] = 0.0f;
+    op4.send[0] = 0;
+    op4.send_level[0] = 0.25f;
+    s.ops[3] = op4;
+
+    fm_operator op5 = fm_new_op(1, 1, false, 4.0f);
+    op5.envelope = fm_make_envelope(0.05, 0.5, 0.0, 0.2f);
+	op5.wave_type = FN_TRIANGLE;
+    op5.recv[0] = 0;
+    op5.recv_level[0] = 1.0f;
+    op5.send[0] = 0;
+    op5.send_level[0] = 0.15f;
+    s.ops[4] = op5;
+
+	return s;
+}
+
+fm_synth make_synth2() {
+    fm_synth s = fm_new_synth(5);
+    
+    fm_operator op = fm_new_op(0, 1, true, 150.0f);
+    op.envelope = fm_make_envelope(0.1, 0.7, 0.3, 0.2f);
+    op.send[0] = 1;
+    op.send_level[0] = 1.0f;
+    s.ops[0] = op;
+
+    fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
+    op2.envelope = fm_make_envelope(0.02, 0.8, 0.2, 0.2f);
+    op2.recv[0] = 0;
+    op2.recv_level[0] = 0.0f;
+    op2.send[0] = 0;
+    op2.send_level[0] = 0.6f;
+    s.ops[1] = op2;
+
+    fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
+    op3.envelope = fm_make_envelope(0.02, 0.3, 0.15, 0.2f);
+    op3.recv[0] = 1;
+    op3.recv_level[0] = 0.0f;
+    op3.send[0] = 0;
+    op3.send_level[0] = 0.30f;
+    s.ops[2] = op3;
+
+    fm_operator op4 = fm_new_op(1, 1, false, 0.5f);
+    op4.envelope = fm_make_envelope(0.02, 0.7, 0.6, 0.3f);
     op4.recv[0] = 1;
     op4.recv_level[0] = 0.0f;
     op4.send[0] = 0;
     op4.send_level[0] = 0.15f;
     s.ops[3] = op4;
 
-    fm_operator op5 = fm_new_op(1, 1, false, 4.01f);
+    fm_operator op5 = fm_new_op(1, 1, false, 4.0f);
     op5.envelope = fm_make_envelope(0.02, 0.5, 0.0, 0.2f);
-	op5.wave_type = FN_TRIANGLE;
+	op5.wave_type = FN_SQUARE;
     op5.recv[0] = 0;
     op5.recv_level[0] = 1.0f;
     op5.send[0] = 0;
