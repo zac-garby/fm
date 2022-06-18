@@ -264,21 +264,21 @@ void crab_canon(fm_player *p) {
 fm_synth make_synth1() {
     fm_synth s = fm_new_synth(5);
     
-    fm_operator op = fm_new_op(0, 1, true, 440.0f);
-    op.envelope = fm_make_envelope(0.1, 0.7, 0.3, 0.2f);
+    fm_operator op = fm_new_op(0, 1, true, 16.0f);
+    op.envelope = fm_make_envelope(0.0, 0.0, 1.0, 1.0f);
     op.send[0] = 1;
     op.send_level[0] = 1.0f;
     s.ops[0] = op;
 
     fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.envelope = fm_make_envelope(0.22, 0.8, 0.2, 0.2f);
-    op2.recv[0] = 0;
-    op2.recv_level[0] = 0.0f;
+    op2.envelope = fm_make_envelope(0.22, 0.8, 0.8, 0.2f);
+    op2.recv[0] = 1;
+    op2.recv_level[0] = 1.0f;
     op2.send[0] = 0;
-    op2.send_level[0] = 0.6f;
+    op2.send_level[0] = 0.65f;
     s.ops[1] = op2;
 
-    fm_operator op3 = fm_new_op(1, 1, false, 2.01f);
+    fm_operator op3 = fm_new_op(1, 1, false, 1.51f);
     op3.envelope = fm_make_envelope(0.22, 0.3, 0.15, 0.2f);
     op3.recv[0] = 1;
     op3.recv_level[0] = 0.0f;
@@ -300,7 +300,7 @@ fm_synth make_synth1() {
     op5.recv[0] = 0;
     op5.recv_level[0] = 1.0f;
     op5.send[0] = 0;
-    op5.send_level[0] = 0.15f;
+    op5.send_level[0] = 0.25f;
     s.ops[4] = op5;
 
 	return s;

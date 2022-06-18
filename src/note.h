@@ -13,7 +13,7 @@ fm_note fm_make_note(float freq, double start, float duration);
 
 
 // NOTE FREQUENCY DEFINITIONS
-// relative to A0 = 27.5 exactly
+// relative to C0 = 16.35159783Hz
 
 #define C0 16.35159783f
 #define CS0 17.323914434690536f

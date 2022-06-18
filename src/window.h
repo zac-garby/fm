@@ -10,34 +10,32 @@
 #include "player.h"
 #include "synth.h"
 
-#define SCREEN_WIDTH 1300
-#define SCREEN_HEIGHT 800
+#define SCREEN_WIDTH 300
+#define SCREEN_HEIGHT 200
+#define SCREEN_SCALE 4
+#define REAL_WIDTH (SCREEN_WIDTH * SCREEN_SCALE)
+#define REAL_HEIGHT (SCREEN_HEIGHT * SCREEN_SCALE)
 
-#define PANEL_BORDER_WIDTH 3
-#define PANEL_BORDER_INSET 4
-#define PANEL_BORDER_PADDING 2
+#define SPECTRUM_VERT_SCALE 0.2f
 
-#define SPECTRUM_VERTICAL_SCALE 0.5
+#define BG_COLOUR 83, 74, 61, 255
+#define BORDER_COLOUR 48, 41, 50, 255
+#define PANEL_COLOUR 29, 24, 30, 255
 
-#define WINDOW_BACKGROUND_COLOUR 0, 0, 0, 255
-#define GUI_BACKGROUND_COLOUR 0, 0, 0, 255
-#define GUI_BORDER_COLOUR 200, 200, 200, 255
-#define SPECTRUM_BAR_COLOUR 255, 255, 255, 255
+#define SPECTRO_W 128
+#define SPECTRO_H 32
 
-#define WINDOW_LEFT_WIDTH 900
-#define SPECTRUM_PANEL_HEIGHT 300
+#define SPECTRO0_BORDER 252, 27, 27, 255
+#define SPECTRO0_BG 252, 193, 193, 255
+#define SPECTRO0_FG 107, 0, 0, 255
 
-#define FRAMES_PER_FFT 1
+#define SPECTRO1_BORDER 62, 237, 121, 255
+#define SPECTRO1_BG 242, 255, 242, 255
+#define SPECTRO1_FG 0, 77, 2, 255
 
-#define FFT_BAR_WIDTH 2
-#define FFT_SCALE_STEP 100
-#define FFT_SCALE_SKIP 10
-#define FFT_SCALE_MAX (48000 / 2)
-
-#define WAVEFORM_RESOLUTION SCREEN_WIDTH
-#define WAVEFORM_SEGMENT (HOLD_BUFFER_SIZE)
-
-static TTF_Font *font;
+#define SPECTRO2_BORDER 58, 108, 249, 255
+#define SPECTRO2_BG 229, 233, 255, 255
+#define SPECTRO2_FG 0, 2, 92, 255
 
 struct fm_window;
 struct fm_gui_panel;
@@ -47,11 +45,13 @@ typedef void fm_panel_renderer(struct fm_window*, struct fm_gui_panel*);
 typedef struct fm_gui_panel {
     SDL_Rect rect;
     fm_panel_renderer *render;
+    void *data;
 } fm_gui_panel;
 
 typedef struct fm_window {
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_Surface *surf, *win_surf;
 
     fm_player *player;
 
