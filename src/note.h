@@ -7,9 +7,10 @@ typedef struct fm_note {
     float freq;
     double start;
     float duration;
+    float velocity;
 } fm_note;
 
-fm_note fm_make_note(float freq, double start, float duration);
+fm_note fm_make_note(float freq, double start, float duration, float velocity);
 
 
 // NOTE FREQUENCY DEFINITIONS

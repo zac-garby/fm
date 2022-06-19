@@ -6,15 +6,11 @@
 #include <float.h>
 
 #include "synth.h"
+#include "song.h"
 
 #define UNUSED(x) (void)(x)
 
 #define TIME_QUANTIZE 1024
-
-typedef struct fm_song_part {
-    int num_notes;
-    fm_note *notes;
-} fm_song_part;
 
 typedef struct fm_player {
     // an array of synths
@@ -37,7 +33,7 @@ typedef struct fm_player {
 
     // the song to play, represented as a number (num_synths) of song parts.
     // each part corresponds to the synth with the same index.
-    fm_song_part *song_parts;
+    fm_song song;
 
     // the index for each song part's next note to play. initially all 0.
     int *next_notes;

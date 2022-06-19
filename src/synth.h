@@ -15,9 +15,9 @@ static const float PI = 3.1415926535f;
 #define N_CHANNELS 9
 #define HOLD_BUFFER_SIZE 1024
 #define FREQ_DOMAIN (HOLD_BUFFER_SIZE / 2 + 1)
-#define MAX_POLYPHONY 8
+#define MAX_POLYPHONY 16
 
-typedef struct fm_synth {
+typedef struct fm_synth {    
     // the array of recv/send channels.
     float *channels;
 

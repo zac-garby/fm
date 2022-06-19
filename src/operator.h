@@ -34,6 +34,9 @@ typedef struct fm_operator {
     // a frequency scaling factor.
     float transpose;
 
+    // the phase offset of the oscillator.
+    float phase;
+
     // the envelope that the operator follows.
     fm_envelope envelope;
 } fm_operator;

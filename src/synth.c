@@ -41,17 +41,23 @@ void fm_synth_swap_buffers(fm_synth *s) {
 
     for (int i = 0; i < N_CHANNELS; i++) {
         s->channels_back[i] = 0.0f;
+        s->integrals[i] *= 0.9f;
     }
 }
 
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
-    for (int i = 0; i < s->n_ops; i++) {        
+    for (int i = 0; i < s->n_ops; i++) {
         fm_operator *op = &s->ops[i];
         
         double mod = 0;
         for (int n = 0; n < op->recv_n; n++) {
+            // op->phase += s->channels[op->recv[n]] * op->recv_level[n];
+            // printf("%f\tvs\t%f\n", s->channels[op->recv[n]], s->integrals[op->recv[n]]);
+            // mod = hypotf(mod, s->channels[op->recv[n]] * op->recv_level[n]);
             mod += s->integrals[op->recv[n]] * op->recv_level[n];
         }
+
+        // printf("%f\n", mod);
 
 		float (*wave)(float);
 		switch (op->wave_type) {
@@ -79,13 +85,18 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
             if (note.freq == 0) continue;
 
             float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
+            float s;
             
             if (op->fixed) {
-                sample += wave(op->transpose * time + mod) * env;
+                s = wave(op->transpose * time + mod) * env * note.velocity;
             } else {
-                sample += wave(note.freq*op->transpose * time + mod) * env;
+                s = wave(note.freq*op->transpose * time + mod) * env * note.velocity;
             }
+
+            sample += s;
         }
+
+        // printf("%f\n", sample);
 
         for (int n = 0; n < op->send_n; n++) {
             s->channels_back[op->send[n]] += op->send_level[n] * sample;
@@ -111,7 +122,7 @@ void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_pe
     s->hold_buf_dirty = false;
 }
 
-float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame) {    
+float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame) {
     if (s->hold_index >= HOLD_BUFFER_SIZE) {
         fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
     }

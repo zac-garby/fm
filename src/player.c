@@ -60,7 +60,6 @@ fm_player* fm_new_player(int num_synths, struct SoundIoDevice *device) {
 
     p->synths = malloc(sizeof(fm_synth) * num_synths);
     p->num_synths = num_synths;
-    p->song_parts = malloc(sizeof(fm_song_part) * num_synths);
     p->next_notes = calloc(num_synths, sizeof(int));
     p->bps = 1.0;
     p->playhead = 0;
@@ -103,7 +102,7 @@ void fm_player_loop(void *player_ptr) {
 void fm_player_schedule(fm_player *p, double time_per_quantum) {
     for (int i = 0; i < p->num_synths; i++) {        
         fm_synth *s = &p->synths[i];
-        fm_song_part part = p->song_parts[i];
+        fm_song_part part = p->song.parts[i];
 
         // while there are notes remaining in this part which have a start time before or
         // at the current playhead, play them.
