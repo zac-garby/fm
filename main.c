@@ -33,18 +33,18 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(3, device);
+    player = fm_new_player(1, device);
 
-    if (!parse_song("assets/ricercar.txt", &player->song)) {
+    if (!parse_song("assets/test.txt", &player->song)) {
         return 0;
     }
 
-    player->volume = 0.1;
+    player->volume = 0.3;
     player->bps = (float) player->song.bpm / 60.0f;
     
     player->synths[0] = make_flute();
-    player->synths[1] = make_lute();
-    player->synths[2] = make_lute();
+    // player->synths[1] = make_brass();
+    //player->synths[2] = make_flute();
     //player->synths[3] = make_flute();
     //player->synths[4] = make_lute();
     //player->synths[5] = make_lute();
@@ -95,41 +95,46 @@ struct SoundIoDevice* init_audio() {
 }
 
 fm_synth make_flute() {
-    fm_synth s = fm_new_synth(4);
+    fm_synth s = fm_new_synth(5);
 
-    fm_operator op = fm_new_op(1, 1, false, 1.0f);
-    op.wave_type = FN_SIN;
-    op.envelope = fm_make_envelope(0.1, 0.95, 0.1, 0.35f);
-    op.recv[0] = 1;
-    op.recv_level[0] = 1.0f;
-    op.send[0] = 0;
-    op.send_level[0] = 0.65f;
-    s.ops[0] = op;
+    fm_operator carr = fm_new_op(2, 1, false, 1.0f);
+    carr.wave_type = FN_SIN;
+    carr.envelope = fm_make_envelope(0.1, 0.45, 0.8, 0.35f);
+    carr.recv[0] = 1;
+    carr.recv_level[0] = 440.0f;
+    carr.recv[1] = 3;
+    carr.recv_level[1] = 4;
+    carr.send[0] = 0;
+    carr.send_level[0] = 1.0f;
+    s.ops[0] = carr;
 
-    fm_operator op2 = fm_new_op(1, 1, false, 1.0f);
-    op2.wave_type = FN_TRIANGLE;
-    op2.envelope = fm_make_envelope(0.1, 0.2, 0.1, 0.15f);
-    op2.recv[0] = 1;
-    op2.recv_level[0] = 0.5f;
-    op2.send[0] = 0;
-    op2.send_level[0] = 0.55f;
-    s.ops[1] = op;
+    fm_operator mod1 = fm_new_op(0, 1, false, 2.0f);
+    mod1.envelope = fm_make_envelope(0.1, 0.45, 0.75, 0.35f);
+    mod1.send[0] = 1;
+    mod1.send_level[0] = 0.43f;
+    s.ops[1] = mod1;
 
-    fm_operator vib = fm_new_op(0, 1, true, 2.0f);
-    vib.wave_type = FN_SIN;
-    vib.envelope = fm_make_envelope(1.0, 0.0, 0.4, 1.0);
-    vib.send[0] = 1;
+    fm_operator mod2 = fm_new_op(0, 1, false, 1.0f);
+    mod2.envelope = fm_make_envelope(0.1, 0.45, 0.75, 0.35f);
+    mod2.send[0] = 1;
+    mod2.send_level[0] = 0.37f;
+    s.ops[2] = mod2;
+
+    fm_operator fb = fm_new_op(2, 1, false, 1.1f);
+    fb.envelope = fm_make_envelope(0.04, 0.5, 0.1, 0.15f);
+    fb.recv[0] = 2;
+    fb.recv_level[0] = 1.0f;
+    fb.send[0] = 2;
+    fb.send_level[0] = 0.5f;
+    fb.send[1] = 1;
+    fb.send_level[0] = 0.03f;
+    s.ops[3] = fb;
+
+    fm_operator vib = fm_new_op(0, 1, true, 4.0f);
+    vib.envelope = fm_make_envelope(1.3, 0.2, 2.0, 0.0);
+    vib.send[0] = 3;
     vib.send_level[0] = 1.0f;
-    s.ops[2] = vib;
-
-    fm_operator breath = fm_new_op(0, 2, false, 1.0f);
-    breath.wave_type = FN_TRIANGLE;
-    breath.envelope = fm_make_envelope(0.05, 0.2, 0.0, 0.0);
-    breath.send[0] = 1;
-    breath.send_level[0] = 20.0f;
-    breath.send[1] = 0;
-    breath.send_level[1] = 0.45f;
-    s.ops[3] = breath;
+    s.ops[4] = vib;
 
 	return s;
 }
@@ -172,21 +177,30 @@ fm_synth make_brass() {
     feedback.recv[0] = 1;
     feedback.recv_level[0] = 1.0f;
     feedback.send[0] = 1;
-    feedback.send_level[0] = 0.5f;
+    feedback.send_level[0] = 0.25f;
     s.ops[1] = feedback;
 
     return s;
 }
 
 fm_synth make_sine() {
-    fm_synth s = fm_new_synth(1);
+    fm_synth s = fm_new_synth(2);
 
-    fm_operator op = fm_new_op(0, 1, false, 1.0f);
+    fm_operator op = fm_new_op(1, 1, false, 1.0f);
     op.wave_type = FN_SIN;
-    op.envelope = fm_make_envelope(0.1f, 0.0, 1.0, 0.0);
+    op.envelope = fm_make_envelope(0.1f, 0.4, 5.0, 0.1);
+    op.recv[0] = 1;
+    op.recv_level[0] = 4.0;
     op.send[0] = 0;
     op.send_level[0] = 0.45f;
     s.ops[0] = op;
+
+    fm_operator vib = fm_new_op(0, 1, true, 8.0f);
+    vib.wave_type = FN_SIN;
+    vib.envelope = fm_make_envelope(-1, 0, 0, 0);
+    vib.send[0] = 1;
+    vib.send_level[0] = 1.0f;
+    s.ops[1] = vib;
 
 	return s;
 }

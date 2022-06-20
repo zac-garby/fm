@@ -41,23 +41,33 @@ void fm_synth_swap_buffers(fm_synth *s) {
 
     for (int i = 0; i < N_CHANNELS; i++) {
         s->channels_back[i] = 0.0f;
-        s->integrals[i] *= 0.9f;
+        // s->integrals[i] *= 0.95f;
+        // if (i == 1) printf("%f\n", s->integrals[i]);
     }
 }
 
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
     for (int i = 0; i < s->n_ops; i++) {
         fm_operator *op = &s->ops[i];
-        
+
+        // it is possible that the modulation should be calculated
+        // per note. in this case, there would have to be a phase for
+        // each note. in this case, it may make more sense to have only
+        // monophonic synths and have a wrapper which combines a number
+        // of synths into one, emulating multiple notes.
+        //
+        // this approach would also allow the trails of notes (aka
+        // the release--after the note is not held) to not interfere
+        // with the next note being synthesised, as is currently an
+        // issue.
+        //
+        // https://ccrma.stanford.edu/software/snd/snd/fm.html
+        // (see fm-index)
         double mod = 0;
         for (int n = 0; n < op->recv_n; n++) {
-            // op->phase += s->channels[op->recv[n]] * op->recv_level[n];
-            // printf("%f\tvs\t%f\n", s->channels[op->recv[n]], s->integrals[op->recv[n]]);
-            // mod = hypotf(mod, s->channels[op->recv[n]] * op->recv_level[n]);
-            mod += s->integrals[op->recv[n]] * op->recv_level[n];
+            op->phase += s->channels[op->recv[n]] * op->recv_level[n] * seconds_per_frame;
+            while (op->phase > 2 * PI) op->phase -= 2 * PI;
         }
-
-        // printf("%f\n", mod);
 
 		float (*wave)(float);
 		switch (op->wave_type) {
@@ -85,22 +95,20 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
             if (note.freq == 0) continue;
 
             float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
-            float s;
+            float vel = env * note.velocity;
+            float t;
             
             if (op->fixed) {
-                s = wave(op->transpose * time + mod) * env * note.velocity;
+                t = op->transpose * time + op->phase;
             } else {
-                s = wave(note.freq*op->transpose * time + mod) * env * note.velocity;
+                t = note.freq*op->transpose * time + op->phase;
             }
 
-            sample += s;
+            sample += wave(t) * vel;
         }
-
-        // printf("%f\n", sample);
 
         for (int n = 0; n < op->send_n; n++) {
             s->channels_back[op->send[n]] += op->send_level[n] * sample;
-            s->integrals[op->send[n]] += (double) (op->send_level[n] * sample) * seconds_per_frame;
         }
     }
 
@@ -111,6 +119,7 @@ void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_pe
     s->hold_buf_dirty = true;
     for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
         double time = start_time + seconds_per_frame * frame;
+        
         fm_synth_frame(s, time, seconds_per_frame);
 
         for (int c = 0; c < N_CHANNELS; c++) {
