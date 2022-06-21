@@ -13,9 +13,9 @@
 #define TIME_QUANTIZE 1024
 
 typedef struct fm_player {
-    // an array of synths
-    fm_synth *synths;
-    int num_synths;
+    // an array of instruments.
+    fm_instrument *instrs;
+    int num_instrs;
 
     // the soundio outstream struct.
     struct SoundIoOutStream *outstream;
@@ -48,7 +48,7 @@ typedef struct fm_player {
     bool playing;
 } fm_player;
 
-fm_player* fm_new_player(int num_synths, struct SoundIoDevice *device);
+fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device);
 
 void fm_player_loop(void *player_ptr);
 void fm_player_schedule(fm_player *p, double time_per_quantum);

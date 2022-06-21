@@ -15,9 +15,26 @@ static const float PI = 3.1415926535f;
 #define N_CHANNELS 4
 #define HOLD_BUFFER_SIZE 1024
 #define FREQ_DOMAIN (HOLD_BUFFER_SIZE / 2 + 1)
-#define MAX_POLYPHONY 16
+#define MAX_OPERATORS 8
+#define MAX_POLYPHONY 8
 
-typedef struct fm_synth {    
+struct fm_instrument;
+struct fm_synth;
+
+// collects together a number (MAX_POLYPHONY) of identical
+// synths, and allocates notes between them to emulate
+// polyphony.
+typedef struct fm_instrument {
+    // each potential voice the instrument can play is a
+    // synth, because two notes cannot be played at the
+    // same time on one synth. len: MAX_POLYPHONY.
+    struct fm_synth *voices;
+
+    int n_ops;
+    fm_operator *ops;
+} fm_instrument;
+
+typedef struct fm_synth {
     // the array of recv/send channels.
     float *channels;
 
@@ -26,13 +43,12 @@ typedef struct fm_synth {
     // can go into a blank buffer.
     float *channels_back;
 
-    // the integrals of each channel, for use in frequency modulation.
-    // each integral is updated each frame.
-    double *integrals;
-
     // the hold buffer, i.e. the history of the synth channels.
     // the history goes back HOLD_BUFFER_SIZE frames, and is used
     // to allow spectral analysis on the synth output.
+    //
+    // TODO: i really only need one hold buffer per synth, since
+    // the non-output channels don't need to be recorded.
     float hold_buf[N_CHANNELS][HOLD_BUFFER_SIZE];
 
     // whether the hold buffer is in the process of being written to.
@@ -41,27 +57,33 @@ typedef struct fm_synth {
     // the current playhead into the hold buffer.
     int hold_index;
 
-    // the array of operators.
-    fm_operator *ops;
-    int n_ops;
+    // the instrument associated with this synth.
+    struct fm_instrument *instr;
 
-    // the frequencies of the current notes to play.
-    fm_note *notes;
+    // the phases of each of the synth's oscillators.
+    float *phases;
 
-    // the thread to run the synth in.
-    pthread_t thread;
-
-    // whether to stop the synth thread running.
-    bool stop;
+    // a pointer to the current note to play.
+    // if frequency is 0, play nothing.
+    fm_note note;
 } fm_synth;
 
-fm_synth fm_new_synth(int n_ops);
+void fm_new_instr(fm_instrument *instr, int n_ops);
+fm_synth fm_new_synth(fm_instrument *instr);
+
+float fm_instr_get_next_output(fm_instrument *instr,
+                               double start_time,
+                               double seconds_per_frame);
 
 void fm_synth_start(fm_synth *s);
 void fm_synth_stop(fm_synth *s);
 void fm_synth_swap_buffers(fm_synth *s);
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame);
-void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_per_frame);
-float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame);
+void fm_synth_fill_hold_buffer(fm_synth *s,
+                               double start_time,
+                               double seconds_per_frame);
+float fm_synth_get_next_output(fm_synth *s,
+                               double start_time,
+                               double seconds_per_frame);
 
 #endif

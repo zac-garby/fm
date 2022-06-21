@@ -62,6 +62,7 @@ void fm_window_loop(fm_window *win) {
 }
 
 void render_spectrum(fm_window *win, fm_gui_panel *panel) {
+    return; 
     fm_spectrum_data *data;
     Uint32 bg, border, fg;
     SDL_Rect safe;
@@ -98,7 +99,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
     kiss_fftr_cfg fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
     kiss_fftr(fft_cfg,
-              win->player->synths[data->synth_index].hold_buf[0],
+              win->player->instrs[data->synth_index].voices[0].hold_buf[0],
               data->freq);
     kiss_fftr_free(fft_cfg);
 

@@ -13,6 +13,9 @@
 #define FN_NOISE 3
 #define FN_SAWTOOTH 4
 
+// stores the *settings* of an FM operator.
+// the operator is used in an fm_synth, where the actual
+// oscillation is performed (see fm_synth.phases.)
 typedef struct fm_operator {
     // an array of channels to receive from, and
     // the level of each one to be summed. recv_n is
@@ -33,9 +36,6 @@ typedef struct fm_operator {
 
     // a frequency scaling factor.
     float transpose;
-
-    // the phase offset of the oscillator.
-    float phase;
 
     // the envelope that the operator follows.
     fm_envelope envelope;

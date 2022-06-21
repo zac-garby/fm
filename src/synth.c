@@ -6,29 +6,50 @@ float triangle_wave(float);
 float noise_wave(float);
 float sawtooth_wave(float);
 
-fm_synth fm_new_synth(int n_ops) {
+void fm_new_instr(fm_instrument *instr, int n_ops) {
+    instr->n_ops = n_ops;
+    instr->ops = malloc(sizeof(fm_operator) * n_ops);
+
+    instr->voices = malloc(sizeof(fm_synth) * MAX_POLYPHONY);
+
+    for (int i = 0; i < MAX_POLYPHONY; i++) {
+        instr->voices[i] = fm_new_synth(instr);
+    }
+}
+
+float fm_instr_get_next_output(fm_instrument *instr,
+                              double start_time,
+                              double seconds_per_frame) {
+    float sample = 0;
+
+    for (int i = 0; i < MAX_POLYPHONY; i++) {
+        sample += fm_synth_get_next_output(&instr->voices[i],
+                                           start_time,
+                                           seconds_per_frame);
+    }
+
+    return sample;
+}
+
+fm_synth fm_new_synth(fm_instrument *instr) {
     fm_synth s;
 
-    s.channels = malloc(sizeof(float) * N_CHANNELS);
-    s.channels_back = malloc(sizeof(float) * N_CHANNELS);
-    s.integrals = malloc(sizeof(double) * N_CHANNELS);
+    s.channels = calloc(N_CHANNELS, sizeof(float));
+    s.channels_back = calloc(N_CHANNELS, sizeof(float));
     s.hold_index = HOLD_BUFFER_SIZE;
     s.hold_buf_dirty = false;
     
-    s.ops = malloc(sizeof(fm_operator) * n_ops);
-    s.n_ops = n_ops;
-    s.stop = false;
+    s.instr = instr;
+    s.phases = calloc(MAX_OPERATORS, sizeof(float));
 
-    s.notes = malloc(sizeof(fm_note) * MAX_POLYPHONY);
-
-    for (int n = 0; n < MAX_POLYPHONY; n++) {
-        s.notes[n].freq = 0;
-    }
+    s.note.freq = 0;
+    s.note.start = 0;
+    s.note.duration = 0;
+    s.note.velocity = 0;
     
     for (int i = 0; i < N_CHANNELS; i++) {
         s.channels[i] = 0;
         s.channels_back[i] = 0;
-        s.integrals[i] = 0;
     }
 
     return s;
@@ -41,32 +62,16 @@ void fm_synth_swap_buffers(fm_synth *s) {
 
     for (int i = 0; i < N_CHANNELS; i++) {
         s->channels_back[i] = 0.0f;
-        // s->integrals[i] *= 0.95f;
-        // if (i == 1) printf("%f\n", s->integrals[i]);
     }
 }
 
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
-    for (int i = 0; i < s->n_ops; i++) {
-        fm_operator *op = &s->ops[i];
-
-        // it is possible that the modulation should be calculated
-        // per note. in this case, there would have to be a phase for
-        // each note. in this case, it may make more sense to have only
-        // monophonic synths and have a wrapper which combines a number
-        // of synths into one, emulating multiple notes.
-        //
-        // this approach would also allow the trails of notes (aka
-        // the release--after the note is not held) to not interfere
-        // with the next note being synthesised, as is currently an
-        // issue.
-        //
-        // https://ccrma.stanford.edu/software/snd/snd/fm.html
-        // (see fm-index)
-        double mod = 0;
+    for (int i = 0; i < s->instr->n_ops; i++) {
+        fm_operator *op = &s->instr->ops[i];
+        
         for (int n = 0; n < op->recv_n; n++) {
-            op->phase += s->channels[op->recv[n]] * op->recv_level[n] * seconds_per_frame;
-            while (op->phase > 2 * PI) op->phase -= 2 * PI;
+            s->phases[i] += s->channels[op->recv[n]] * op->recv_level[n] * seconds_per_frame;
+            while (s->phases[i] > 2 * PI) s->phases[i] -= 2 * PI;
         }
 
 		float (*wave)(float);
@@ -90,18 +95,17 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
 
         float sample = 0;
 
-        for (int n = 0; n < MAX_POLYPHONY; n++) {
-            fm_note note = s->notes[n];
-            if (note.freq == 0) continue;
-
-            float env = fm_envelope_evaluate(&op->envelope, time - note.start, note.duration);
-            float vel = env * note.velocity;
+        if (s->note.freq > 0) {
+            float env = fm_envelope_evaluate(&op->envelope,
+                                             time - s->note.start,
+                                             s->note.duration);
+            float vel = env * s->note.velocity;
             float t;
             
             if (op->fixed) {
-                t = op->transpose * time + op->phase;
+                t = op->transpose * time + s->phases[i];
             } else {
-                t = note.freq*op->transpose * time + op->phase;
+                t = s->note.freq * op->transpose * time + s->phases[i];
             }
 
             sample += wave(t) * vel;
@@ -117,9 +121,10 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
 
 void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_per_frame) {
     s->hold_buf_dirty = true;
+    
     for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
         double time = start_time + seconds_per_frame * frame;
-        
+
         fm_synth_frame(s, time, seconds_per_frame);
 
         for (int c = 0; c < N_CHANNELS; c++) {

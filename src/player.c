@@ -30,8 +30,8 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
 
 			float sample = 0;
 
-			for (int i = 0; i < p->num_synths; i++) {
-			    sample += fm_synth_get_next_output(&p->synths[i],
+			for (int i = 0; i < p->num_instrs; i++) {
+			    sample += fm_instr_get_next_output(&p->instrs[i],
 												   p->playhead + frame * time_per_frame,
 												   time_per_frame);
 			}
@@ -55,12 +55,12 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
     }
 }
 
-fm_player* fm_new_player(int num_synths, struct SoundIoDevice *device) {
+fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device) {
     fm_player *p = malloc(sizeof(fm_player));
 
-    p->synths = malloc(sizeof(fm_synth) * num_synths);
-    p->num_synths = num_synths;
-    p->next_notes = calloc(num_synths, sizeof(int));
+    p->instrs = malloc(sizeof(fm_instrument) * num_instrs);
+    p->num_instrs = num_instrs;
+    p->next_notes = calloc(num_instrs, sizeof(int));
     p->bps = 1.0;
     p->playhead = 0;
 	p->volume = 1.0;
@@ -100,8 +100,8 @@ void fm_player_loop(void *player_ptr) {
 }
 
 void fm_player_schedule(fm_player *p, double time_per_quantum) {
-    for (int i = 0; i < p->num_synths; i++) {        
-        fm_synth *s = &p->synths[i];
+    for (int i = 0; i < p->num_instrs; i++) {
+        fm_instrument *instr = &p->instrs[i];
         fm_song_part part = p->song.parts[i];
 
         // while there are notes remaining in this part which have a start time before or
@@ -117,7 +117,8 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
             int earliest_idx = 0;
 
             for (int n = 0; n < MAX_POLYPHONY; n++) {
-                fm_note candidate = s->notes[n];
+                fm_note candidate = instr->voices[n].note;
+                
                 double finish = candidate.start + (double) candidate.duration;
                 if (finish < earliest_finish) {
                     earliest_finish = finish;
@@ -127,9 +128,10 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
 
             // replace the note that finished longest ago
             fm_note note = part.notes[p->next_notes[i]];
+            double error = p->playhead - note.start;
             note.start = p->playhead;
-            note.duration /= p->bps;
-            s->notes[earliest_idx] = note;
+            note.duration = (note.duration / p->bps) - error;
+            instr->voices[earliest_idx].note = note;
             p->next_notes[i]++;
         }
     }
