@@ -18,7 +18,7 @@
 
 #define SPECTRUM_VERT_SCALE 0.15f
 
-#define BG_COLOUR 83, 74, 61, 255
+#define BG_COLOUR 21, 20, 18, 255
 #define BORDER_COLOUR 48, 41, 50, 255
 #define PANEL_COLOUR 29, 24, 30, 255
 

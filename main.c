@@ -21,9 +21,6 @@ struct SoundIoDevice* init_audio();
 
 void make_flute(fm_instrument*);
 void make_lute(fm_instrument*);
-// fm_instrument make_lute();
-// fm_instrument make_brass();
-// fm_instrument make_sine();
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -35,7 +32,7 @@ int main() {
 
     player = fm_new_player(4, device);
 
-    if (!parse_song("assets/merry-go-round.txt", &player->song)) {
+    if (!parse_song("assets/air.txt", &player->song)) {
         return 0;
     }
 
@@ -43,8 +40,8 @@ int main() {
     player->bps = (float) player->song.bpm / 60.0f;
     
     make_flute(&player->instrs[0]);
-    make_lute(&player->instrs[1]);
-    make_lute(&player->instrs[2]);
+    make_flute(&player->instrs[1]);
+    make_flute(&player->instrs[2]);
     make_flute(&player->instrs[3]);
     //make_flute(&player->instrs[4]);
     //make_flute(&player->instrs[5]);
