@@ -70,9 +70,12 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
         fm_operator *op = &s->instr->ops[i];
         
         for (int n = 0; n < op->recv_n; n++) {
-            s->phases[i] += s->channels[op->recv[n]] * op->recv_level[n] * seconds_per_frame;
-            while (s->phases[i] > 2 * PI) s->phases[i] -= 2 * PI;
+            float mod = s->channels[op->recv[n]] * op->recv_level[n] * seconds_per_frame;
+            if (op->recv_type[n] == FM_RECV_MODULATE) mod *= s->note.freq;
+            s->phases[i] += mod;
         }
+
+        while (s->phases[i] > 2 * PI) s->phases[i] -= 2 * PI;
 
 		float (*wave)(float);
 		switch (op->wave_type) {
@@ -122,9 +125,7 @@ void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_pe
 
         fm_synth_frame(s, time, seconds_per_frame);
 
-        for (int c = 0; c < N_CHANNELS; c++) {
-            s->hold_buf[c][frame] = s->channels[c];
-        }
+        s->hold_buf[frame] = s->channels[0];
     }
 
     s->hold_index = 0;
@@ -136,7 +137,7 @@ float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_pe
         fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
     }
 
-    float out = s->hold_buf[0][s->hold_index];
+    float out = s->hold_buf[s->hold_index];
     s->hold_index++;
 
     return out;

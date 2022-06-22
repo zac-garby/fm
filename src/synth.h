@@ -12,7 +12,7 @@
 
 static const float PI = 3.1415926535f;
 
-#define N_CHANNELS 4
+#define N_CHANNELS 8
 #define HOLD_BUFFER_SIZE 1024
 #define FREQ_DOMAIN (HOLD_BUFFER_SIZE / 2 + 1)
 #define MAX_OPERATORS 8
@@ -47,13 +47,10 @@ typedef struct fm_synth {
     // can go into a blank buffer.
     float *channels_back;
 
-    // the hold buffer, i.e. the history of the synth channels.
+    // the hold buffer, i.e. the history of the synth output channel.
     // the history goes back HOLD_BUFFER_SIZE frames, and is used
     // to allow spectral analysis on the synth output.
-    //
-    // TODO: i really only need one hold buffer per synth, since
-    // the non-output channels don't need to be recorded.
-    float hold_buf[N_CHANNELS][HOLD_BUFFER_SIZE];
+    float hold_buf[HOLD_BUFFER_SIZE];
 
     // whether the hold buffer is in the process of being written to.
     bool hold_buf_dirty;

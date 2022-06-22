@@ -11,6 +11,11 @@ fm_operator fm_new_op(int recv_n, int send_n, int fixed, float transpose) {
 
     op.recv = malloc(sizeof(int) * recv_n);
     op.recv_level = malloc(sizeof(float) * recv_n);
+    op.recv_type = malloc(sizeof(int) * recv_n);
+
+    for (int i = 0; i < recv_n; i++) {
+        op.recv_type[i] = FM_RECV_NORMAL;
+    }
 
     op.send = malloc(sizeof(int) * send_n);
     op.send_level = malloc(sizeof(float) * send_n);

@@ -21,6 +21,7 @@ struct SoundIoDevice* init_audio();
 
 void make_flute(fm_instrument*);
 void make_lute(fm_instrument*);
+void make_organ(fm_instrument*);
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -30,19 +31,19 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(4, device);
+    player = fm_new_player(3, device);
 
-    if (!parse_song("assets/air.txt", &player->song)) {
+    if (!parse_song("assets/toccata.txt", &player->song)) {
         return 0;
     }
 
     player->volume = 0.015;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_flute(&player->instrs[0]);
-    make_flute(&player->instrs[1]);
-    make_flute(&player->instrs[2]);
-    make_flute(&player->instrs[3]);
+    make_organ(&player->instrs[0]);
+    make_organ(&player->instrs[1]);
+    make_organ(&player->instrs[2]);
+    // make_flute(&player->instrs[3]);
     //make_flute(&player->instrs[4]);
     //make_flute(&player->instrs[5]);
     //make_lute(&player->instrs[6]);
@@ -100,7 +101,8 @@ void make_flute(fm_instrument *instr) {
     carr.wave_type = FN_SIN;
     carr.envelope = fm_make_envelope(0.1, 0.45, 0.8, 0.35f);
     carr.recv[0] = 1;
-    carr.recv_level[0] = 1550.0f;
+    carr.recv_level[0] = 4.0f;
+    carr.recv_type[0] = FM_RECV_MODULATE;
     carr.recv[1] = 3;
     carr.recv_level[1] = 4;
     carr.send[0] = 0;
@@ -126,7 +128,7 @@ void make_flute(fm_instrument *instr) {
     fb.send[0] = 2;
     fb.send_level[0] = 0.5f;
     fb.send[1] = 1;
-    fb.send_level[0] = 0.03f;
+    fb.send_level[0] = 0.15f;
     instr->ops[3] = fb;
 
     fm_operator vib = fm_new_op(0, 1, true, 4.0f);
@@ -152,6 +154,29 @@ void make_lute(fm_instrument *instr) {
     op2.send[0] = 0;
     op2.send_level[0] = 0.25f;
     instr->ops[1] = op2;
+}
+
+void make_organ(fm_instrument *instr) {
+    fm_new_instr(instr, 8);
+
+    for (int i = 0; i < 4; i++) {
+        fm_operator op = fm_new_op(1, 1, false, powf(2.0f, (float) i));
+        op.envelope = fm_make_envelope(0.2, 0.2, 1.0, 0.35);
+        op.recv[0] = i + 1;
+        op.recv_level[0] = 4;
+        op.recv_type[0] = FM_RECV_MODULATE;
+        op.send[0] = 0;
+        op.send_level[0] = 0.5 - (float) i / 20;
+        instr->ops[i] = op;
+
+        fm_operator feedback = fm_new_op(1, 1, false, pow(2.0f, (float) i));
+        feedback.envelope = fm_make_envelope(0.05, 0.2, 1, 0.35);
+        feedback.recv[0] = i + 1;
+        feedback.recv_level[0] = 0.65;
+        feedback.send[0] = i + 1;
+        feedback.send_level[0] = 1;
+        instr->ops[i + 4] = feedback;
+    }
 }
 
 /*

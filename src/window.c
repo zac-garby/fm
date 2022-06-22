@@ -113,7 +113,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
         hold_buf[n] = 0;
         
         for (int i = 0; i < MAX_POLYPHONY; i++) {
-            hold_buf[n] += instr->voices[i].hold_buf[0][n];
+            hold_buf[n] += instr->voices[i].hold_buf[n];
         }
     }
 
