@@ -87,6 +87,11 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
         border = SDL_MapRGBA(win->surf->format, SPECTRO2_BORDER);
         fg = SDL_MapRGBA(win->surf->format, SPECTRO2_FG);
         break;
+    case 3:
+        bg = SDL_MapRGBA(win->surf->format, SPECTRO3_BG);
+        border = SDL_MapRGBA(win->surf->format, SPECTRO3_BORDER);
+        fg = SDL_MapRGBA(win->surf->format, SPECTRO3_FG);
+        break;
     default:
         return;
     }
@@ -123,9 +128,25 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
     SDL_Rect bar;
     bar.w = 1;
 
+    static float freqs[FREQ_DOMAIN];
     for (int i = 0; i < FREQ_DOMAIN; i++) {
-        int bin = (int) ((float) SPECTRO_W * ((float) i / (float) FREQ_DOMAIN));
-        data->bins[bin] += hypotf(data->freq[i].r, data->freq[i].i);
+        freqs[i] = hypot(data->freq[i].r, data->freq[i].i);
+    }
+
+    int f = 1, fn = 0;
+    for (int i = 0; i < SPECTRO_W; i++) {
+        float p = (float) (i + 1) / (float) SPECTRO_W;
+        fn = (int) (powf((float) FREQ_DOMAIN, p));
+
+        float sum = 0.0f;
+        int n = 0;
+        for (int j = f; j < fn + 1; j++) {
+            sum += freqs[j];
+            n++;
+        }
+        data->bins[i] += sum / n;
+
+        f = fn;
     }
 
     for (int x = 0; x < SPECTRO_W; x++) {
@@ -140,10 +161,10 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 }
 
 void setup_panels(fm_window *win) {
-    win->num_panels = 3;
+    win->num_panels = 4;
     win->panels = malloc(sizeof(fm_gui_panel) * win->num_panels);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         win->panels[i].rect = make_rect(2, 2 + i * (SPECTRO_H + 3),
                                         SPECTRO_W + 2,
                                         SPECTRO_H + 2);
