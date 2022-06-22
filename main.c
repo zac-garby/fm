@@ -33,18 +33,25 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(2, device);
+    player = fm_new_player(4, device);
 
-    if (!parse_song("assets/crab.txt", &player->song)) {
+    if (!parse_song("assets/merry-go-round.txt", &player->song)) {
         return 0;
     }
 
-    player->volume = 0.025;
+    player->volume = 0.015;
     player->bps = (float) player->song.bpm / 60.0f;
     
     make_flute(&player->instrs[0]);
     make_lute(&player->instrs[1]);
-    // player->instrs[1] = make_brass();
+    make_lute(&player->instrs[2]);
+    make_flute(&player->instrs[3]);
+    //make_flute(&player->instrs[4]);
+    //make_flute(&player->instrs[5]);
+    //make_lute(&player->instrs[6]);
+    //make_lute(&player->instrs[7]);
+    // make_flute(&player->instrs[1]);
+    // make_lute(&player->instrs[2]);
 
     fm_window win = fm_create_window(player);
 
@@ -139,12 +146,12 @@ void make_lute(fm_instrument *instr) {
     op.wave_type = FN_TRIANGLE;
     op.envelope = fm_make_envelope(0.2f, 0.3, 0.6, 0.35f);
     op.send[0] = 0;
-    op.send_level[0] = 0.45f;
+    op.send_level[0] = 0.60f;
     instr->ops[0] = op;
 
-    fm_operator op2 = fm_new_op(0, 1, false, 0.5f);
+    fm_operator op2 = fm_new_op(0, 1, false, 2.0f);
     op2.wave_type = FN_SQUARE;
-    op2.envelope = fm_make_envelope(0.01f, 0.3f, 0.4f, 0.8f);
+    op2.envelope = fm_make_envelope(0.01f, 0.3f, 0.15f, 0.8f);
     op2.send[0] = 0;
     op2.send_level[0] = 0.25f;
     instr->ops[1] = op2;
