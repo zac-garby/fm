@@ -33,7 +33,7 @@ int main() {
 
     player = fm_new_player(3, device);
 
-    if (!parse_song("assets/toccata.txt", &player->song)) {
+    if (!parse_song("assets/fantasia.txt", &player->song)) {
         return 0;
     }
 
