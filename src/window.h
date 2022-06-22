@@ -37,8 +37,8 @@
 #define SPECTRO2_BG 229, 233, 255, 255
 #define SPECTRO2_FG 0, 2, 92, 255
 
-#define SPECTRO3_BORDER 248, 232, 6, 255
-#define SPECTRO3_BG 255, 251, 189, 255
+#define SPECTRO3_BORDER 208, 172, 3, 255
+#define SPECTRO3_BG 255, 253, 209, 255
 #define SPECTRO3_FG 92, 87, 8, 255
 
 struct fm_window;
