@@ -30,7 +30,11 @@ typedef struct fm_instrument {
     // same time on one synth. len: MAX_POLYPHONY.
     struct fm_synth *voices;
 
+    // the number of operators in the instrument.
     int n_ops;
+
+    // the operators making up the instrument. these are
+    // shared to each of its synths.
     fm_operator *ops;
 } fm_instrument;
 

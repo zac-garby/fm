@@ -62,7 +62,8 @@ void fm_window_loop(fm_window *win) {
 }
 
 void render_spectrum(fm_window *win, fm_gui_panel *panel) {
-    return; 
+    static float hold_buf[HOLD_BUFFER_SIZE];
+    
     fm_spectrum_data *data;
     Uint32 bg, border, fg;
     SDL_Rect safe;
@@ -92,15 +93,27 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
     draw_rect(win->surf, &panel->rect, bg, border);
 
+    if (data->synth_index >= win->player->num_instrs) {
+        return;
+    }
+
     if (SPECTRO_W != safe.w) {
         printf("the width is wrong\n");
         return;
     }
 
+    fm_instrument *instr = &win->player->instrs[data->synth_index];
+
+    for (int n = 0; n < HOLD_BUFFER_SIZE; n++) {
+        hold_buf[n] = 0;
+        
+        for (int i = 0; i < MAX_POLYPHONY; i++) {
+            hold_buf[n] += instr->voices[i].hold_buf[0][n];
+        }
+    }
+
     kiss_fftr_cfg fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
-    kiss_fftr(fft_cfg,
-              win->player->instrs[data->synth_index].voices[0].hold_buf[0],
-              data->freq);
+    kiss_fftr(fft_cfg, hold_buf, data->freq);
     kiss_fftr_free(fft_cfg);
 
     for (int i = 0; i < SPECTRO_W; i++) {
