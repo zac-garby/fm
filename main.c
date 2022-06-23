@@ -23,6 +23,7 @@ struct SoundIoDevice* init_audio();
 void make_flute(fm_instrument*);
 void make_lute(fm_instrument*);
 void make_organ(fm_instrument*);
+void make_percussion(fm_instrument*);
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -32,18 +33,18 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(1, device);
+    player = fm_new_player(2, device);
 
-    if (!parse_song("assets/runescape.txt", &player->song)) {
+    if (!fm_parse_song("assets/crab.txt", &player->song)) {
         return 0;
     }
 
     player->volume = 0.15;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_flute(&player->instrs[0]);
-    // make_flute(&player->instrs[1]);
-    // make_flute(&player->instrs[2]);
+    make_organ(&player->instrs[0]);
+    make_organ(&player->instrs[1]);
+    // make_organ(&player->instrs[2]);
     // make_organ(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
@@ -60,7 +61,8 @@ int main() {
     fm_player_pause(player);
     pthread_join(player_thread, NULL);
 
-    fm_export_wav("out.wav", player, 44100, 16, 216);
+    double duration = fm_song_duration(&player->song);
+    fm_export_wav("out.wav", player, 44100, 16, duration + 5);
     
     return 0;
 }
@@ -148,7 +150,7 @@ void make_lute(fm_instrument *instr) {
     op.wave_type = FN_TRIANGLE;
     op.envelope = fm_make_envelope(0.01f, 0.6, 0.3, 0.55f);
     op.send[0] = 0;
-    op.send_level[0] = 0.40f;
+    op.send_level[0] = 0.70f;
     instr->ops[0] = op;
 
     fm_operator op2 = fm_new_op(0, 1, false, 2.0f);
@@ -180,6 +182,17 @@ void make_organ(fm_instrument *instr) {
         feedback.send_level[0] = 1;
         instr->ops[i + 4] = feedback;
     }
+}
+
+void make_percussion(fm_instrument *instr) {
+    fm_new_instr(instr, 1);
+
+    fm_operator op = fm_new_op(0, 1, false, 1.0f);
+    op.wave_type = FN_NOISE;
+    op.envelope = fm_make_envelope(0.05, 0.3, 0.2, 0.5);
+    op.send[0] = 0;
+    op.send_level[0] = 0.5;
+    instr->ops[0] = op;
 }
 
 /*

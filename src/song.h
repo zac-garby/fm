@@ -19,6 +19,7 @@ typedef struct fm_song {
     fm_song_part *parts;
 } fm_song;
 
-int parse_song(char *filename, fm_song *song);
+int fm_parse_song(char *filename, fm_song *song);
+double fm_song_duration(fm_song *song);
 
 #endif

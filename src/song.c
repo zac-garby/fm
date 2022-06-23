@@ -3,7 +3,7 @@
 int parse_int(char *s, int *i);
 int parse_note(char *s, fm_note *note);
 
-int parse_song(char *filename, fm_song *song) {
+int fm_parse_song(char *filename, fm_song *song) {
     FILE *fp;
 
     fp = fopen(filename, "r");
@@ -101,6 +101,19 @@ int parse_song(char *filename, fm_song *song) {
     }
 
     return 1;
+}
+
+double fm_song_duration(fm_song *song) {
+    double d = 0;
+
+    for (int i = 0; i < song->num_parts; i++) {
+        fm_song_part *part = &song->parts[i];
+        fm_note last_note = part->notes[part->num_notes - 1];
+        double part_dur = last_note.start + last_note.duration;
+        if (part_dur > d) d = part_dur;
+    }
+
+    return d;
 }
 
 int parse_int(char *s, int *i) {
