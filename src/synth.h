@@ -36,6 +36,15 @@ typedef struct fm_instrument {
     // the operators making up the instrument. these are
     // shared to each of its synths.
     fm_operator *ops;
+
+    // the instrument's hold buffer.
+    // i.e. the history of the instrument's combined output from
+    // all of its voices. allows for spectral analysis.
+    // also the hold back-buffer, which is used for writing to.
+    float *hold_buf, *hold_buf_back;
+
+    // the current playhead into the hold buffer.
+    int hold_index;
 } fm_instrument;
 
 typedef struct fm_synth {
@@ -46,14 +55,6 @@ typedef struct fm_synth {
     // this swaps with 'channels' each frame so that sends
     // can go into a blank buffer.
     float *channels_back;
-
-    // the hold buffer, i.e. the history of the synth output channel.
-    // the history goes back HOLD_BUFFER_SIZE frames, and is used
-    // to allow spectral analysis on the synth output.
-    float hold_buf[HOLD_BUFFER_SIZE];
-
-    // whether the hold buffer is in the process of being written to.
-    bool hold_buf_dirty;
 
     // the current playhead into the hold buffer.
     int hold_index;
@@ -75,15 +76,15 @@ fm_synth fm_new_synth(fm_instrument *instr);
 float fm_instr_get_next_output(fm_instrument *instr,
                                double start_time,
                                double seconds_per_frame);
+void fm_instr_fill_hold_buffer(fm_instrument *instr,
+                               double start_time,
+                               double seconds_per_frame);
 
 void fm_synth_start(fm_synth *s);
 void fm_synth_stop(fm_synth *s);
 void fm_synth_swap_buffers(fm_synth *s);
 void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame);
 void fm_synth_fill_hold_buffer(fm_synth *s,
-                               double start_time,
-                               double seconds_per_frame);
-float fm_synth_get_next_output(fm_synth *s,
                                double start_time,
                                double seconds_per_frame);
 

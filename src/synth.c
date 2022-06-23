@@ -9,29 +9,52 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
     for (int i = 0; i < MAX_POLYPHONY; i++) {
         instr->voices[i] = fm_new_synth(instr);
     }
+
+    instr->hold_index = HOLD_BUFFER_SIZE;
+
+    instr->hold_buf = calloc(HOLD_BUFFER_SIZE, sizeof(float));
+    instr->hold_buf_back = calloc(HOLD_BUFFER_SIZE, sizeof(float));
 }
 
 float fm_instr_get_next_output(fm_instrument *instr,
                               double start_time,
                               double seconds_per_frame) {
-    float sample = 0;
+    if (instr->hold_index >= HOLD_BUFFER_SIZE) {
+        fm_instr_fill_hold_buffer(instr, start_time, seconds_per_frame);
+    }
+    
+    return instr->hold_buf[instr->hold_index++];
+}
 
-    for (int i = 0; i < MAX_POLYPHONY; i++) {
-        sample += fm_synth_get_next_output(&instr->voices[i],
-                                           start_time,
-                                           seconds_per_frame);
+void fm_instr_fill_hold_buffer(fm_instrument *instr,
+                               double start_time,
+                               double seconds_per_frame) {
+    for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
+        instr->hold_buf_back[i] = 0;
     }
 
-    return sample;
+    for (int i = 0; i < MAX_POLYPHONY; i++) {
+        fm_synth_fill_hold_buffer(&instr->voices[i],
+                                  start_time,
+                                  seconds_per_frame);
+    }
+
+    // swap the hold buffer and the back-buffer.
+    // the hold buffer now contains the new samples.
+    float *temp = instr->hold_buf;
+    instr->hold_buf = instr->hold_buf_back;
+    instr->hold_buf_back = temp;
+
+    instr->hold_index = 0;
 }
+
+
 
 fm_synth fm_new_synth(fm_instrument *instr) {
     fm_synth s;
 
     s.channels = calloc(N_CHANNELS, sizeof(float));
     s.channels_back = calloc(N_CHANNELS, sizeof(float));
-    s.hold_index = HOLD_BUFFER_SIZE;
-    s.hold_buf_dirty = false;
     
     s.instr = instr;
     s.phases = calloc(MAX_OPERATORS, sizeof(float));
@@ -112,27 +135,12 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
 }
 
 void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_per_frame) {
-    s->hold_buf_dirty = true;
-    
     for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
         double time = start_time + seconds_per_frame * frame;
 
         fm_synth_frame(s, time, seconds_per_frame);
 
-        s->hold_buf[frame] = s->channels[0];
+        s->instr->hold_buf_back[frame] += s->channels[0];
     }
-
-    s->hold_index = 0;
-    s->hold_buf_dirty = false;
 }
 
-float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_per_frame) {
-    if (s->hold_index >= HOLD_BUFFER_SIZE) {
-        fm_synth_fill_hold_buffer(s, start_time, seconds_per_frame);
-    }
-
-    float out = s->hold_buf[s->hold_index];
-    s->hold_index++;
-
-    return out;
-}
