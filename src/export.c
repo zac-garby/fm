@@ -1,5 +1,7 @@
 #include "export.h"
 
+#define WAV_CHUNK_SIZE 65536
+
 typedef struct wav_header {
     unsigned char chunk_id[4];
     unsigned int file_size;
@@ -49,15 +51,10 @@ int fm_export_wav(char *filename, fm_player *player,
     FILE *f = fopen(filename, "wb");
     fwrite(&h, sizeof(h), 1, f);
 
-    short *data = malloc(sizeof(short) * num_samples);
+    short *data = malloc(sizeof(short) * WAV_CHUNK_SIZE);
+    int chunk_idx = 0;
     
     for (int frame = 0; frame < num_samples; frame++) {
-        if (frame % 100000 == 0) {
-            float pct = 100.0f * ((float) frame / (float) num_samples);
-            printf("\rframe %d of %d (%f%%)", frame, num_samples, pct);
-            fflush(stdout);
-        }
-
         if (player->quantize_counter++ >= frames_per_quantum) {
             fm_player_schedule(player, time_per_frame);
             player->quantize_counter = 0;
@@ -71,11 +68,21 @@ int fm_export_wav(char *filename, fm_player *player,
                                                time_per_frame);
         }
         
-        data[frame] = (short) (sample * 32767 * player->volume);
+        data[chunk_idx++] = (short) (sample * 32767 * player->volume);
         player->playhead += time_per_frame;
+
+        if (chunk_idx == WAV_CHUNK_SIZE) {
+            float pct = 100.0f * ((float) frame / (float) num_samples);
+            printf("\rframe %d/%d (%.0f%%)", frame, num_samples, pct);
+            fflush(stdout);
+            
+            fwrite(data, sizeof(short), WAV_CHUNK_SIZE, f);
+            chunk_idx = 0;
+        }
     }
-    
-    fwrite(data, sizeof(short), num_samples, f);
+
+    // write any remaining unwritten data
+    fwrite(data, sizeof(short), chunk_idx, f);
 
     fclose(f);
 
