@@ -8,8 +8,7 @@ SDL_Rect get_safe_area(fm_gui_panel*);
 
 typedef struct fm_spectrum_data {
     int synth_index;
-    kiss_fft_cpx *freq;
-    float *bins;
+    float bins[SPECTRO_W];
 } fm_spectrum_data;
 
 fm_window fm_create_window(fm_player *player) {
@@ -107,10 +106,6 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
     fm_instrument *instr = &win->player->instrs[data->synth_index];
 
-    kiss_fftr_cfg fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
-    kiss_fftr(fft_cfg, instr->hold_buf, data->freq);
-    kiss_fftr_free(fft_cfg);
-
     for (int i = 0; i < SPECTRO_W; i++) {
         data->bins[i] *= 0.5f;
     }
@@ -120,7 +115,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
     static float freqs[FREQ_DOMAIN];
     for (int i = 0; i < FREQ_DOMAIN; i++) {
-        freqs[i] = hypot(data->freq[i].r, data->freq[i].i);
+        freqs[i] = hypot(instr->spectrum[i].r, instr->spectrum[i].i);
     }
 
     int f = 1, fn = 0;
@@ -163,8 +158,6 @@ void setup_panels(fm_window *win) {
 
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
-        data->freq = malloc(sizeof(kiss_fft_cpx) * FREQ_DOMAIN);
-        data->bins = malloc(sizeof(float) * SPECTRO_W);
         
         win->panels[i].data = data;
     }

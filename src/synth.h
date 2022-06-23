@@ -6,6 +6,7 @@
 #include <math.h>
 #include <soundio/soundio.h>
 #include <pthread.h>
+#include <kissfft/kiss_fftr.h>
 
 #include "operator.h"
 #include "note.h"
@@ -45,6 +46,9 @@ typedef struct fm_instrument {
 
     // the current playhead into the hold buffer.
     int hold_index;
+
+    // the spectral analysis of the current hold_buf.
+    kiss_fft_cpx spectrum[FREQ_DOMAIN];
 } fm_instrument;
 
 typedef struct fm_synth {
@@ -79,6 +83,7 @@ float fm_instr_get_next_output(fm_instrument *instr,
 void fm_instr_fill_hold_buffer(fm_instrument *instr,
                                double start_time,
                                double seconds_per_frame);
+void fm_instr_swap_buffers(fm_instrument *instr);
 
 void fm_synth_start(fm_synth *s);
 void fm_synth_stop(fm_synth *s);

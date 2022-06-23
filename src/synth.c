@@ -39,13 +39,25 @@ void fm_instr_fill_hold_buffer(fm_instrument *instr,
                                   seconds_per_frame);
     }
 
+    fm_instr_swap_buffers(instr);
+    
+    instr->hold_index = 0;
+}
+
+void fm_instr_swap_buffers(fm_instrument *instr) {
     // swap the hold buffer and the back-buffer.
     // the hold buffer now contains the new samples.
     float *temp = instr->hold_buf;
     instr->hold_buf = instr->hold_buf_back;
     instr->hold_buf_back = temp;
 
-    instr->hold_index = 0;
+    // also, computes the spectrum of the hold buffer, for
+    // further processing.
+    kiss_fftr_cfg cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
+    kiss_fftr(cfg, instr->hold_buf, instr->spectrum);
+    kiss_fftr_free(cfg);
+
+    // TODO: can this be allocated just once?
 }
 
 
