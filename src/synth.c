@@ -78,8 +78,8 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
                                              time - s->note.start,
                                              s->note.duration);
             float vel = env * s->note.velocity;
-            float f = op->fixed ? op->transpose : s->note.freq * op->transpose;
-            float t = f * time + s->phases[i];
+            double f = op->fixed ? op->transpose : s->note.freq * op->transpose;
+            double t = f * time + (double) s->phases[i];
             float wave;
 
             switch (op->wave_type) {
