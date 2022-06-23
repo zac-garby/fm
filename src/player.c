@@ -136,3 +136,42 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
         }
     }
 }
+
+void fm_player_pause(fm_player *p) {
+    p->playing = false;
+    soundio_outstream_pause(p->outstream, true);
+}
+
+void fm_player_close(fm_player *p) {
+    struct SoundIoDevice *device = p->outstream->device;
+    struct SoundIo *soundio = device->soundio;
+    soundio_outstream_destroy(p->outstream);
+    soundio_device_unref(device);
+    soundio_destroy(soundio);
+}
+
+void fm_player_reset(fm_player *p) {
+    fm_player_pause(p);
+    p->playhead = 0;
+    p->quantize_counter = p->outstream->sample_rate;
+
+    for (int i = 0; i < p->num_instrs; i++) {
+        fm_instrument *instr = &p->instrs[i];
+        p->next_notes[i] = 0;
+
+        for (int v = 0; v < MAX_POLYPHONY; v++) {
+            fm_synth *voice = &instr->voices[v];
+            voice->hold_index = HOLD_BUFFER_SIZE;
+            
+            voice->note.start = 0;
+            voice->note.duration = 0;
+            voice->note.velocity = 0;
+            voice->note.freq = 0;
+
+            for (int j = 0; j < N_CHANNELS; j++) {
+                voice->channels[j] = 0;
+                voice->channels_back[j] = 0;
+            }
+        }
+    }
+}

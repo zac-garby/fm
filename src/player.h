@@ -52,5 +52,8 @@ fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device);
 
 void fm_player_loop(void *player_ptr);
 void fm_player_schedule(fm_player *p, double time_per_quantum);
+void fm_player_pause(fm_player *p);
+void fm_player_close(fm_player *p);
+void fm_player_reset(fm_player *p);
 
 #endif
