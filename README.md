@@ -1,10 +1,16 @@
 # fm
 
-This is a barely functional [FM synthesizer](https://en.wikipedia.org/wiki/Frequency_modulation_synthesis).
+This is an [FM synthesizer](https://en.wikipedia.org/wiki/Frequency_modulation_synthesis).
 
 ![](assets/screenshot.png)
 
-The goal is to have a synth which can immitate lots of different instruments, and a sequencer to play it. MIDI input should be pretty straightforward too, since I'm using libsoundio.
+The goal is to have a synth which can immitate lots of different instruments, and a sequencer to play it. Current features include:
+
+ - FM instruments with arbitrary custom algorithms.
+ - Envelopes, notes, songs, sequencing.
+ - Songs can be loaded from files.
+ - A nice GUI.
+ - `.wav` file export.
 
 ## Installation
 
@@ -13,7 +19,6 @@ First, you'll need to install a few libraries:
  - [libsoundio](http://libsound.io)
  - [kissfft](https://github.com/mborgerding/kissfft)
  - [SDL](https://www.libsdl.org)
- - [SDL TTF](https://www.libsdl.org/projects/SDL_ttf/)
  
 libsoundio and SDL are easy enough to install through package managers usually, but kissfft doesn't have very good instructions so this is what I'd suggest:
 
