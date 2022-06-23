@@ -5,3 +5,5 @@
 .DS_Store
 
 bin
+out.wav
+*.wav
