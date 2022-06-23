@@ -47,8 +47,10 @@ typedef struct fm_instrument {
     // the current playhead into the hold buffer.
     int hold_index;
 
-    // the spectral analysis of the current hold_buf.
+    // the spectral analysis of the current hold_buf, and
+    // associated data.
     kiss_fft_cpx spectrum[FREQ_DOMAIN];
+    kiss_fft_cfg fft_cfg;
 } fm_instrument;
 
 typedef struct fm_synth {

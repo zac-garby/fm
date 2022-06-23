@@ -14,6 +14,8 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
 
     instr->hold_buf = calloc(HOLD_BUFFER_SIZE, sizeof(float));
     instr->hold_buf_back = calloc(HOLD_BUFFER_SIZE, sizeof(float));
+
+    instr->fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr,
@@ -53,11 +55,7 @@ void fm_instr_swap_buffers(fm_instrument *instr) {
 
     // also, computes the spectrum of the hold buffer, for
     // further processing.
-    kiss_fftr_cfg cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE, 0, NULL, NULL);
-    kiss_fftr(cfg, instr->hold_buf, instr->spectrum);
-    kiss_fftr_free(cfg);
-
-    // TODO: can this be allocated just once?
+    kiss_fftr(instr->fft_cfg, instr->hold_buf, instr->spectrum);
 }
 
 
