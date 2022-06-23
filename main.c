@@ -24,6 +24,7 @@ void make_flute(fm_instrument*);
 void make_lute(fm_instrument*);
 void make_organ(fm_instrument*);
 void make_percussion(fm_instrument*);
+void make_sine(fm_instrument*);
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -33,9 +34,9 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(2, device);
+    player = fm_new_player(3, device);
 
-    if (!fm_parse_song("assets/crab.txt", &player->song)) {
+    if (!fm_parse_song("assets/toccata.txt", &player->song)) {
         return 0;
     }
 
@@ -44,7 +45,7 @@ int main() {
     
     make_organ(&player->instrs[0]);
     make_organ(&player->instrs[1]);
-    // make_organ(&player->instrs[2]);
+    make_organ(&player->instrs[2]);
     // make_organ(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
@@ -104,7 +105,7 @@ void make_flute(fm_instrument *instr) {
 
     fm_operator carr = fm_new_op(2, 1, false, 1.0f);
     carr.wave_type = FN_SIN;
-    carr.envelope = fm_make_envelope(0.1, 0.45, 0.8, 0.35f);
+    carr.envelope = fm_make_envelope(0.2, 0.45, 0.8, 0.35f);
     carr.recv[0] = 1;
     carr.recv_level[0] = 4.0f;
     carr.recv_type[0] = FM_RECV_MODULATE;
@@ -117,23 +118,24 @@ void make_flute(fm_instrument *instr) {
     fm_operator mod1 = fm_new_op(0, 1, false, 2.0f);
     mod1.envelope = fm_make_envelope(0.1, 0.45, 0.75, 0.35f);
     mod1.send[0] = 1;
-    mod1.send_level[0] = 0.43f;
+    mod1.send_level[0] = 0.33f;
     instr->ops[1] = mod1;
 
     fm_operator mod2 = fm_new_op(0, 1, false, 1.0f);
-    mod2.envelope = fm_make_envelope(0.03, 0.45, 0.75, 0.35f);
+    mod2.envelope = fm_make_envelope(0.06, 0.45, 0.75, 0.35f);
     mod2.send[0] = 1;
-    mod2.send_level[0] = 0.37f;
+    mod2.send_level[0] = 0.67f;
     instr->ops[2] = mod2;
 
     fm_operator fb = fm_new_op(2, 1, false, 1.1f);
     fb.envelope = fm_make_envelope(0.04, 0.5, 0.1, 0.15f);
     fb.recv[0] = 2;
-    fb.recv_level[0] = 1.0f;
+    fb.recv_level[0] = 3.0f;
+    fb.recv_type[0] = FM_RECV_MODULATE;
     fb.send[0] = 2;
     fb.send_level[0] = 0.5f;
     fb.send[1] = 1;
-    fb.send_level[0] = 0.15f;
+    fb.send_level[0] = 0.25f;
     instr->ops[3] = fb;
 
     fm_operator vib = fm_new_op(0, 1, true, 4.0f);
@@ -161,6 +163,8 @@ void make_lute(fm_instrument *instr) {
     instr->ops[1] = op2;
 }
 
+
+
 void make_organ(fm_instrument *instr) {
     fm_new_instr(instr, 8);
 
@@ -177,7 +181,7 @@ void make_organ(fm_instrument *instr) {
         fm_operator feedback = fm_new_op(1, 1, false, pow(2.0f, (float) i));
         feedback.envelope = fm_make_envelope(0.05, 0.2, 1, 0.35);
         feedback.recv[0] = i + 1;
-        feedback.recv_level[0] = 0.65;
+        feedback.recv_level[0] = 0.45 + (float) i / 15;
         feedback.send[0] = i + 1;
         feedback.send_level[0] = 1;
         instr->ops[i + 4] = feedback;
@@ -192,6 +196,16 @@ void make_percussion(fm_instrument *instr) {
     op.envelope = fm_make_envelope(0.05, 0.3, 0.2, 0.5);
     op.send[0] = 0;
     op.send_level[0] = 0.5;
+    instr->ops[0] = op;
+}
+
+void make_sine(fm_instrument *instr) {
+    fm_new_instr(instr, 1);
+
+    fm_operator op = fm_new_op(0, 1, false, 1.0f);
+    op.envelope = fm_make_envelope(0.1, 0.2, 0.7, 0.5);
+    op.send[0] = 0;
+    op.send_level[0] = 1.0;
     instr->ops[0] = op;
 }
 
