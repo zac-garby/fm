@@ -57,7 +57,10 @@ int main() {
     fm_window win = fm_create_window(player);
 
     pthread_t player_thread;
-    pthread_create(&player_thread, 0, fm_player_loop, player);
+    pthread_create(&player_thread,
+                   0,
+                   (void * _Nullable (* _Nonnull)(void * _Nullable)) fm_player_loop,
+                   player);
     fm_window_loop(&win);
     fm_player_pause(player);
     pthread_join(player_thread, NULL);
