@@ -1,11 +1,5 @@
 #include "synth.h"
 
-float sine_wave(float);
-float square_wave(float);
-float triangle_wave(float);
-float noise_wave(float);
-float sawtooth_wave(float);
-
 void fm_new_instr(fm_instrument *instr, int n_ops) {
     instr->n_ops = n_ops;
     instr->ops = malloc(sizeof(fm_operator) * n_ops);
@@ -77,25 +71,6 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
 
         while (s->phases[i] > 2 * PI) s->phases[i] -= 2 * PI;
 
-		float (*wave)(float);
-		switch (op->wave_type) {
-		case FN_SIN:
-			wave = sine_wave;
-			break;
-		case FN_SQUARE:
-			wave = square_wave;
-			break;
-		case FN_TRIANGLE:
-			wave = triangle_wave;
-			break;
-		case FN_NOISE:
-			wave = noise_wave;
-			break;
-        case FN_SAWTOOTH:
-            wave = sawtooth_wave;
-            break;
-		}
-
         float sample = 0;
 
         if (s->note.freq > 0) {
@@ -105,8 +80,27 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
             float vel = env * s->note.velocity;
             float f = op->fixed ? op->transpose : s->note.freq * op->transpose;
             float t = f * time + s->phases[i];
+            float wave;
 
-            sample += wave(t) * vel;
+            switch (op->wave_type) {
+            case FN_SIN:
+                wave = -cos(2.0f * PI * t);
+                break;
+            case FN_SQUARE:
+                wave = 2 * ((int)(2 * t) % 2) - 1;
+                break;
+            case FN_TRIANGLE:
+                wave = 1 - 2 * fabs(2 * (t - floor(t)) - 1);
+                break;
+            case FN_NOISE:
+                wave = 2 * (rand() % 2) - 1;
+                break;
+            case FN_SAWTOOTH:
+                wave = t - floor(t);
+                break;
+            }
+
+            sample += wave * vel;
         }
 
         for (int n = 0; n < op->send_n; n++) {
@@ -141,24 +135,4 @@ float fm_synth_get_next_output(fm_synth *s, double start_time, double seconds_pe
     s->hold_index++;
 
     return out;
-}
-
-float sine_wave(float t) {
-	return -cos(2.0f * PI * t);
-}
-
-float square_wave(float t) {
-	return 2 * ((int)(2 * t) % 2) - 1;
-}
-
-float triangle_wave(float t) {
-	return 1 - 2 * fabs(2 * (t - floor(t)) - 1);
-}
-
-float noise_wave(float t) {
-	return 2 * (rand() % 2) - 1;
-}
-
-float sawtooth_wave(float t) {
-    return t - floor(t);
 }
