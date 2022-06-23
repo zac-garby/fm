@@ -32,7 +32,6 @@ int fm_parse_song(char *filename, fm_song *song) {
                 return 0;
             }
 
-            printf("bpm: %d\n", song->bpm);
             bpm_done = 1;
         } else if (strncmp(line, "num_parts", 9) == 0) {
             if (!parse_int(line + 9, &song->num_parts)) {
@@ -41,7 +40,6 @@ int fm_parse_song(char *filename, fm_song *song) {
             }
             
             song->parts = malloc(sizeof(fm_song_part) * song->num_parts);
-            printf("%d parts\n", song->num_parts);
             num_parts_done = 1;
         } else if (strncmp(line, "part", 4) == 0) {
             if (!bpm_done || !num_parts_done) {
@@ -74,7 +72,6 @@ int fm_parse_song(char *filename, fm_song *song) {
                 }
 
                 part->notes = malloc(sizeof(fm_note) * part->num_notes);
-                printf("part %d: %d notes\n", part_index, part->num_notes);
                 num_notes_done = 1;
                 note_index = 0;
             } else {
