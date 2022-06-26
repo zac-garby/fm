@@ -51,6 +51,8 @@ typedef struct fm_instrument {
     // associated data.
     kiss_fft_cpx spectrum[FREQ_DOMAIN];
     kiss_fft_cfg fft_cfg;
+
+    float f_state;
 } fm_instrument;
 
 typedef struct fm_synth {
