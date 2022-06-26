@@ -50,7 +50,7 @@ typedef struct fm_instrument {
     // the spectral analysis of the current hold_buf, and
     // associated data.
     kiss_fft_cpx spectrum[FREQ_DOMAIN];
-    kiss_fft_cfg fft_cfg, ffti_cfg;
+    kiss_fft_cfg fft_cfg;
 } fm_instrument;
 
 typedef struct fm_synth {

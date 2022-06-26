@@ -19,8 +19,6 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
 
     instr->fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE,
                                      0, NULL, NULL);
-    instr->ffti_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE,
-                                      1, NULL, NULL);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr,
@@ -58,18 +56,8 @@ void fm_instr_swap_buffers(fm_instrument *instr) {
     instr->hold_buf = instr->hold_buf_back;
     instr->hold_buf_back = temp;
 
-    // also, computes the spectrum of the hold buffer, for
-    // further processing.
+    // also, computes the spectrum of the hold buffer.
     kiss_fftr(instr->fft_cfg, instr->hold_buf, instr->spectrum);
-
-    // undo the FFT to get the hold buffer back. this allows for
-    // frequency effects to be applied in-between.
-    kiss_fftri(instr->ffti_cfg, instr->spectrum, instr->hold_buf);
-
-    // apply some scaling to correct for the inverse FFT.
-    for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
-        instr->hold_buf[i] /= (float) HOLD_BUFFER_SIZE;
-    }
 }
 
 

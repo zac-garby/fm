@@ -34,18 +34,18 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(3, device);
+    player = fm_new_player(1, device);
 
-    if (!fm_parse_song("assets/toccata.txt", &player->song)) {
+    if (!fm_parse_song("assets/test.txt", &player->song)) {
         return 0;
     }
 
-    player->volume = 0.15;
+    player->volume = 0.075;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_organ(&player->instrs[0]);
-    make_organ(&player->instrs[1]);
-    make_organ(&player->instrs[2]);
+    make_percussion(&player->instrs[0]);
+    // make_flute(&player->instrs[1]);
+    // make_flute(&player->instrs[2]);
     // make_organ(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
@@ -196,9 +196,9 @@ void make_percussion(fm_instrument *instr) {
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
     op.wave_type = FN_NOISE;
-    op.envelope = fm_make_envelope(0.05, 0.3, 0.2, 0.5);
+    op.envelope = fm_make_envelope(0.00, 0.0, 1.0, 0.0);
     op.send[0] = 0;
-    op.send_level[0] = 0.5;
+    op.send_level[0] = 1.5;
     instr->ops[0] = op;
 }
 
