@@ -21,38 +21,33 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
                                      0, NULL, NULL);
 
     instr->bq = fm_new_biquad();
-    fm_biquad_lowpass(&instr->bq, 440, 0.7071, 0.00002083);
+    fm_biquad_lowpass(&instr->bq, 440, 0.7071, fm_config.fps);
+    fm_biquad_gain(&instr->bq, 1.0);
 }
 
-float fm_instr_get_next_output(fm_instrument *instr,
-                              double start_time,
-                              double seconds_per_frame) {
+float fm_instr_get_next_output(fm_instrument *instr, double start_time) {
     if (instr->hold_index >= HOLD_BUFFER_SIZE) {
-        fm_instr_fill_hold_buffer(instr, start_time, seconds_per_frame);
+        fm_instr_fill_hold_buffer(instr, start_time);
     }
     
     return instr->hold_buf[instr->hold_index++];
 }
 
-void fm_instr_fill_hold_buffer(fm_instrument *instr,
-                               double start_time,
-                               double seconds_per_frame) {
+void fm_instr_fill_hold_buffer(fm_instrument *instr, double start_time) {
     for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
         instr->hold_buf_back[i] = 0;
     }
 
     for (int i = 0; i < MAX_POLYPHONY; i++) {
-        fm_synth_fill_hold_buffer(&instr->voices[i],
-                                  start_time,
-                                  seconds_per_frame);
+        fm_synth_fill_hold_buffer(&instr->voices[i], start_time);
     }
 
-    double f = 1500 + 1000 * sin(start_time * 5);
-    fm_biquad_lowpass(&instr->bq, f, 1.0 / SQRT2, 0.00002083);
+    // double f = 1500 + 1000 * sin(start_time * 5);
+    // fm_biquad_lowpass(&instr->bq, f, 1.0 / SQRT2, 0.00002083);
 
     // apply filters to the whole buffer at once
     for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
-        X(i) = fm_biquad_run(&instr->bq, X(i));
+        // X(i) = fm_biquad_run(&instr->bq, X(i));
     }
 
     fm_instr_swap_buffers(instr);
@@ -105,12 +100,12 @@ void fm_synth_swap_buffers(fm_synth *s) {
     }
 }
 
-void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
+void fm_synth_frame(fm_synth *s, double time) {
     for (int i = 0; i < s->instr->n_ops; i++) {
         fm_operator *op = &s->instr->ops[i];
         
         for (int n = 0; n < op->recv_n; n++) {
-            float mod = s->channels[op->recv[n]] * op->recv_level[n] * seconds_per_frame;
+            float mod = s->channels[op->recv[n]] * op->recv_level[n] * fm_config.fps;
             if (op->recv_type[n] == FM_RECV_MODULATE) mod *= s->note.freq;
             s->phases[i] += mod;
         }
@@ -157,11 +152,11 @@ void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame) {
     fm_synth_swap_buffers(s);
 }
 
-void fm_synth_fill_hold_buffer(fm_synth *s, double start_time, double seconds_per_frame) {
+void fm_synth_fill_hold_buffer(fm_synth *s, double start_time) {
     for (int frame = 0; frame < HOLD_BUFFER_SIZE; frame++) {
-        double time = start_time + seconds_per_frame * frame;
+        double time = start_time + fm_config.fps * frame;
 
-        fm_synth_frame(s, time, seconds_per_frame);
+        fm_synth_frame(s, time);
 
         s->instr->hold_buf_back[frame] += s->channels[0];
     }

@@ -34,18 +34,18 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(1, device);
+    player = fm_new_player(2, device);
 
-    if (!fm_parse_song("assets/test.txt", &player->song)) {
+    if (!fm_parse_song("assets/froides.txt", &player->song)) {
         return 0;
     }
 
     player->volume = 0.075;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_percussion(&player->instrs[0]);
-    // make_percussion(&player->instrs[1]);
-    // make_lute(&player->instrs[2]);
+    make_flute(&player->instrs[0]);
+    make_flute(&player->instrs[1]);
+    // make_organ(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
@@ -66,7 +66,7 @@ int main() {
     pthread_join(player_thread, NULL);
 
     double duration = fm_song_duration(&player->song);
-    fm_export_wav("out.wav", player, 44100, 16, 10); //duration + 5);
+    fm_export_wav("out.wav", player, 48000, 16, 10); //duration + 5);
     
     return 0;
 }

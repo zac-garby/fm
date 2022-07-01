@@ -64,8 +64,7 @@ int fm_export_wav(char *filename, fm_player *player,
 
         for (int i = 0; i < player->num_instrs; i++) {
             sample += fm_instr_get_next_output(&player->instrs[i],
-                                               frame * time_per_frame,
-                                               time_per_frame);
+                                               frame * time_per_frame);
         }
         
         data[chunk_idx++] = (short) (sample * 32767 * player->volume);

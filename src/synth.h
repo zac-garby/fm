@@ -84,20 +84,14 @@ typedef struct fm_synth {
 void fm_new_instr(fm_instrument *instr, int n_ops);
 fm_synth fm_new_synth(fm_instrument *instr);
 
-float fm_instr_get_next_output(fm_instrument *instr,
-                               double start_time,
-                               double seconds_per_frame);
-void fm_instr_fill_hold_buffer(fm_instrument *instr,
-                               double start_time,
-                               double seconds_per_frame);
+float fm_instr_get_next_output(fm_instrument *instr, double start_time);
+void fm_instr_fill_hold_buffer(fm_instrument *instr, double start_time);
 void fm_instr_swap_buffers(fm_instrument *instr);
 
 void fm_synth_start(fm_synth *s);
 void fm_synth_stop(fm_synth *s);
 void fm_synth_swap_buffers(fm_synth *s);
-void fm_synth_frame(fm_synth *s, double time, double seconds_per_frame);
-void fm_synth_fill_hold_buffer(fm_synth *s,
-                               double start_time,
-                               double seconds_per_frame);
+void fm_synth_frame(fm_synth *s, double time);
+void fm_synth_fill_hold_buffer(fm_synth *s, double start_time);
 
 #endif

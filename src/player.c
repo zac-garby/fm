@@ -32,8 +32,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
 
 			for (int i = 0; i < p->num_instrs; i++) {
 			    sample += fm_instr_get_next_output(&p->instrs[i],
-												   p->playhead + frame * time_per_frame,
-												   time_per_frame);
+                                               p->playhead + frame * time_per_frame);
 			}
 
 			sample *= p->volume;
@@ -57,6 +56,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
 
 fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device) {
     fm_player *p = malloc(sizeof(fm_player));
+    int err;
 
     p->instrs = malloc(sizeof(fm_instrument) * num_instrs);
     p->num_instrs = num_instrs;
@@ -71,6 +71,16 @@ fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device) {
         exit(1);
     }
 
+    if ((err = soundio_outstream_open(p->outstream))) {
+        fprintf(stderr, "unable to open device: %s\n", soundio_strerror(err));
+        exit(1);
+    }
+
+    printf("sample rate: %dHz\n", p->outstream->sample_rate);
+
+    fm_config.sample_rate = p->outstream->sample_rate;
+    fm_config.fps = 1.0 / (double) fm_config.sample_rate;
+
     p->outstream->format = SoundIoFormatFloat32NE;
     p->outstream->userdata = p;
     p->outstream->write_callback = fm_player_outstream_callback;
@@ -83,19 +93,12 @@ void fm_player_loop(void *player_ptr) {
     fm_player *p = (fm_player*) player_ptr;
     int err;
     p->playing = true;
-    
-    if ((err = soundio_outstream_open(p->outstream))) {
-        fprintf(stderr, "unable to open device: %s\n", soundio_strerror(err));
-        exit(1);
-    }
 
     if ((err = soundio_outstream_start(p->outstream))) {
         fprintf(stderr, "unable to start device: %s\n", soundio_strerror(err));
         exit(1);
     }
-
-    printf("sample rate: %dHz\n", p->outstream->sample_rate);
-
+    
     while (p->playing) {
         soundio_flush_events(p->outstream->device->soundio);
     }
