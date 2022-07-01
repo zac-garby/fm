@@ -94,6 +94,8 @@ void fm_player_loop(void *player_ptr) {
         exit(1);
     }
 
+    printf("sample rate: %dHz\n", p->outstream->sample_rate);
+
     while (p->playing) {
         soundio_flush_events(p->outstream->device->soundio);
     }

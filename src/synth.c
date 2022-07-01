@@ -20,7 +20,8 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
     instr->fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE,
                                      0, NULL, NULL);
 
-    instr->f_state = 0;
+    instr->bq = fm_new_biquad();
+    fm_biquad_passthrough(&instr->bq);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr,
@@ -46,11 +47,9 @@ void fm_instr_fill_hold_buffer(fm_instrument *instr,
                                   seconds_per_frame);
     }
 
-    // apply filters
+    // apply filters to the whole buffer at once
     for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
-        float xi = instr->hold_buf_back[i];
-        instr->hold_buf_back[i] = (xi + instr->f_state) / 2;
-        instr->f_state = xi;
+        X(i) = fm_biquad_run(&instr->bq, X(i));
     }
 
     fm_instr_swap_buffers(instr);

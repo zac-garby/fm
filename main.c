@@ -34,19 +34,19 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(1, device);
+    player = fm_new_player(2, device);
 
-    if (!fm_parse_song("assets/test.txt", &player->song)) {
+    if (!fm_parse_song("assets/froides.txt", &player->song)) {
         return 0;
     }
 
     player->volume = 0.075;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_percussion(&player->instrs[0]);
-    // make_flute(&player->instrs[1]);
-    // make_flute(&player->instrs[2]);
-    // make_organ(&player->instrs[3]);
+    make_flute(&player->instrs[0]);
+    make_flute(&player->instrs[1]);
+    // make_lute(&player->instrs[2]);
+    // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
     // make_lute(&player->instrs[6]);
@@ -108,7 +108,7 @@ void make_flute(fm_instrument *instr) {
 
     fm_operator carr = fm_new_op(2, 1, false, 1.0f);
     carr.wave_type = FN_SIN;
-    carr.envelope = fm_make_envelope(0.2, 0.45, 0.8, 0.35f);
+    carr.envelope = fm_make_envelope(0.05, 0.45, 0.8, 0.35f);
     carr.recv[0] = 1;
     carr.recv_level[0] = 4.0f;
     carr.recv_type[0] = FM_RECV_MODULATE;
@@ -119,15 +119,15 @@ void make_flute(fm_instrument *instr) {
     instr->ops[0] = carr;
 
     fm_operator mod1 = fm_new_op(0, 1, false, 2.0f);
-    mod1.envelope = fm_make_envelope(0.1, 0.45, 0.75, 0.35f);
+    mod1.envelope = fm_make_envelope(0.05, 0.45, 0.75, 0.35f);
     mod1.send[0] = 1;
-    mod1.send_level[0] = 0.33f;
+    mod1.send_level[0] = 0.53f;
     instr->ops[1] = mod1;
 
     fm_operator mod2 = fm_new_op(0, 1, false, 1.0f);
     mod2.envelope = fm_make_envelope(0.06, 0.45, 0.75, 0.35f);
     mod2.send[0] = 1;
-    mod2.send_level[0] = 0.67f;
+    mod2.send_level[0] = 0.37f;
     instr->ops[2] = mod2;
 
     fm_operator fb = fm_new_op(2, 1, false, 1.1f);
@@ -138,7 +138,7 @@ void make_flute(fm_instrument *instr) {
     fb.send[0] = 2;
     fb.send_level[0] = 0.5f;
     fb.send[1] = 1;
-    fb.send_level[0] = 0.25f;
+    fb.send_level[0] = 0.35f;
     instr->ops[3] = fb;
 
     fm_operator vib = fm_new_op(0, 1, true, 4.0f);
@@ -155,7 +155,7 @@ void make_lute(fm_instrument *instr) {
     op.wave_type = FN_TRIANGLE;
     op.envelope = fm_make_envelope(0.01f, 0.6, 0.3, 0.55f);
     op.send[0] = 0;
-    op.send_level[0] = 0.70f;
+    op.send_level[0] = 0.50f;
     instr->ops[0] = op;
 
     fm_operator op2 = fm_new_op(0, 1, false, 2.0f);
