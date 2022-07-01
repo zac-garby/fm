@@ -11,8 +11,7 @@
 #include "operator.h"
 #include "note.h"
 #include "filter.h"
-
-static const float PI = 3.1415926535f;
+#include "common.h"
 
 #define N_CHANNELS 8
 #define HOLD_BUFFER_SIZE 1024

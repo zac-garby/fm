@@ -21,7 +21,7 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
                                      0, NULL, NULL);
 
     instr->bq = fm_new_biquad();
-    fm_biquad_passthrough(&instr->bq);
+    fm_biquad_lowpass(&instr->bq, 440, 0.7071, 0.00002083);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr,
@@ -46,6 +46,9 @@ void fm_instr_fill_hold_buffer(fm_instrument *instr,
                                   start_time,
                                   seconds_per_frame);
     }
+
+    double f = 1500 + 1000 * sin(start_time * 5);
+    fm_biquad_lowpass(&instr->bq, f, 1.0 / SQRT2, 0.00002083);
 
     // apply filters to the whole buffer at once
     for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {

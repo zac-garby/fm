@@ -1,6 +1,11 @@
 #ifndef H_FM_FILTER
 #define H_FM_FILTER
 
+#include <math.h>
+#include <stdio.h>
+
+#include "common.h"
+
 // a biquad filter, able to take the form of many LTI filters including
 // the filters required for EQ (low-pass, high-pass, and peak).
 typedef struct fm_biquad {
@@ -22,9 +27,15 @@ typedef struct fm_biquad {
 // afterwards, since they are not initialised during this function.
 fm_biquad fm_new_biquad();
 
-// sets a biquad filter to act as a passthrough, i.e. does nothing to the
-// input.
-void fm_biquad_passthrough(fm_biquad *bq);
+// sets a biquad filter to act as a simple constant gain filter. each frequency
+// is scaled by the same amount.
+void fm_biquad_gain(fm_biquad *bq, double gain);
+
+// sets a biquad filter to act as a low/high-pass filter about the given
+// frequency, and with the given peak gain, Q.
+// this relies on the "dt" = 1/sample_rate.
+void fm_biquad_lowpass(fm_biquad *bq, double hz, double Q, double dt);
+void fm_biquad_highpass(fm_biquad *bq, double hz, double Q, double dt);
 
 // pushes the given sample to the beginning of the input history
 // array and then runs the filter, returning the processed sample.
