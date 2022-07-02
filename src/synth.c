@@ -63,6 +63,10 @@ void fm_instr_swap_buffers(fm_instrument *instr) {
     instr->hold_buf_back = temp;
 
     // also, computes the spectrum of the hold buffer.
+    // TODO: maybe I should move this back into window.c?
+    // it doesn't seem to slow things down here almost at all,
+    // but now i'm not planning on using it for any synthesis
+    // it doesn't need to be here.
     kiss_fftr(instr->fft_cfg, instr->hold_buf, instr->spectrum);
 }
 

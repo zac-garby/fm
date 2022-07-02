@@ -66,7 +66,7 @@ int main() {
     pthread_join(player_thread, NULL);
 
     double duration = fm_song_duration(&player->song);
-    fm_export_wav("out.wav", player, 48000, 16, 10); //duration + 5);
+    fm_export_wav("out.wav", player, 48000, 16, duration + 5);
     
     return 0;
 }
