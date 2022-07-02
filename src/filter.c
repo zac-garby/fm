@@ -1,5 +1,74 @@
 #include "filter.h"
 
+fm_eq fm_new_eq(int num_peaks) {
+    fm_eq eq;
+
+    eq.lowpass_hz = -1;
+    eq.highpass_hz = -1;
+
+    eq.num_peaks = num_peaks;
+    eq.peaks_hz = malloc(sizeof(double) * num_peaks);
+    eq.peaks_Q = malloc(sizeof(double) * num_peaks);
+    eq.peaks_A = malloc(sizeof(double) * num_peaks);
+
+    eq.biquads_cap = 0;
+    eq.num_biquads = 0;
+    eq.biquads = NULL;
+
+    return eq;
+}
+
+void fm_eq_bake(fm_eq *eq) {
+    int has_lp = eq->lowpass_hz >= 0;
+    int has_hp = eq->highpass_hz >= 0;
+    
+    eq->num_biquads = eq->num_peaks + has_lp + has_hp;
+
+    if (eq->num_biquads > eq->biquads_cap) {
+        eq->biquads_cap = eq->num_biquads;
+        eq->biquads = realloc(eq->biquads, sizeof(fm_biquad) * eq->biquads_cap);
+    }
+
+    int i = 0;
+
+    if (has_lp) {
+        fm_biquad_lowpass(&eq->biquads[i++], eq->lowpass_hz, eq->lowpass_Q);
+    }
+
+    if (has_hp) {
+        fm_biquad_highpass(&eq->biquads[i++], eq->highpass_hz, eq->highpass_Q);
+    }
+
+    for (int j = 0; j < eq->num_peaks; j++) {
+        fm_biquad_peak(&eq->biquads[i++],
+                       eq->peaks_hz[j], eq->peaks_Q[j], eq->peaks_A[j]);
+    }
+}
+
+float fm_eq_run(fm_eq *eq, float sample) {
+    float out = sample;
+
+    for (int i = 0; i < eq->num_biquads; i++) {
+        out = fm_biquad_run(&eq->biquads[i], out);
+    }
+
+    return out;
+}
+
+void fm_eq_lowpass(fm_eq *eq, double hz, double Q) {
+    eq->lowpass_hz = hz;
+    eq->lowpass_Q = Q;
+}
+
+void fm_eq_highpass(fm_eq *eq, double hz, double Q) {
+    eq->highpass_hz = hz;
+    eq->highpass_Q = Q;
+}
+
+void fm_eq_peak(fm_eq *eq, int n, double hz, double Q, double A) {
+    
+}
+
 fm_biquad fm_new_biquad() {
     fm_biquad bq;
 
@@ -50,7 +119,7 @@ void fm_biquad_highpass(fm_biquad *bq, double hz, double Q) {
     double cos_w = cos(w);
     
     bq->b[0] = (1 + cos_w) / 2.0;
-    bq->b[1] = -(1 - cos_w);
+    bq->b[1] = -(1 + cos_w);
     bq->b[2] = (1 + cos_w) / 2.0;
 
     bq->a[0] = 1 + alpha; // ignored

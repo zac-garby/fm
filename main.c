@@ -106,6 +106,10 @@ struct SoundIoDevice* init_audio() {
 void make_flute(fm_instrument *instr) {
     fm_new_instr(instr, 5);
 
+    fm_eq_lowpass(&instr->eq, 4000, 2);
+    fm_eq_highpass(&instr->eq, 250, 2);
+    fm_eq_bake(&instr->eq);
+
     fm_operator carr = fm_new_op(2, 1, false, 1.0f);
     carr.wave_type = FN_SIN;
     carr.envelope = fm_make_envelope(0.05, 0.45, 0.8, 0.35f);
@@ -193,6 +197,10 @@ void make_organ(fm_instrument *instr) {
 
 void make_percussion(fm_instrument *instr) {
     fm_new_instr(instr, 1);
+
+    fm_eq_lowpass(&instr->eq, 4000, 2);
+    fm_eq_highpass(&instr->eq, 250, 2);
+    fm_eq_bake(&instr->eq);
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
     op.wave_type = FN_NOISE;

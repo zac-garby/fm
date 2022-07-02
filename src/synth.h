@@ -55,7 +55,8 @@ typedef struct fm_instrument {
     kiss_fft_cpx spectrum[FREQ_DOMAIN];
     kiss_fft_cfg fft_cfg;
 
-    fm_biquad bq;
+    // the equaliser for the instrument's output.
+    fm_eq eq;
 } fm_instrument;
 
 typedef struct fm_synth {

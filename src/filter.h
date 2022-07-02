@@ -1,8 +1,10 @@
 #ifndef H_FM_FILTER
 #define H_FM_FILTER
 
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "common.h"
 
@@ -22,6 +24,47 @@ typedef struct fm_biquad {
     // y[0] is only accurate after the filter has been run.
     float y[3];
 } fm_biquad;
+
+// an equaliser, consisting of multiple biquad filters.
+typedef struct fm_eq {
+    // the frequency and peak gain of the EQ's low- and high-pass filters.
+    // if the frequency is negative, the filter is ignored.
+    double lowpass_hz, lowpass_Q;
+    double highpass_hz, highpass_Q;
+
+    // the frequency, Q, and A values for each peak filter in the EQ.
+    double *peaks_hz, *peaks_Q, *peaks_A;
+
+    // the total number of peak filters.
+    int num_peaks;
+
+    // the sequence of biquad filters which form the EQ. these are
+    // generated from the EQ settings, i.e. the rest of the struct.
+    fm_biquad *biquads;
+
+    // the number of biquad filters currently allocated for the EQ.
+    int biquads_cap;
+
+    // the number of biquad filters currently in use by the EQ.
+    int num_biquads;
+} fm_eq;
+
+// constructs a new equaliser, with a given amount of peak filters. the
+// settings of the EQ should be set afterwards, and then the biquads can
+// be generated.
+fm_eq fm_new_eq(int num_peaks);
+
+// generates the required biquad filters to simulate the specified EQ
+// settings.
+void fm_eq_bake(fm_eq *eq);
+
+// passes a sample through all of the filters in an EQ.
+float fm_eq_run(fm_eq *eq, float sample);
+
+// convenience functions for setting values or adding filters to the EQ.
+void fm_eq_lowpass(fm_eq *eq, double hz, double Q);
+void fm_eq_highpass(fm_eq *eq, double hz, double Q);
+void fm_eq_add_peak(fm_eq *eq, double hz, double Q, double A);
 
 // constructs a new empty biquad filter. the constants a and b need to be set
 // afterwards, since they are not initialised during this function.

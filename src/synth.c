@@ -20,8 +20,7 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
     instr->fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE,
                                      0, NULL, NULL);
 
-    instr->bq = fm_new_biquad();
-    fm_biquad_peak(&instr->bq, 500, 1.75, 2);
+    instr->eq = fm_new_eq(0);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr, double start_time) {
@@ -41,13 +40,9 @@ void fm_instr_fill_hold_buffer(fm_instrument *instr, double start_time) {
         fm_synth_fill_hold_buffer(&instr->voices[i], start_time);
     }
 
-    double f = 10000 + 9900 * sin(start_time * 5);
-    // fm_biquad_lowpass(&instr->bq, f, 1.0 / SQRT2);
-    fm_biquad_peak(&instr->bq, f, 1.75, 2);
-
     // apply filters to the whole buffer at once
     for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
-        X(i) = fm_biquad_run(&instr->bq, X(i));
+        X(i) = fm_eq_run(&instr->eq, X(i));
     }
 
     fm_instr_swap_buffers(instr);
