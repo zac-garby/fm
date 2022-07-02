@@ -6,7 +6,6 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
     fm_player *p = (fm_player*) outstream->userdata;
 
     const struct SoundIoChannelLayout *layout = &outstream->layout;
-    double time_per_frame = 1.0 / outstream->sample_rate;
     struct SoundIoChannelArea *areas;
     int frames_left = frame_count_max;
     int frames_per_quantum = outstream->sample_rate / TIME_QUANTIZE;
@@ -24,7 +23,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
 
         for (int frame = 0; frame < frame_count; frame++) {
             if (p->quantize_counter++ >= frames_per_quantum) {
-                fm_player_schedule(p, time_per_frame * frames_per_quantum);
+                fm_player_schedule(p, fm_config.dt * frames_per_quantum);
                 p->quantize_counter = 0;
             }
 
@@ -32,7 +31,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
 
 			for (int i = 0; i < p->num_instrs; i++) {
 			    sample += fm_instr_get_next_output(&p->instrs[i],
-                                               p->playhead + frame * time_per_frame);
+                                               p->playhead + frame * fm_config.dt);
 			}
 
 			sample *= p->volume;
@@ -43,7 +42,7 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
             }
         }
 
-        p->playhead += time_per_frame * frame_count;
+        p->playhead += fm_config.dt * frame_count;
 
         if ((err = soundio_outstream_end_write(outstream))) {
             fprintf(stderr, "error: %s\n", soundio_strerror(err));
@@ -79,7 +78,7 @@ fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device) {
     printf("sample rate: %dHz\n", p->outstream->sample_rate);
 
     fm_config.sample_rate = p->outstream->sample_rate;
-    fm_config.fps = 1.0 / (double) fm_config.sample_rate;
+    fm_config.dt = 1.0 / (double) fm_config.sample_rate;
 
     p->outstream->format = SoundIoFormatFloat32NE;
     p->outstream->userdata = p;

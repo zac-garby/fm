@@ -6,7 +6,7 @@
 
 struct {
     int sample_rate;
-    double fps;
+    double dt;
 } fm_config;
 
 #endif

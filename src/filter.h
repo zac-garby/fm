@@ -34,8 +34,12 @@ void fm_biquad_gain(fm_biquad *bq, double gain);
 // sets a biquad filter to act as a low/high-pass filter about the given
 // frequency, and with the given peak gain, Q.
 // this relies on the "dt" = 1/sample_rate.
-void fm_biquad_lowpass(fm_biquad *bq, double hz, double Q, double dt);
-void fm_biquad_highpass(fm_biquad *bq, double hz, double Q, double dt);
+void fm_biquad_lowpass(fm_biquad *bq, double hz, double Q);
+void fm_biquad_highpass(fm_biquad *bq, double hz, double Q);
+
+// sets a biquad filter to act as a peak filter about the given frequency,
+// with a peak gain of A and a given Q (how "peaky" the peak is).
+void fm_biquad_peak(fm_biquad *bq, double hz, double Q, double A);
 
 // pushes the given sample to the beginning of the input history
 // array and then runs the filter, returning the processed sample.
