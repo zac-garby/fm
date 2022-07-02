@@ -11,6 +11,7 @@ The goal is to have a synth which can immitate lots of different instruments, an
  - Songs can be loaded from files.
  - A nice GUI.
  - `.wav` file export.
+ - Filters
 
 ## Installation
 
