@@ -7,9 +7,6 @@ fm_eq fm_new_eq(int num_peaks) {
     eq.highpass_hz = -1;
 
     eq.num_peaks = num_peaks;
-    eq.peaks_hz = malloc(sizeof(double) * num_peaks);
-    eq.peaks_Q = malloc(sizeof(double) * num_peaks);
-    eq.peaks_A = malloc(sizeof(double) * num_peaks);
 
     eq.biquads_cap = 0;
     eq.num_biquads = 0;

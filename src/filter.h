@@ -8,6 +8,8 @@
 
 #include "common.h"
 
+#define EQ_MAX_PEAKS 8
+
 // a biquad filter, able to take the form of many LTI filters including
 // the filters required for EQ (low-pass, high-pass, and peak).
 typedef struct fm_biquad {
@@ -33,7 +35,7 @@ typedef struct fm_eq {
     double highpass_hz, highpass_Q;
 
     // the frequency, Q, and A values for each peak filter in the EQ.
-    double *peaks_hz, *peaks_Q, *peaks_A;
+    double peaks_hz[EQ_MAX_PEAKS], peaks_Q[EQ_MAX_PEAKS], peaks_A[EQ_MAX_PEAKS];
 
     // the total number of peak filters.
     int num_peaks;
