@@ -72,7 +72,7 @@ int fm_export_wav(char *filename, fm_player *player,
 
         if (chunk_idx == WAV_CHUNK_SIZE) {
             float pct = 100.0f * ((float) frame / (float) num_samples);
-            printf("\rframe %d/%d (%.0f%%)", frame, num_samples, pct);
+            printf("\r%.1lfs/%.1lfs (%.0f%%)", frame * time_per_frame, num_samples * time_per_frame, pct);
             fflush(stdout);
             
             fwrite(data, sizeof(short), WAV_CHUNK_SIZE, f);
