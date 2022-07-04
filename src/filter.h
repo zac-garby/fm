@@ -34,6 +34,9 @@ typedef struct fm_eq {
     double lowpass_hz, lowpass_Q;
     double highpass_hz, highpass_Q;
 
+    // the output volume of the EQ filter.
+    double gain;
+
     // the frequency, Q, and A values for each peak filter in the EQ.
     double peaks_hz[EQ_MAX_PEAKS], peaks_Q[EQ_MAX_PEAKS], peaks_A[EQ_MAX_PEAKS];
 

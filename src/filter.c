@@ -6,6 +6,8 @@ fm_eq fm_new_eq(int num_peaks) {
     eq.lowpass_hz = -1;
     eq.highpass_hz = -1;
 
+    eq.gain = 1.0;
+
     eq.num_peaks = num_peaks;
 
     eq.biquads_cap = 0;
@@ -49,7 +51,7 @@ float fm_eq_run(fm_eq *eq, float sample) {
         out = fm_biquad_run(&eq->biquads[i], out);
     }
 
-    return out;
+    return out * eq->gain;
 }
 
 void fm_eq_lowpass(fm_eq *eq, double hz, double Q) {
