@@ -20,7 +20,7 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
     instr->fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE,
                                      0, NULL, NULL);
 
-    instr->eq = fm_new_eq(0);
+    instr->eq = fm_new_eq();
 }
 
 float fm_instr_get_next_output(fm_instrument *instr, double start_time) {

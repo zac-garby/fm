@@ -54,10 +54,9 @@ typedef struct fm_eq {
     int num_biquads;
 } fm_eq;
 
-// constructs a new equaliser, with a given amount of peak filters. the
-// settings of the EQ should be set afterwards, and then the biquads can
-// be generated.
-fm_eq fm_new_eq(int num_peaks);
+// constructs a new equaliser. the settings of the EQ should be set
+// afterwards, and then the biquads can be generated.
+fm_eq fm_new_eq();
 
 // generates the required biquad filters to simulate the specified EQ
 // settings.

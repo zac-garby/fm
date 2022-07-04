@@ -1,6 +1,6 @@
 #include "filter.h"
 
-fm_eq fm_new_eq(int num_peaks) {
+fm_eq fm_new_eq() {
     fm_eq eq;
 
     eq.lowpass_hz = -1;
@@ -8,7 +8,7 @@ fm_eq fm_new_eq(int num_peaks) {
 
     eq.gain = 1.0;
 
-    eq.num_peaks = num_peaks;
+    eq.num_peaks = 0;
 
     eq.biquads_cap = 0;
     eq.num_biquads = 0;
@@ -64,8 +64,17 @@ void fm_eq_highpass(fm_eq *eq, double hz, double Q) {
     eq->highpass_Q = Q;
 }
 
-void fm_eq_peak(fm_eq *eq, int n, double hz, double Q, double A) {
-    
+void fm_eq_add_peak(fm_eq *eq, double hz, double Q, double A) {
+    if (eq->num_peaks >= EQ_MAX_PEAKS) {
+        printf("could not add more peaks\n");
+        return;
+    }
+
+    eq->peaks_hz[eq->num_peaks] = hz;
+    eq->peaks_Q[eq->num_peaks] = Q;
+    eq->peaks_A[eq->num_peaks] = A;
+
+    eq->num_peaks++;
 }
 
 fm_biquad fm_new_biquad() {

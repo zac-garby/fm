@@ -43,7 +43,7 @@ int main() {
     player->volume = 0.075;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_flute(&player->instrs[0]);
+    make_percussion(&player->instrs[0]);
     // make_flute(&player->instrs[1]);
     // make_organ(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
@@ -198,12 +198,9 @@ void make_organ(fm_instrument *instr) {
 void make_percussion(fm_instrument *instr) {
     fm_new_instr(instr, 1);
 
-    instr->eq.num_peaks = 1;
     fm_eq_lowpass(&instr->eq, 4000, 2);
     fm_eq_highpass(&instr->eq, 250, 2);
-    instr->eq.peaks_hz[0] = 1000;
-    instr->eq.peaks_Q[0] = 3;
-    instr->eq.peaks_A[0] = 2;
+    fm_eq_add_peak(&instr->eq, 1000, 3, 2);
     fm_eq_bake(&instr->eq);
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
