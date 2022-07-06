@@ -198,8 +198,6 @@ void make_organ(fm_instrument *instr) {
 void make_percussion(fm_instrument *instr) {
     fm_new_instr(instr, 1);
 
-    fm_eq_lowpass(&instr->eq, 4000, 2);
-    fm_eq_highpass(&instr->eq, 250, 2);
     fm_eq_add_peak(&instr->eq, 1000, 3, 2);
     fm_eq_bake(&instr->eq);
 

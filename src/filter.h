@@ -88,6 +88,11 @@ void fm_biquad_highpass(fm_biquad *bq, double hz, double Q);
 // with a peak gain of A and a given Q (how "peaky" the peak is).
 void fm_biquad_peak(fm_biquad *bq, double hz, double Q, double A);
 
+// sets a biquad filter to act as a high-shelf filter about the given
+// frequency and with a given shelf linear gain, Q. this is a first-order
+// filter, so a[2] and b[2] remain 0.
+void fm_biquad_highshelf(fm_biquad *bq, double hz, double Q);
+
 // pushes the given sample to the beginning of the input history
 // array and then runs the filter, returning the processed sample.
 float fm_biquad_run(fm_biquad *bq, float x0);

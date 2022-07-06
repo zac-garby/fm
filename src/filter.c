@@ -39,8 +39,9 @@ void fm_eq_bake(fm_eq *eq) {
     }
 
     for (int j = 0; j < eq->num_peaks; j++) {
-        fm_biquad_peak(&eq->biquads[i++],
-                       eq->peaks_hz[j], eq->peaks_Q[j], eq->peaks_A[j]);
+        //fm_biquad_peak(&eq->biquads[i++],
+        //               eq->peaks_hz[j], eq->peaks_Q[j], eq->peaks_A[j]);
+        fm_biquad_highshelf(&eq->biquads[i++], eq->peaks_hz[j], eq->peaks_Q[j]);
     }
 }
 
@@ -147,6 +148,21 @@ void fm_biquad_peak(fm_biquad *bq, double hz, double Q, double A) {
     bq->a[0] = 1 + alpha / A;
     bq->a[1] = (-2 * cos_w) / bq->a[0];
     bq->a[2] = (1 - alpha / A) / bq->a[0];
+}
+
+void fm_biquad_highshelf(fm_biquad *bq, double hz, double Q) {
+    double w = (2 * PI * (double) hz) * fm_config.dt;
+    double t = tan(w / 2.0);
+    double sqrt_Q = sqrt(Q);
+    double g = (t * sqrt_Q - 1) / (t * sqrt_Q + 1);
+
+    bq->b[0] = (1 + g + Q * (1 - g)) / 2.0;
+    bq->b[1] = (1 + g - Q * (1 - g)) / 2.0;
+    bq->b[2] = 0;
+
+    bq->a[0] = 1.0;
+    bq->a[1] = g / bq->a[0];
+    bq->a[2] = 0;
 }
 
 float fm_biquad_run(fm_biquad *bq, float x0) {
