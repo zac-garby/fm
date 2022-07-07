@@ -57,6 +57,9 @@ typedef struct fm_instrument {
 
     // the equaliser for the instrument's output.
     fm_eq eq;
+
+    // the reverb effect.
+    fm_reverb rv;
 } fm_instrument;
 
 typedef struct fm_synth {

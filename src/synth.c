@@ -21,6 +21,7 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
                                      0, NULL, NULL);
 
     instr->eq = fm_new_eq();
+    instr->rv = fm_new_reverb(0.35);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr, double start_time) {
@@ -43,6 +44,7 @@ void fm_instr_fill_hold_buffer(fm_instrument *instr, double start_time) {
     // apply filters to the whole buffer at once
     for (int i = 0; i < HOLD_BUFFER_SIZE; i++) {
         X(i) = fm_eq_run(&instr->eq, X(i));
+        X(i) = fm_reverb_run(&instr->rv, X(i));
     }
 
     fm_instr_swap_buffers(instr);

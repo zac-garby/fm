@@ -1,4 +1,4 @@
-bpm 1
+bpm 60
 
 num_parts 1
 
