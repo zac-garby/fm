@@ -44,6 +44,12 @@
 struct fm_window;
 struct fm_gui_panel;
 
+typedef struct fm_spectrum_data {
+    int synth_index;
+    float bins[SPECTRO_W];
+    bool show_wave;
+} fm_spectrum_data;
+
 typedef void fm_panel_renderer(struct fm_window*, struct fm_gui_panel*);
 
 typedef struct fm_gui_panel {
@@ -67,5 +73,12 @@ fm_window fm_create_window(fm_player *player);
 
 // needs to be called in the main thread
 void fm_window_loop(fm_window *win);
+
+void setup_panels(fm_window *win);
+void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border);
+void render_spectrum(fm_window *win, fm_gui_panel *panel);
+SDL_Rect make_rect(int x, int y, int w, int h);
+SDL_Rect get_safe_area(fm_gui_panel*);
+void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
 
 #endif

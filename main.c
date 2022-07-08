@@ -36,15 +36,16 @@ int main() {
 
     player = fm_new_player(1, device);
     
-    if (!fm_parse_song("assets/test.txt", &player->song)) {
+    if (!fm_parse_song("assets/bwv1013.txt", &player->song)) {
         return 0;
     }
 
-    player->volume = 0.0075;
+    player->volume = 0.05;
+    player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
     make_sine(&player->instrs[0]);
-    // make_organ(&player->instrs[1]);
+    // make_sine(&player->instrs[1]);
     // make_organ(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
@@ -198,9 +199,9 @@ void make_organ(fm_instrument *instr) {
 void make_percussion(fm_instrument *instr) {
     fm_new_instr(instr, 1);
 
-    fm_eq_highpass(&instr->eq, 200, 1 / SQRT2);
+    /*fm_eq_highpass(&instr->eq, 200, 1 / SQRT2);
     fm_eq_lowpass(&instr->eq, 4000, 1 / SQRT2);
-    fm_eq_bake(&instr->eq);
+    fm_eq_bake(&instr->eq);*/
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
     op.wave_type = FN_NOISE;
@@ -214,7 +215,7 @@ void make_sine(fm_instrument *instr) {
     fm_new_instr(instr, 1);
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
-    op.wave_type = FN_SAWTOOTH;
+    op.wave_type = FN_TRIANGLE;
     op.envelope = fm_make_envelope(0.1, 0.2, 0.7, 0.5);
     op.send[0] = 0;
     op.send_level[0] = 1.0;

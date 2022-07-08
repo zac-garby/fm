@@ -1,16 +1,5 @@
 #include "window.h"
 
-void setup_panels(fm_window *win);
-void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border);
-void render_spectrum(fm_window *win, fm_gui_panel *panel);
-SDL_Rect make_rect(int x, int y, int w, int h);
-SDL_Rect get_safe_area(fm_gui_panel*);
-
-typedef struct fm_spectrum_data {
-    int synth_index;
-    float bins[SPECTRO_W];
-} fm_spectrum_data;
-
 fm_window fm_create_window(fm_player *player) {
     fm_window win;
 
@@ -106,42 +95,72 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
     fm_instrument *instr = &win->player->instrs[data->synth_index];
 
-    for (int i = 0; i < SPECTRO_W; i++) {
-        data->bins[i] *= 0.5f;
-    }
-    
-    SDL_Rect bar;
-    bar.w = 1;
+    if (data->show_wave) {
+        SDL_Rect axis;
+        axis.w = SPECTRO_W;
+        axis.h = 1;
+        axis.x = safe.x;
+        axis.y = safe.y + safe.h / 2;
 
-    static float freqs[FREQ_DOMAIN];
-    for (int i = 0; i < FREQ_DOMAIN; i++) {
-        freqs[i] = hypot(instr->spectrum[i].r, instr->spectrum[i].i);
-    }
+        SDL_FillRect(win->surf, &axis, border);
 
-    int f = 1, fn = 0;
-    for (int i = 0; i < SPECTRO_W; i++) {
-        float p = (float) (i + 1) / (float) SPECTRO_W;
-        fn = (int) (powf((float) FREQ_DOMAIN, p));
+        float r = (float) HOLD_BUFFER_SIZE / (float) SPECTRO_W;
 
-        float sum = 0.0f;
-        int n = 0;
-        for (int j = f; j < fn + 1; j++) {
-            sum += freqs[j];
-            n++;
+        for (int i = 0; i+1 < SPECTRO_W; i++) {
+            int j = (int) (i * r);
+            int j2 = (int) ((i + 1) * r);
+
+            float sample = instr->hold_buf[j];
+            float next = instr->hold_buf[j2];
+
+            if (next < sample) {
+                float temp = next;
+                next = sample;
+                sample = temp;
+            }
+
+            for (int y = (int) (sample * 10); y <= (int) (next * 10); y++) {
+                set_pixel(win->surf, axis.x + i, axis.y + y, fg);
+            }
         }
-        data->bins[i] += sum / n;
-
-        f = fn;
-    }
-
-    for (int x = 0; x < SPECTRO_W; x++) {
-        int h = (int) (data->bins[x] * SPECTRUM_VERT_SCALE) + 1;
-        if (h > safe.h) h = safe.h;
+    } else {
+        for (int i = 0; i < SPECTRO_W; i++) {
+            data->bins[i] *= 0.5f;
+        }
         
-        bar.x = x + safe.x;
-        bar.y = safe.h - h + safe.y;
-        bar.h = h;
-        SDL_FillRect(win->surf, &bar, fg);
+        SDL_Rect bar;
+        bar.w = 1;
+        
+        static float freqs[FREQ_DOMAIN];
+        for (int i = 0; i < FREQ_DOMAIN; i++) {
+            freqs[i] = hypot(instr->spectrum[i].r, instr->spectrum[i].i);
+        }
+        
+        int f = 1, fn = 0;
+        for (int i = 0; i < SPECTRO_W; i++) {
+            float p = (float) (i + 1) / (float) SPECTRO_W;
+            fn = (int) (powf((float) FREQ_DOMAIN, p));
+            
+            float sum = 0.0f;
+            int n = 0;
+            for (int j = f; j < fn + 1; j++) {
+                sum += freqs[j];
+                n++;
+            }
+            data->bins[i] += sum / n;
+            
+            f = fn;
+        }
+        
+        for (int x = 0; x < SPECTRO_W; x++) {
+            int h = (int) (data->bins[x] * SPECTRUM_VERT_SCALE) + 1;
+            if (h > safe.h) h = safe.h;
+            
+            bar.x = x + safe.x;
+            bar.y = safe.h - h + safe.y;
+            bar.h = h;
+            SDL_FillRect(win->surf, &bar, fg);
+        }
     }
 }
 
@@ -158,6 +177,7 @@ void setup_panels(fm_window *win) {
 
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
+        data->show_wave = true;
         
         win->panels[i].data = data;
     }
@@ -192,3 +212,43 @@ SDL_Rect make_rect(int x, int y, int w, int h) {
     
     return r;
 }
+
+void set_pixel(SDL_Surface *surface, int x, int y, Uint32 colour) {
+    Uint32 * const target_pixel = (Uint32 *) ((Uint8 *) surface->pixels
+                                              + y * surface->pitch
+                                              + x * surface->format->BytesPerPixel);
+    *target_pixel = colour;
+}
+
+/*
+  plotLine(x0, y0, x1, y1)
+    dx = x1 - x0
+    dy = y1 - y0
+    D = 2*dy - dx
+    y = y0
+
+    for x from x0 to x1
+        plot(x,y)
+        if D > 0
+            y = y + 1
+            D = D - 2*dx
+        end if
+        D = D + 2*dy
+void draw_line(SDL_Surface *s, int x0, int y0, int x1, int y1, Uint32 colour) {
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    int D = 2 * dy - dx;
+    int y = y0;
+
+    for (int x = x0; x <= x1; x++) {
+        set_pixel(s, x, y, colour);
+
+        if (D > 0) {
+            y++;
+            D -= 2 * dx;
+        }
+
+        D += 2 * dy;
+    }
+}
+*/
