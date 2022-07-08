@@ -36,7 +36,7 @@ int main() {
 
     player = fm_new_player(3, device);
     
-    if (!fm_parse_song("assets/passacaglia.txt", &player->song)) {
+    if (!fm_parse_song("assets/toccata.txt", &player->song)) {
         return 0;
     }
 
@@ -215,7 +215,7 @@ void make_sine(fm_instrument *instr) {
     fm_new_instr(instr, 1);
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
-    op.wave_type = FN_TRIANGLE;
+    op.wave_type = FN_SIN;
     op.envelope = fm_make_envelope(0.1, 0.2, 0.7, 0.5);
     op.send[0] = 0;
     op.send_level[0] = 1.0;

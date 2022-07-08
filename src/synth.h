@@ -18,7 +18,6 @@
 #define FREQ_DOMAIN (HOLD_BUFFER_SIZE / 2 + 1)
 #define MAX_OPERATORS 8
 #define MAX_POLYPHONY 8
-#define DELAY_LINE_SIZE 220500
 
 #define X(i) (instr->hold_buf_back[i])
 

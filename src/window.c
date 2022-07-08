@@ -97,26 +97,21 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
     data = (fm_spectrum_data*) panel->data;
     safe = get_safe_area(panel);
 
+    bg = SDL_MapRGBA(win->surf->format, BG_COLOUR);
+    border = SDL_MapRGBA(win->surf->format, BORDER_COLOUR);
+
     switch (data->synth_index) {
     case 0:
-        bg = SDL_MapRGBA(win->surf->format, SPECTRO0_BG);
-        border = SDL_MapRGBA(win->surf->format, SPECTRO0_BORDER);
-        fg = SDL_MapRGBA(win->surf->format, SPECTRO0_FG);
+        fg = SDL_MapRGBA(win->surf->format, INSTR0_COLOUR);
         break;
     case 1:
-        bg = SDL_MapRGBA(win->surf->format, SPECTRO1_BG);
-        border = SDL_MapRGBA(win->surf->format, SPECTRO1_BORDER);
-        fg = SDL_MapRGBA(win->surf->format, SPECTRO1_FG);
+        fg = SDL_MapRGBA(win->surf->format, INSTR1_COLOUR);
         break;
     case 2:
-        bg = SDL_MapRGBA(win->surf->format, SPECTRO2_BG);
-        border = SDL_MapRGBA(win->surf->format, SPECTRO2_BORDER);
-        fg = SDL_MapRGBA(win->surf->format, SPECTRO2_FG);
+        fg = SDL_MapRGBA(win->surf->format, INSTR2_COLOUR);
         break;
     case 3:
-        bg = SDL_MapRGBA(win->surf->format, SPECTRO3_BG);
-        border = SDL_MapRGBA(win->surf->format, SPECTRO3_BORDER);
-        fg = SDL_MapRGBA(win->surf->format, SPECTRO3_FG);
+        fg = SDL_MapRGBA(win->surf->format, INSTR3_COLOUR);
         break;
     default:
         return;
@@ -144,22 +139,17 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
         SDL_FillRect(win->surf, &axis, border);
 
-        float r = (float) HOLD_BUFFER_SIZE / (float) SPECTRO_W;
+        for (int i = 0; i < SPECTRO_W; i++) {
+            float p = (float) i / (float) SPECTRO_W;
+            int j = (int) (p * HOLD_BUFFER_SIZE);
 
-        for (int i = 0; i+1 < SPECTRO_W; i++) {
-            int j = (int) (i * r);
-            int j2 = (int) ((i + 1) * r);
-
-            float sample = instr->hold_buf[j];
-            float next = instr->hold_buf[j2];
+            float sample = instr->hold_buf[j] * WAVE_VERT_SCALE;
+            int sy = sample < 0 ? (int) sample : 0;
+            int ey = sample < 0 ? 0 : (int) sample;
+            if (sy < -safe.h / 2) sy = -safe.h / 2;
+            if (ey > safe.h / 2) ey = safe.h / 2;
             
-            if (next < sample) {
-                float temp = next;
-                next = sample;
-                sample = temp;
-            }
-            
-            for (int y = (int) (sample * 10); y <= (int) (next * 10); y++) {
+            for (int y = sy; y <= ey; y++) {
                 set_pixel(win->surf, axis.x + i, axis.y + y, fg);
             }
         }
