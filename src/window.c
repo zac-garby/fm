@@ -1,5 +1,13 @@
 #include "window.h"
 
+void send_mouse_event(fm_window *win, int x, int y, SDL_Event e);
+void setup_panels(fm_window *win);
+void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border);
+void render_spectrum(fm_window *win, fm_gui_panel *panel);
+SDL_Rect make_rect(int x, int y, int w, int h);
+SDL_Rect get_safe_area(fm_gui_panel*);
+void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
+
 fm_window fm_create_window(fm_player *player) {
     fm_window win;
 
@@ -29,8 +37,24 @@ void fm_window_loop(fm_window *win) {
     while (!quit) {
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
-            if (e.type == SDL_QUIT) {
+            int x, y;
+            
+            switch (e.type) {
+            case SDL_QUIT:
                 quit = true;
+                break;
+
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+                x = e.button.x;
+                y = e.button.y;
+            case SDL_MOUSEMOTION:
+                x = e.motion.x;
+                y = e.motion.y;
+
+                send_mouse_event(win, x, y, e);
+                
+                break;
             }
         }
 
@@ -47,6 +71,22 @@ void fm_window_loop(fm_window *win) {
 
     SDL_DestroyWindow(win->window);
     SDL_Quit();
+}
+
+void send_mouse_event(fm_window *win, int screen_x, int screen_y, SDL_Event e) {
+    int x = screen_x / SCREEN_SCALE;
+    int y = screen_y / SCREEN_SCALE;
+    
+    for (int i = 0; i < win->num_panels; i++) {
+        fm_gui_panel *panel = &win->panels[i];
+        
+        if (x >= panel->rect.x && y >= panel->rect.y &&
+            x < panel->rect.x + panel->rect.w &&
+            y < panel->rect.y + panel->rect.h) {
+            
+            panel->handler(win, panel, e);
+        }
+    }
 }
 
 void render_spectrum(fm_window *win, fm_gui_panel *panel) {
@@ -112,13 +152,13 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
             float sample = instr->hold_buf[j];
             float next = instr->hold_buf[j2];
-
+            
             if (next < sample) {
                 float temp = next;
                 next = sample;
                 sample = temp;
             }
-
+            
             for (int y = (int) (sample * 10); y <= (int) (next * 10); y++) {
                 set_pixel(win->surf, axis.x + i, axis.y + y, fg);
             }
@@ -164,6 +204,16 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
     }
 }
 
+void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
+    UNUSED(win);
+    
+    fm_spectrum_data *data = (fm_spectrum_data*) panel->data;
+    
+    if (e.type == SDL_MOUSEBUTTONUP) {
+        data->show_wave = !data->show_wave;
+    }
+}
+
 void setup_panels(fm_window *win) {
     win->num_panels = 4;
     win->panels = malloc(sizeof(fm_gui_panel) * win->num_panels);
@@ -174,6 +224,7 @@ void setup_panels(fm_window *win) {
                                         SPECTRO_H + 2);
         
         win->panels[i].render = render_spectrum;
+        win->panels[i].handler = spectrum_handle_event;
 
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
