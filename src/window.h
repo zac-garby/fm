@@ -48,20 +48,26 @@ typedef struct fm_gui_panel {
     fm_panel_renderer *render;
     fm_panel_event_handler *handler;
     void *data;
+
+    struct fm_gui_panel *children;
+    int num_children;
 } fm_gui_panel;
 
 typedef struct fm_window {
     SDL_Window *window;
-    SDL_Renderer *renderer;
     SDL_Surface *surf, *win_surf;
 
     fm_player *player;
 
-    fm_gui_panel *panels;
-    int num_panels;
+    fm_gui_panel root;
 } fm_window;
 
 fm_window fm_create_window(fm_player *player);
+
+fm_gui_panel fm_make_panel(int x, int y, int w, int h,
+                           int num_children,
+                           fm_panel_renderer *render,
+                           fm_panel_event_handler *handler);
 
 // needs to be called in the main thread
 void fm_window_loop(fm_window *win);

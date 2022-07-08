@@ -1,9 +1,10 @@
 #include "window.h"
 
-void send_mouse_event(fm_window *win, int x, int y, SDL_Event e);
+void send_mouse_event(fm_window*, fm_gui_panel*, int x, int y, SDL_Event e);
 void setup_panels(fm_window *win);
 void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border);
 void render_spectrum(fm_window *win, fm_gui_panel *panel);
+void render_children(fm_window *win, fm_gui_panel *panel);
 SDL_Rect make_rect(int x, int y, int w, int h);
 SDL_Rect get_safe_area(fm_gui_panel*);
 void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
@@ -52,18 +53,16 @@ void fm_window_loop(fm_window *win) {
                 x = e.motion.x;
                 y = e.motion.y;
 
-                send_mouse_event(win, x, y, e);
+                send_mouse_event(win, &win->root, x, y, e);
                 
                 break;
             }
         }
 
         SDL_FillRect(win->surf, NULL, SDL_MapRGBA(win->surf->format, BG_COLOUR));
-
-        for (int i = 0; i < win->num_panels; i++) {
-            fm_gui_panel* panel = &win->panels[i];
-            panel->render(win, panel);
-        }
+        
+        fm_gui_panel* root = &win->root;
+        root->render(win, root);
         
         SDL_BlitScaled(win->surf, NULL, win->win_surf, NULL);
         SDL_UpdateWindowSurface(win->window);
@@ -73,19 +72,31 @@ void fm_window_loop(fm_window *win) {
     SDL_Quit();
 }
 
-void send_mouse_event(fm_window *win, int screen_x, int screen_y, SDL_Event e) {
+void send_mouse_event(fm_window *win, fm_gui_panel *panel,
+                      int screen_x, int screen_y, SDL_Event e) {
     int x = screen_x / SCREEN_SCALE;
     int y = screen_y / SCREEN_SCALE;
+
+    if (panel->handler != NULL) {
+        panel->handler(win, panel, e);
+    }
     
-    for (int i = 0; i < win->num_panels; i++) {
-        fm_gui_panel *panel = &win->panels[i];
+    for (int i = 0; i < panel->num_children; i++) {
+        fm_gui_panel *child = &panel->children[i];
         
-        if (x >= panel->rect.x && y >= panel->rect.y &&
-            x < panel->rect.x + panel->rect.w &&
-            y < panel->rect.y + panel->rect.h) {
+        if (x >= child->rect.x && y >= child->rect.y &&
+            x < child->rect.x + child->rect.w &&
+            y < child->rect.y + child->rect.h) {
             
-            panel->handler(win, panel, e);
+            send_mouse_event(win, child, screen_x, screen_y, e);
         }
+    }
+}
+
+void render_children(fm_window *win, fm_gui_panel *panel) {
+    for (int i = 0; i < panel->num_children; i++) {
+        fm_gui_panel *child = &panel->children[i];
+        child->render(win, child);
     }
 }
 
@@ -204,23 +215,37 @@ void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
     }
 }
 
+fm_gui_panel fm_make_panel(int x, int y, int w, int h,
+                           int num_children,
+                           fm_panel_renderer *render,
+                           fm_panel_event_handler *handler) {
+    fm_gui_panel p;
+
+    p.rect = make_rect(x, y, w, h);
+    p.render = render;
+    p.handler = handler;
+
+    p.children = malloc(sizeof(fm_gui_panel) * num_children);
+    p.num_children = num_children;
+
+    return p;
+}
+
 void setup_panels(fm_window *win) {
-    win->num_panels = 4;
-    win->panels = malloc(sizeof(fm_gui_panel) * win->num_panels);
+    win->root = fm_make_panel(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+                              4, render_children, NULL);
 
     for (int i = 0; i < 4; i++) {
-        win->panels[i].rect = make_rect(2, 2 + i * (SPECTRO_H + 3),
-                                        SPECTRO_W + 2,
-                                        SPECTRO_H + 2);
-        
-        win->panels[i].render = render_spectrum;
-        win->panels[i].handler = spectrum_handle_event;
+        win->root.children[i] =
+            fm_make_panel(2, 2 + i * (SPECTRO_H + 3),
+                          SPECTRO_W + 2, SPECTRO_H + 2,
+                          0, render_spectrum, spectrum_handle_event);
 
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
         data->show_wave = false;
         
-        win->panels[i].data = data;
+        win->root.children[i].data = data;
     }
 }
 
