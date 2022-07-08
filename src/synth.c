@@ -21,7 +21,7 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
                                      0, NULL, NULL);
 
     instr->eq = fm_new_eq();
-    instr->rv = fm_new_reverb(0.35);
+    instr->rv = fm_new_reverb(0.55);
 }
 
 float fm_instr_get_next_output(fm_instrument *instr, double start_time) {

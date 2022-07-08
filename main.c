@@ -41,7 +41,7 @@ int main() {
     }
 
     player->volume = 0.05;
-    player->volume = 0;
+    // player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
     make_organ(&player->instrs[0]);
@@ -183,7 +183,7 @@ void make_organ(fm_instrument *instr) {
         op.recv_level[0] = 4;
         op.recv_type[0] = FM_RECV_MODULATE;
         op.send[0] = 0;
-        op.send_level[0] = 0.5 - (float) i / 20;
+        op.send_level[0] = 0.5 - (float) i / 12;
         instr->ops[i] = op;
 
         fm_operator feedback = fm_new_op(1, 1, false, pow(2.0f, (float) i));
@@ -191,7 +191,7 @@ void make_organ(fm_instrument *instr) {
         feedback.recv[0] = i + 1;
         feedback.recv_level[0] = 0.45 + (float) i / 15;
         feedback.send[0] = i + 1;
-        feedback.send_level[0] = 1;
+        feedback.send_level[0] = 2;
         instr->ops[i + 4] = feedback;
     }
 }

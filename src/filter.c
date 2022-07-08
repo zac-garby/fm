@@ -268,13 +268,13 @@ fm_reverb fm_new_reverb(float mix) {
     rv.fdn = fm_new_fdn(3041, 3385, 4481, 5477);
     
     fm_fdn_hadamard(&rv.fdn);
-    rv.fdn.feedback_gain[0] = 0.9;
-    rv.fdn.feedback_gain[1] = 0.85;
+    rv.fdn.feedback_gain[0] = 0.94;
+    rv.fdn.feedback_gain[1] = 0.93;
     rv.fdn.feedback_gain[2] = 0.9;
-    rv.fdn.feedback_gain[3] = 0.92;
+    rv.fdn.feedback_gain[3] = 0.85;
     
     for (int i = 0; i < 4; i++) {
-        fm_biquad_lowpass(&rv.fdn.feedback_filter[i], 8000, 1 / SQRT2);
+        fm_biquad_lowpass(&rv.fdn.feedback_filter[i], 5600, 1 / SQRT2);
     }
 
     rv.in_gain[0] = 0.4;
@@ -282,10 +282,10 @@ fm_reverb fm_new_reverb(float mix) {
     rv.in_gain[2] = 0.2;
     rv.in_gain[3] = 0.2;
 
-    rv.out_gain[0] = 0.7;
-    rv.out_gain[1] = 0.7;
-    rv.out_gain[2] = 0.7;
-    rv.out_gain[3] = 0.7;
+    rv.out_gain[0] = 0.5;
+    rv.out_gain[1] = 0.5;
+    rv.out_gain[2] = 0.3;
+    rv.out_gain[3] = 0.1;
 
     rv.mix = mix;
 
