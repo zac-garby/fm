@@ -228,7 +228,7 @@ void setup_panels(fm_window *win) {
 
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
-        data->show_wave = true;
+        data->show_wave = false;
         
         win->panels[i].data = data;
     }
