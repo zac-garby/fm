@@ -273,6 +273,7 @@ void setup_panels(fm_window *win) {
         data->show_wave = false;
         data->spectrum_scale = SPECTRUM_VERT_SCALE;
         data->wave_scale = WAVE_VERT_SCALE;
+        for (int i = 0; i < SPECTRO_W; i++) data->bins[i] = 0;
         
         win->root.children[i].data = data;
     }
