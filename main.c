@@ -34,19 +34,19 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(3, device);
+    player = fm_new_player(2, device);
     
-    if (!fm_parse_song("assets/toccata.txt", &player->song)) {
+    if (!fm_parse_song("assets/harpsichord5.txt", &player->song)) {
         return 0;
     }
 
-    player->volume = 0.05;
+    //player->volume = 0.05;
     player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_organ(&player->instrs[0]);
-    make_organ(&player->instrs[1]);
-    make_organ(&player->instrs[2]);
+    make_lute(&player->instrs[0]);
+    make_lute(&player->instrs[1]);
+    // make_organ(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
@@ -113,14 +113,14 @@ void make_flute(fm_instrument *instr) {
 
     fm_operator carr = fm_new_op(2, 1, false, 1.0f);
     carr.wave_type = FN_SIN;
-    carr.envelope = fm_make_envelope(0.05, 0.45, 0.8, 0.35f);
+    carr.envelope = fm_make_envelope(0.1, 0.45, 0.8, 0.35f);
     carr.recv[0] = 1;
     carr.recv_level[0] = 4.0f;
     carr.recv_type[0] = FM_RECV_MODULATE;
     carr.recv[1] = 3;
     carr.recv_level[1] = 4;
     carr.send[0] = 0;
-    carr.send_level[0] = 0.7f;
+    carr.send_level[0] = 0.5f;
     instr->ops[0] = carr;
 
     fm_operator mod1 = fm_new_op(0, 1, false, 2.0f);
@@ -157,17 +157,17 @@ void make_lute(fm_instrument *instr) {
     fm_new_instr(instr, 2);
 
     fm_operator op = fm_new_op(0, 1, false, 1.0f);
-    op.wave_type = FN_TRIANGLE;
-    op.envelope = fm_make_envelope(0.01f, 0.6, 0.3, 0.0f);
+    op.wave_type = FN_SQUARE;
+    op.envelope = fm_make_envelope(0.01f, 0.6, 0.3, 0.3f);
     op.send[0] = 0;
-    op.send_level[0] = 0.50f;
+    op.send_level[0] = 0.65f;
     instr->ops[0] = op;
 
     fm_operator op2 = fm_new_op(0, 1, false, 2.0f);
-    op2.wave_type = FN_SQUARE;
+    op2.wave_type = FN_TRIANGLE;
     op2.envelope = fm_make_envelope(0.01f, 0.1f, 0.15f, 0.8f);
     op2.send[0] = 0;
-    op2.send_level[0] = 0.05f;
+    op2.send_level[0] = 0.1f;
     instr->ops[1] = op2;
 }
 
@@ -183,7 +183,7 @@ void make_organ(fm_instrument *instr) {
         op.recv_level[0] = 4;
         op.recv_type[0] = FM_RECV_MODULATE;
         op.send[0] = 0;
-        op.send_level[0] = 0.5 - (float) i / 12;
+        op.send_level[0] = 0.4 - (float) i / 12;
         instr->ops[i] = op;
 
         fm_operator feedback = fm_new_op(1, 1, false, pow(2.0f, (float) i));
