@@ -17,7 +17,14 @@
 #define REAL_HEIGHT (SCREEN_HEIGHT * SCREEN_SCALE)
 
 #define SPECTRUM_VERT_SCALE 0.15f
+#define SPECTRUM_MIN_SCALE 0.05f
+#define SPECTRUM_MAX_SCALE 2.0f
+#define SPECTRUM_SCALE_DELTA 0.05f
+
 #define WAVE_VERT_SCALE 60
+#define WAVE_MIN_SCALE 1
+#define WAVE_MAX_SCALE 100
+#define WAVE_SCALE_DELTA 3
 
 #define BG_COLOUR 21, 20, 18, 255
 #define BORDER_COLOUR 48, 41, 50, 255
@@ -38,7 +45,13 @@ typedef struct fm_spectrum_data {
     int synth_index;
     float bins[SPECTRO_W];
     bool show_wave;
+    float spectrum_scale, wave_scale;
 } fm_spectrum_data;
+
+typedef struct fm_sequencer_data {
+    int synth_index;
+    fm_song song;
+} fm_sequencer_data;
 
 typedef void fm_panel_renderer(struct fm_window*, struct fm_gui_panel*);
 typedef void fm_panel_event_handler(struct fm_window*, struct fm_gui_panel*, SDL_Event e);
@@ -56,6 +69,7 @@ typedef struct fm_gui_panel {
 typedef struct fm_window {
     SDL_Window *window;
     SDL_Surface *surf, *win_surf;
+    int mouse_x, mouse_y;
 
     fm_player *player;
 

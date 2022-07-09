@@ -27,6 +27,9 @@ fm_window fm_create_window(fm_player *player) {
     win.win_surf = SDL_GetWindowSurface(win.window);
     win.player = player;
 
+    win.mouse_x = 0;
+    win.mouse_y = 0;
+
     setup_panels(&win);
     
     return win;
@@ -45,15 +48,14 @@ void fm_window_loop(fm_window *win) {
                 quit = true;
                 break;
 
+            case SDL_MOUSEMOTION:
+                win->mouse_x = e.motion.x;
+                win->mouse_y = e.motion.y;
+
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
-                x = e.button.x;
-                y = e.button.y;
-            case SDL_MOUSEMOTION:
-                x = e.motion.x;
-                y = e.motion.y;
-
-                send_mouse_event(win, &win->root, x, y, e);
+            case SDL_MOUSEWHEEL:
+                send_mouse_event(win, &win->root, win->mouse_x, win->mouse_y, e);
                 
                 break;
             }
@@ -154,7 +156,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
             float p = (float) i / (float) SPECTRO_W;
             int j = (int) (p * HOLD_BUFFER_SIZE);
 
-            float sample = instr->hold_buf[j] * WAVE_VERT_SCALE;
+            float sample = instr->hold_buf[j] * data->wave_scale;
             int sy = sample < 0 ? (int) sample : 0;
             int ey = sample < 0 ? 0 : (int) sample;
             if (sy < -safe.h / 2) sy = -safe.h / 2;
@@ -194,7 +196,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
         }
         
         for (int x = 0; x < SPECTRO_W; x++) {
-            int h = (int) (data->bins[x] * SPECTRUM_VERT_SCALE) + 1;
+            int h = (int) (data->bins[x] * data->spectrum_scale) + 1;
             if (h > safe.h) h = safe.h;
             
             bar.x = x + safe.x;
@@ -209,9 +211,27 @@ void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
     UNUSED(win);
     
     fm_spectrum_data *data = (fm_spectrum_data*) panel->data;
-    
-    if (e.type == SDL_MOUSEBUTTONUP) {
+    float *p;
+
+    switch (e.type) {
+    case SDL_MOUSEBUTTONUP:
         data->show_wave = !data->show_wave;
+        break;
+    case SDL_MOUSEWHEEL:
+        if (data->show_wave) {
+            data->wave_scale += e.wheel.preciseY * WAVE_SCALE_DELTA;
+            if (data->wave_scale < WAVE_MIN_SCALE)
+                data->wave_scale = WAVE_MIN_SCALE;
+            if (data->wave_scale > WAVE_MAX_SCALE)
+                data->wave_scale = WAVE_MAX_SCALE;
+        } else {
+            data->spectrum_scale += e.wheel.preciseY * SPECTRUM_SCALE_DELTA;
+            if (data->spectrum_scale < SPECTRUM_MIN_SCALE)
+                data->spectrum_scale = SPECTRUM_MIN_SCALE;
+            if (data->spectrum_scale > SPECTRUM_MAX_SCALE)
+                data->spectrum_scale = SPECTRUM_MAX_SCALE;
+        }
+        break;
     }
 }
 
@@ -251,6 +271,8 @@ void setup_panels(fm_window *win) {
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
         data->show_wave = false;
+        data->spectrum_scale = SPECTRUM_VERT_SCALE;
+        data->wave_scale = WAVE_VERT_SCALE;
         
         win->root.children[i].data = data;
     }
