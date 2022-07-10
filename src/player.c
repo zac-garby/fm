@@ -124,10 +124,19 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
             double earliest_finish = DBL_MAX;
             int earliest_idx = 0;
 
+            // get the note which needs to be played.
+            fm_note note = part.notes[p->next_notes[i]];
+
             for (int n = 0; n < MAX_POLYPHONY; n++) {
                 fm_note candidate = instr->voices[n].note;
+                double finish = candidate.start + (double) candidate.duration;                
+
+                if (candidate.freq == note.freq) {
+                    earliest_finish = finish;
+                    earliest_idx = n;
+                    break;
+                }
                 
-                double finish = candidate.start + (double) candidate.duration;
                 if (finish < earliest_finish) {
                     earliest_finish = finish;
                     earliest_idx = n;
@@ -135,7 +144,6 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
             }
 
             // replace the note that finished longest ago
-            fm_note note = part.notes[p->next_notes[i]];
             double error = p->playhead - note.start;
             note.start = p->playhead;
             note.duration = (note.duration / p->bps) - error;
