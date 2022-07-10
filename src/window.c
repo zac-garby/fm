@@ -5,6 +5,7 @@ void setup_panels(fm_window *win);
 void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border);
 void render_spectrum(fm_window *win, fm_gui_panel *panel);
 void render_children(fm_window *win, fm_gui_panel *panel);
+void render_box(fm_window *win, fm_gui_panel *panel);
 SDL_Rect make_rect(int x, int y, int w, int h);
 SDL_Rect get_safe_area(fm_gui_panel*);
 void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
@@ -41,8 +42,6 @@ void fm_window_loop(fm_window *win) {
     while (!quit) {
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
-            int x, y;
-            
             switch (e.type) {
             case SDL_QUIT:
                 quit = true;
@@ -104,14 +103,11 @@ void render_children(fm_window *win, fm_gui_panel *panel) {
 
 void render_spectrum(fm_window *win, fm_gui_panel *panel) {
     fm_spectrum_data *data;
-    Uint32 bg, border, fg;
+    Uint32 fg;
     SDL_Rect safe;
 
     data = (fm_spectrum_data*) panel->data;
     safe = get_safe_area(panel);
-
-    bg = SDL_MapRGBA(win->surf->format, BG_COLOUR);
-    border = SDL_MapRGBA(win->surf->format, BORDER_COLOUR);
 
     switch (data->synth_index) {
     case 0:
@@ -130,7 +126,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
         return;
     }
 
-    draw_rect(win->surf, &panel->rect, bg, border);
+    render_box(win, panel);
 
     if (data->synth_index >= win->player->num_instrs) {
         return;
@@ -150,7 +146,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
         axis.x = safe.x;
         axis.y = safe.y + safe.h / 2;
 
-        SDL_FillRect(win->surf, &axis, border);
+        SDL_FillRect(win->surf, &axis, panel->border);
 
         for (int i = 0; i < SPECTRO_W; i++) {
             float p = (float) i / (float) SPECTRO_W;
@@ -211,7 +207,6 @@ void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
     UNUSED(win);
     
     fm_spectrum_data *data = (fm_spectrum_data*) panel->data;
-    float *p;
 
     switch (e.type) {
     case SDL_MOUSEBUTTONUP:
@@ -236,14 +231,13 @@ void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
 }
 
 void render_box(fm_window *win, fm_gui_panel *panel) {
-    Uint32 bg = SDL_MapRGBA(win->surf->format, PANEL_COLOUR);
-    Uint32 border = SDL_MapRGBA(win->surf->format, BORDER_COLOUR);
-    
-    draw_rect(win->surf, &panel->rect, bg, border);
+    draw_rect(win->surf, &panel->rect, panel->bg, panel->border);
+    render_children(win, panel);
 }
 
 fm_gui_panel fm_make_panel(int x, int y, int w, int h,
                            int num_children,
+                           fm_window *win,
                            fm_panel_renderer *render,
                            fm_panel_event_handler *handler) {
     fm_gui_panel p;
@@ -255,18 +249,23 @@ fm_gui_panel fm_make_panel(int x, int y, int w, int h,
     p.children = malloc(sizeof(fm_gui_panel) * num_children);
     p.num_children = num_children;
 
+    p.bg = SDL_MapRGBA(win->surf->format, PANEL_COLOUR);
+    p.border = SDL_MapRGBA(win->surf->format, BORDER_COLOUR);
+
     return p;
 }
 
 void setup_panels(fm_window *win) {
     win->root = fm_make_panel(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-                              6, render_children, NULL);
+                              6, win, render_children, NULL);
+    win->root.parent = NULL;
 
+    // spectrum/waveform windows
     for (int i = 0; i < 4; i++) {
         win->root.children[i] =
             fm_make_panel(2, 2 + i * (SPECTRO_H + 3),
                           SPECTRO_W + 2, SPECTRO_H + 2,
-                          0, render_spectrum, spectrum_handle_event);
+                          0, win, render_spectrum, spectrum_handle_event);
 
         fm_spectrum_data *data = malloc(sizeof(fm_spectrum_data));
         data->synth_index = i;
@@ -276,6 +275,8 @@ void setup_panels(fm_window *win) {
         for (int i = 0; i < SPECTRO_W; i++) data->bins[i] = 0;
         
         win->root.children[i].data = data;
+        win->root.children[i].parent = &win->root;
+        win->root.children[i].bg = SDL_MapRGBA(win->surf->format, BG_COLOUR);
     }
 
     // sequencer / player panel
@@ -283,14 +284,31 @@ void setup_panels(fm_window *win) {
         fm_make_panel(2, 2 + 4 * (SPECTRO_H + 3),
                       SCREEN_WIDTH - 4,
                       SCREEN_HEIGHT - 2 - (2 + 4 * (SPECTRO_H + 3)),
-                      0, render_box, NULL);
+                      1, win, render_children, NULL);
+
+    fm_sequencer_data *seq_data = malloc(sizeof(fm_sequencer_data));
+    seq_data->part_index = 0;
+    seq_data->song = fm_new_song(4, 120);
+    
+    win->root.children[4].data = seq_data;
+    win->root.children[4].parent = &win->root;
+
+    win->root.children[4].children[0] =
+        fm_make_panel(2, 2 + 4 * (SPECTRO_H + 3),
+                      SCREEN_WIDTH - 4,
+                      10,
+                      0, win, render_box, NULL);
+
+    win->root.children[4].children[0].parent = &win->root.children[4];
 
     // instrument controls panel
     win->root.children[5] =
         fm_make_panel(SPECTRO_W + 5, 2,
                       SCREEN_WIDTH - 7 - SPECTRO_W,
                       4 * (SPECTRO_H + 3) - 1,
-                      0, render_box, NULL);
+                      0, win, render_box, NULL);
+
+    win->root.children[5].parent = &win->root;
 }
 
 void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border) {

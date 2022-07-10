@@ -3,6 +3,20 @@
 int parse_int(char *s, int *i);
 int parse_note(char *s, fm_note *note);
 
+fm_song fm_new_song(int num_parts, int bpm) {
+    fm_song song;
+    
+    song.bpm = bpm;
+    song.num_parts = num_parts;
+    song.parts = malloc(sizeof(fm_song_part) * num_parts);
+
+    for (int i = 0; i < num_parts; i++) {
+        song.parts[i].num_notes = 0;
+    }
+
+    return song;
+}
+
 int fm_parse_song(char *filename, fm_song *song) {
     FILE *fp;
 

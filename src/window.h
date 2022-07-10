@@ -17,7 +17,7 @@
 #define REAL_HEIGHT (SCREEN_HEIGHT * SCREEN_SCALE)
 
 #define SPECTRUM_VERT_SCALE 0.08f
-#define SPECTRUM_MIN_SCALE 0.05f
+#define SPECTRUM_MIN_SCALE 0.01f
 #define SPECTRUM_MAX_SCALE 2.0f
 #define SPECTRUM_SCALE_DELTA 0.05f
 
@@ -49,7 +49,7 @@ typedef struct fm_spectrum_data {
 } fm_spectrum_data;
 
 typedef struct fm_sequencer_data {
-    int synth_index;
+    int part_index;
     fm_song song;
 } fm_sequencer_data;
 
@@ -62,8 +62,11 @@ typedef struct fm_gui_panel {
     fm_panel_event_handler *handler;
     void *data;
 
+    struct fm_gui_panel *parent;
     struct fm_gui_panel *children;
     int num_children;
+
+    Uint32 bg, border;
 } fm_gui_panel;
 
 typedef struct fm_window {
@@ -80,6 +83,7 @@ fm_window fm_create_window(fm_player *player);
 
 fm_gui_panel fm_make_panel(int x, int y, int w, int h,
                            int num_children,
+                           fm_window *win,
                            fm_panel_renderer *render,
                            fm_panel_event_handler *handler);
 
