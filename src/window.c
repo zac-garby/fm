@@ -57,6 +57,11 @@ void fm_window_loop(fm_window *win) {
                 send_mouse_event(win, &win->root, win->mouse_x, win->mouse_y, e);
                 
                 break;
+
+            case SDL_KEYDOWN:
+                if (e.key.keysym.sym == SDLK_SPACE) {
+                    win->player->paused = !win->player->paused;
+                }
             }
         }
 

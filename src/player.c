@@ -29,12 +29,14 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
 
 			float sample = 0;
 
-			for (int i = 0; i < p->num_instrs; i++) {
-			    sample += fm_instr_get_next_output(&p->instrs[i],
-                                               p->playhead + frame * fm_config.dt);
-			}
-
-			sample *= p->volume;
+            if (!p->paused) {
+                for (int i = 0; i < p->num_instrs; i++) {
+                    sample += fm_instr_get_next_output(&p->instrs[i],
+                                                       p->playhead + frame * fm_config.dt);
+                }
+                
+                sample *= p->volume;
+            }
 
             for (int channel = 0; channel < layout->channel_count; channel++) {
                 float *ptr = (float*) (areas[channel].ptr + areas[channel].step * frame);
@@ -42,7 +44,8 @@ void fm_player_outstream_callback(struct SoundIoOutStream *outstream, int frame_
             }
         }
 
-        p->playhead += fm_config.dt * frame_count;
+        if (!p->paused)
+            p->playhead += fm_config.dt * frame_count;
 
         if ((err = soundio_outstream_end_write(outstream))) {
             fprintf(stderr, "error: %s\n", soundio_strerror(err));
@@ -63,6 +66,7 @@ fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device) {
     p->bps = 1.0;
     p->playhead = 0;
 	p->volume = 1.0;
+    p->paused = true;
     
     p->outstream = soundio_outstream_create(device);
     if (!p->outstream) {

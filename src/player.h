@@ -46,6 +46,10 @@ typedef struct fm_player {
     // whether or not the player is playing at the moment.
     // set this to false to stop the play loop.
     bool playing;
+
+    // true if the player is paused. pausing a player does not stop the
+    // play loop, and it can be resumed by setting this to false.
+    bool paused;
 } fm_player;
 
 fm_player* fm_new_player(int num_instrs, struct SoundIoDevice *device);

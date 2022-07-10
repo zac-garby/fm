@@ -40,8 +40,8 @@ int main() {
         return 0;
     }
 
-    //player->volume = 0.05;
-    player->volume = 0;
+    player->volume = 0.05;
+    //player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
     make_lute(&player->instrs[0]);
