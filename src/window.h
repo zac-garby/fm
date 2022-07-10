@@ -2,13 +2,13 @@
 #define H_FM_WINDOW
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include <kissfft/kiss_fftr.h>
 #include <math.h>
 
 #include "player.h"
 #include "synth.h"
+#include "font.h"
 
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
@@ -19,13 +19,15 @@
 #define SPECTRUM_VERT_SCALE 0.08f
 #define SPECTRUM_MIN_SCALE 0.01f
 #define SPECTRUM_MAX_SCALE 2.0f
-#define SPECTRUM_SCALE_DELTA 0.05f
+#define SPECTRUM_SCALE_DELTA 0.01f
+#define SPECTRUM_FALLOFF 0.9
 
 #define WAVE_VERT_SCALE 60
 #define WAVE_MIN_SCALE 1
 #define WAVE_MAX_SCALE 100
 #define WAVE_SCALE_DELTA 3
 
+#define FG_COLOUR 210, 210, 210, 255
 #define BG_COLOUR 21, 20, 18, 255
 #define BORDER_COLOUR 48, 41, 50, 255
 #define PANEL_COLOUR 29, 24, 30, 255
@@ -46,6 +48,7 @@ typedef struct fm_spectrum_data {
     float bins[SPECTRO_W];
     bool show_wave;
     float spectrum_scale, wave_scale;
+    char *title;
 } fm_spectrum_data;
 
 typedef struct fm_sequencer_data {
@@ -72,6 +75,7 @@ typedef struct fm_gui_panel {
 typedef struct fm_window {
     SDL_Window *window;
     SDL_Surface *surf, *win_surf;
+    fm_font font;
     int mouse_x, mouse_y;
 
     fm_player *player;

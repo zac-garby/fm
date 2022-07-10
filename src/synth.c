@@ -17,6 +17,11 @@ void fm_new_instr(fm_instrument *instr, int n_ops) {
     instr->hold_buf = calloc(HOLD_BUFFER_SIZE, sizeof(float));
     instr->hold_buf_back = calloc(HOLD_BUFFER_SIZE, sizeof(float));
 
+    for (int i = 0; i < FREQ_DOMAIN; i++) {
+        instr->spectrum[i].r = 0;
+        instr->spectrum[i].i = 0;
+    }
+    
     instr->fft_cfg = kiss_fftr_alloc(HOLD_BUFFER_SIZE,
                                      0, NULL, NULL);
 

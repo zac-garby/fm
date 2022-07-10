@@ -31,6 +31,8 @@ fm_window fm_create_window(fm_player *player) {
     win.mouse_x = 0;
     win.mouse_y = 0;
 
+    win.font = fm_make_font(FG_COLOUR);
+
     setup_panels(&win);
     
     return win;
@@ -55,7 +57,6 @@ void fm_window_loop(fm_window *win) {
             case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEWHEEL:
                 send_mouse_event(win, &win->root, win->mouse_x, win->mouse_y, e);
-                
                 break;
 
             case SDL_KEYDOWN:
@@ -133,79 +134,81 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel) {
 
     render_box(win, panel);
 
-    if (data->synth_index >= win->player->num_instrs) {
-        return;
-    }
-
-    if (SPECTRO_W != safe.w) {
-        printf("the width is wrong\n");
-        return;
-    }
-
-    fm_instrument *instr = &win->player->instrs[data->synth_index];
-
-    if (data->show_wave) {
-        SDL_Rect axis;
-        axis.w = SPECTRO_W;
-        axis.h = 1;
-        axis.x = safe.x;
-        axis.y = safe.y + safe.h / 2;
-
-        SDL_FillRect(win->surf, &axis, panel->border);
-
-        for (int i = 0; i < SPECTRO_W; i++) {
-            float p = (float) i / (float) SPECTRO_W;
-            int j = (int) (p * HOLD_BUFFER_SIZE);
-
-            float sample = instr->hold_buf[j] * data->wave_scale;
-            int sy = sample < 0 ? (int) sample : 0;
-            int ey = sample < 0 ? 0 : (int) sample;
-            if (sy < -safe.h / 2) sy = -safe.h / 2;
-            if (ey > safe.h / 2) ey = safe.h / 2;
+    if (data->synth_index < win->player->num_instrs) {
+        if (SPECTRO_W != safe.w) {
+            printf("the width is wrong\n");
+            return;
+        }
+        
+        fm_instrument *instr = &win->player->instrs[data->synth_index];
+        
+        if (data->show_wave) {
+            SDL_Rect axis;
+            axis.w = SPECTRO_W;
+            axis.h = 1;
+            axis.x = safe.x;
+            axis.y = safe.y + safe.h / 2;
             
-            for (int y = sy; y <= ey; y++) {
-                set_pixel(win->surf, axis.x + i, axis.y + y, fg);
+            SDL_FillRect(win->surf, &axis, panel->border);
+            
+            for (int i = 0; i < SPECTRO_W; i++) {
+                float p = (float) i / (float) SPECTRO_W;
+                int j = (int) (p * HOLD_BUFFER_SIZE);
+                
+                float sample = instr->hold_buf[j] * data->wave_scale;
+                int sy = sample < 0 ? (int) sample : 0;
+                int ey = sample < 0 ? 0 : (int) sample;
+                if (sy < -safe.h / 2) sy = -safe.h / 2;
+                if (ey > safe.h / 2) ey = safe.h / 2;
+                
+                for (int y = sy; y <= ey; y++) {
+                    set_pixel(win->surf, axis.x + i, axis.y + y, fg);
+                }
+            }
+        } else {
+            for (int i = 0; i < SPECTRO_W; i++) {
+                data->bins[i] *= SPECTRUM_FALLOFF;
+            }
+            
+            SDL_Rect bar;
+            bar.w = 1;
+            
+            if (!win->player->paused) {
+                static float freqs[FREQ_DOMAIN];
+                for (int i = 0; i < FREQ_DOMAIN; i++) {
+                    freqs[i] = hypot(instr->spectrum[i].r, instr->spectrum[i].i);
+                }
+                
+                int f = 1, fn = 0;
+                for (int i = 0; i < SPECTRO_W; i++) {
+                    float p = (float) (i + 1) / (float) SPECTRO_W;
+                    fn = (int) (powf((float) FREQ_DOMAIN, p));
+                    
+                    float sum = 0.0f;
+                    int n = 0;
+                    for (int j = f; j < fn + 1; j++) {
+                        sum += freqs[j];
+                        n++;
+                    }
+                    data->bins[i] += sum / n;
+                    
+                    f = fn;
+                }
+            }
+            
+            for (int x = 0; x < SPECTRO_W; x++) {
+                int h = (int) (data->bins[x] * data->spectrum_scale) + 1;
+                if (h > safe.h) h = safe.h;
+                
+                bar.x = x + safe.x;
+                bar.y = safe.h - h + safe.y;
+                bar.h = h;
+                SDL_FillRect(win->surf, &bar, fg);
             }
         }
-    } else {
-        for (int i = 0; i < SPECTRO_W; i++) {
-            data->bins[i] *= 0.5f;
-        }
-        
-        SDL_Rect bar;
-        bar.w = 1;
-        
-        static float freqs[FREQ_DOMAIN];
-        for (int i = 0; i < FREQ_DOMAIN; i++) {
-            freqs[i] = hypot(instr->spectrum[i].r, instr->spectrum[i].i);
-        }
-        
-        int f = 1, fn = 0;
-        for (int i = 0; i < SPECTRO_W; i++) {
-            float p = (float) (i + 1) / (float) SPECTRO_W;
-            fn = (int) (powf((float) FREQ_DOMAIN, p));
-            
-            float sum = 0.0f;
-            int n = 0;
-            for (int j = f; j < fn + 1; j++) {
-                sum += freqs[j];
-                n++;
-            }
-            data->bins[i] += sum / n;
-            
-            f = fn;
-        }
-        
-        for (int x = 0; x < SPECTRO_W; x++) {
-            int h = (int) (data->bins[x] * data->spectrum_scale) + 1;
-            if (h > safe.h) h = safe.h;
-            
-            bar.x = x + safe.x;
-            bar.y = safe.h - h + safe.y;
-            bar.h = h;
-            SDL_FillRect(win->surf, &bar, fg);
-        }
     }
+
+    fm_font_write(win->surf, &win->font, panel->rect.x + 2, panel->rect.y + 2, data->title);
 }
 
 void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
@@ -277,6 +280,8 @@ void setup_panels(fm_window *win) {
         data->show_wave = false;
         data->spectrum_scale = SPECTRUM_VERT_SCALE;
         data->wave_scale = WAVE_VERT_SCALE;
+        data->title = malloc(sizeof(char) * 8);
+        sprintf(data->title, "INSTR-%d", i);
         for (int i = 0; i < SPECTRO_W; i++) data->bins[i] = 0;
         
         win->root.children[i].data = data;
