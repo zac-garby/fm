@@ -244,7 +244,8 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
 
         Uint32 cell_div = SDL_MapRGBA(data->canvas->format, SEQ_CELL_DIVIDER_COLOUR);
         
-        Uint32 cell_bg[12] = {
+        Uint32 cell_bg[24] = {
+            // normal colours
             SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_OCTAVE),
             SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
             SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
@@ -257,6 +258,20 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
             SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
             SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
             SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+
+            // colours for the first in a bar
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_FIRST_1),
         };
         
         int bg_index = 0;
@@ -274,7 +289,11 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
             for (int col = 0; col < data->song_length; col++) {
                 cell.x = col * (SEQ_CELL_W + 1);
 
-                SDL_FillRect(data->canvas, &cell, cell_bg[bg_index]);
+                if (col % data->song.beats_per_bar == 0) {
+                    SDL_FillRect(data->canvas, &cell, cell_bg[bg_index + 12]);
+                } else {
+                    SDL_FillRect(data->canvas, &cell, cell_bg[bg_index]);
+                }
             }
             
             bg_index = (bg_index + 1) % 12;
@@ -293,15 +312,17 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
         
         float cell_x_frac = ((float) x + clip.x) / (SEQ_CELL_W + 1);
         int cell_x = (int) cell_x_frac;
+        int bar = cell_x / data->song.beats_per_bar;
+        int beat = cell_x % data->song.beats_per_bar;
         int cell_subdiv = (int) (10 * (cell_x_frac - (float) cell_x));
         int cell_y = SEQ_NUM_OCTAVES * 12 - 1 - (y + clip.y) / SEQ_CELL_H;
         int octave = cell_y / 12;
         int note = cell_y % 12;
 
         char text[16];
-        sprintf(&text, "%s%d", NOTE_NAMES[note], octave);
+        sprintf(text, "%s%d", NOTE_NAMES[note], octave);
         fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
-        sprintf(&text, "%d:%d", cell_x, cell_subdiv + 1);
+        sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_subdiv + 1);
         fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
     }
 }

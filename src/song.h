@@ -15,6 +15,7 @@ typedef struct fm_song_part {
 
 typedef struct fm_song {
     int bpm;
+    int beats_per_bar;
     int num_parts;
     fm_song_part *parts;
 } fm_song;

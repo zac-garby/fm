@@ -7,6 +7,7 @@ fm_song fm_new_song(int num_parts, int bpm) {
     fm_song song;
     
     song.bpm = bpm;
+    song.beats_per_bar = 4;
     song.num_parts = num_parts;
     song.parts = malloc(sizeof(fm_song_part) * num_parts);
 
