@@ -1,16 +1,5 @@
 #include "window.h"
 
-void send_mouse_event(fm_window*, fm_gui_panel*, int x, int y, SDL_Event e);
-void setup_panels(fm_window *win);
-void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border, Uint32 corner);
-void render_spectrum(fm_window *win, fm_gui_panel *panel);
-void render_children(fm_window *win, fm_gui_panel *panel);
-void render_box(fm_window *win, fm_gui_panel *panel);
-SDL_Rect make_rect(int x, int y, int w, int h);
-bool point_in_rect(int x, int y, SDL_Rect *r);
-SDL_Rect get_safe_area(fm_gui_panel*);
-void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
-
 fm_window fm_create_window(fm_player *player) {
     fm_window win;
 
@@ -309,15 +298,11 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
         int octave = cell_y / 12;
         int note = cell_y % 12;
 
-        char text[8];
+        char text[16];
         sprintf(&text, "%s%d", NOTE_NAMES[note], octave);
-        int text_w = fm_font_measure(&win->font, text);
-        SDL_Rect popup = make_rect(win->mouse_x + 6, win->mouse_y - 7, text_w + 2, 7);
-
-        draw_rect(win->surf, &popup,
-                  SDL_MapRGBA(win->surf->format, PANEL_COLOUR),
-                  0, 0);
-        fm_font_write(win->surf, &win->font, win->mouse_x + 7, win->mouse_y - 6, text);
+        fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
+        sprintf(&text, "%d:%d", cell_x, cell_subdiv + 1);
+        fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
     }
 }
 
@@ -490,4 +475,15 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint32 colour) {
                                               + y * surface->pitch
                                               + x * surface->format->BytesPerPixel);
     *target_pixel = colour;
+}
+
+void fm_draw_tooltip(fm_window *win, int x, int y, char *text) {
+    int text_w = fm_font_measure(&win->font, text);
+    SDL_Rect popup = make_rect(x, y - 7, text_w + 2, 7);
+    
+    draw_rect(win->surf, &popup,
+              SDL_MapRGBA(win->surf->format, PANEL_COLOUR),
+              0, 0);
+    
+    fm_font_write(win->surf, &win->font, x + 1, y - 6, text);
 }

@@ -110,4 +110,16 @@ fm_gui_panel fm_make_panel(int x, int y, int w, int h,
 // needs to be called in the main thread
 void fm_window_loop(fm_window *win);
 
+void fm_draw_tooltip(fm_window *win, int x, int y, char *text);
+void send_mouse_event(fm_window*, fm_gui_panel*, int x, int y, SDL_Event e);
+void setup_panels(fm_window *win);
+void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border, Uint32 corner);
+void render_spectrum(fm_window *win, fm_gui_panel *panel);
+void render_children(fm_window *win, fm_gui_panel *panel);
+void render_box(fm_window *win, fm_gui_panel *panel);
+SDL_Rect make_rect(int x, int y, int w, int h);
+bool point_in_rect(int x, int y, SDL_Rect *r);
+SDL_Rect get_safe_area(fm_gui_panel*);
+void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
+
 #endif
