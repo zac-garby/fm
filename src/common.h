@@ -4,6 +4,8 @@
 #define PI 3.1415926535
 #define SQRT2 1.41421356
 
+#define CLAMP(x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
+
 struct {
     int sample_rate;
     double dt;

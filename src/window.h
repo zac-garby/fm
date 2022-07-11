@@ -42,6 +42,15 @@
 #define INSTR2_COLOUR 126, 144, 238, 255
 #define INSTR3_COLOUR 255, 251, 181, 255
 
+#define SEQ_CELL_W 8
+#define SEQ_CELL_H 4
+#define SEQ_NUM_OCTAVES 9
+
+#define SEQ_CELL_BG_COLOUR_1 85, 76, 87, 255
+#define SEQ_CELL_BG_COLOUR_2 76, 68, 80, 255
+#define SEQ_CELL_BG_COLOUR_OCTAVE 84, 65, 87, 255
+#define SEQ_CELL_DIVIDER_COLOUR 65, 57, 66, 255
+
 struct fm_window;
 struct fm_gui_panel;
 
@@ -56,6 +65,11 @@ typedef struct fm_spectrum_data {
 typedef struct fm_sequencer_data {
     int part_index;
     fm_song song;
+
+    float scroll_x, scroll_y;
+    int song_length;
+    SDL_Surface *canvas;
+    bool needs_redraw;
 } fm_sequencer_data;
 
 typedef void fm_panel_renderer(struct fm_window*, struct fm_gui_panel*);

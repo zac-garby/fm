@@ -268,9 +268,9 @@ fm_reverb fm_new_reverb(float mix) {
     rv.fdn = fm_new_fdn(3041, 3385, 4481, 5477);
     
     fm_fdn_hadamard(&rv.fdn);
-    rv.fdn.feedback_gain[0] = 0.94;
-    rv.fdn.feedback_gain[1] = 0.93;
-    rv.fdn.feedback_gain[2] = 0.9;
+    rv.fdn.feedback_gain[0] = 0.83;
+    rv.fdn.feedback_gain[1] = 0.9;
+    rv.fdn.feedback_gain[2] = 0.93;
     rv.fdn.feedback_gain[3] = 0.85;
     
     for (int i = 0; i < 4; i++) {

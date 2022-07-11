@@ -10,6 +10,10 @@ typedef struct fm_note {
     float velocity;
 } fm_note;
 
+static const char * NOTE_NAMES[12] = {
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+};
+
 fm_note fm_make_note(float freq, double start, float duration, float velocity);
 
 

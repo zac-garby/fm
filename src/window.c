@@ -7,6 +7,7 @@ void render_spectrum(fm_window *win, fm_gui_panel *panel);
 void render_children(fm_window *win, fm_gui_panel *panel);
 void render_box(fm_window *win, fm_gui_panel *panel);
 SDL_Rect make_rect(int x, int y, int w, int h);
+bool point_in_rect(int x, int y, SDL_Rect *r);
 SDL_Rect get_safe_area(fm_gui_panel*);
 void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
 
@@ -50,8 +51,8 @@ void fm_window_loop(fm_window *win) {
                 break;
 
             case SDL_MOUSEMOTION:
-                win->mouse_x = e.motion.x;
-                win->mouse_y = e.motion.y;
+                win->mouse_x = e.motion.x / SCREEN_SCALE;
+                win->mouse_y = e.motion.y / SCREEN_SCALE;
 
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
@@ -80,10 +81,7 @@ void fm_window_loop(fm_window *win) {
 }
 
 void send_mouse_event(fm_window *win, fm_gui_panel *panel,
-                      int screen_x, int screen_y, SDL_Event e) {
-    int x = screen_x / SCREEN_SCALE;
-    int y = screen_y / SCREEN_SCALE;
-
+                      int x, int y, SDL_Event e) {
     if (panel->handler != NULL) {
         panel->handler(win, panel, e);
     }
@@ -95,7 +93,7 @@ void send_mouse_event(fm_window *win, fm_gui_panel *panel,
             x < child->rect.x + child->rect.w &&
             y < child->rect.y + child->rect.h) {
             
-            send_mouse_event(win, child, screen_x, screen_y, e);
+            send_mouse_event(win, child, x, y, e);
         }
     }
 }
@@ -238,6 +236,109 @@ void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
     }
 }
 
+void sequencer_render(fm_window *win, fm_gui_panel *panel) {
+    render_box(win, panel);
+
+    fm_sequencer_data *data = (fm_sequencer_data*) panel->data;
+    SDL_Rect safe = get_safe_area(panel);
+    
+    if (data->needs_redraw) {
+        data->needs_redraw = false;
+        
+        if (data->canvas == NULL) {
+            data->canvas =
+                SDL_CreateRGBSurface(0, (SEQ_CELL_W + 1) * data->song_length,
+                                     SEQ_CELL_H * SEQ_NUM_OCTAVES * 12,
+                                     32, 0, 0, 0, 0);
+
+        }
+
+        Uint32 cell_div = SDL_MapRGBA(data->canvas->format, SEQ_CELL_DIVIDER_COLOUR);
+        
+        Uint32 cell_bg[12] = {
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_OCTAVE),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_2),
+            SDL_MapRGBA(data->canvas->format, SEQ_CELL_BG_COLOUR_1),
+        };
+        
+        int bg_index = 0;
+
+        SDL_Rect cell;
+        cell.w = SEQ_CELL_W;
+        cell.h = SEQ_CELL_H;
+
+        SDL_FillRect(data->canvas, NULL, cell_div);
+
+        for (int row = 0; row < SEQ_NUM_OCTAVES * 12; row++) {
+            // (needs to be flipped vertically...)
+            cell.y = data->canvas->h - (row * SEQ_CELL_H + SEQ_CELL_H);
+            
+            for (int col = 0; col < data->song_length; col++) {
+                cell.x = col * (SEQ_CELL_W + 1);
+
+                SDL_FillRect(data->canvas, &cell, cell_bg[bg_index]);
+            }
+            
+            bg_index = (bg_index + 1) % 12;
+        }
+    }
+
+    SDL_Rect clip = get_safe_area(panel);
+    clip.x = (int) data->scroll_x;
+    clip.y = data->canvas->h - safe.h - (int) data->scroll_y;
+
+    SDL_BlitSurface(data->canvas, &clip, win->surf, &safe);
+
+    if (point_in_rect(win->mouse_x, win->mouse_y, &safe)) {
+        int x = win->mouse_x - safe.x;
+        int y = win->mouse_y - safe.y;
+        
+        float cell_x_frac = ((float) x + clip.x) / (SEQ_CELL_W + 1);
+        int cell_x = (int) cell_x_frac;
+        int cell_subdiv = (int) (10 * (cell_x_frac - (float) cell_x));
+        int cell_y = SEQ_NUM_OCTAVES * 12 - 1 - (y + clip.y) / SEQ_CELL_H;
+        int octave = cell_y / 12;
+        int note = cell_y % 12;
+
+        char text[8];
+        sprintf(&text, "%s%d", NOTE_NAMES[note], octave);
+        int text_w = fm_font_measure(&win->font, text);
+        SDL_Rect popup = make_rect(win->mouse_x + 6, win->mouse_y - 7, text_w + 2, 7);
+
+        draw_rect(win->surf, &popup,
+                  SDL_MapRGBA(win->surf->format, PANEL_COLOUR),
+                  0, 0);
+        fm_font_write(win->surf, &win->font, win->mouse_x + 7, win->mouse_y - 6, text);
+    }
+}
+
+void sequencer_handler(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
+    UNUSED(win);
+    
+    fm_sequencer_data *data = (fm_sequencer_data*) panel->data;
+    SDL_Rect safe = get_safe_area(panel);
+
+    switch (e.type) {
+    case SDL_MOUSEWHEEL:
+        data->scroll_x = CLAMP(data->scroll_x + e.wheel.preciseX,
+                               0, data->canvas->w - safe.w);
+        
+        data->scroll_y = CLAMP(data->scroll_y + e.wheel.preciseY,
+                               0, data->canvas->h - safe.h);
+        
+        break;
+    }
+}
+
 void render_box(fm_window *win, fm_gui_panel *panel) {
     draw_rect(win->surf, &panel->rect, panel->bg, panel->border, panel->corner);
     render_children(win, panel);
@@ -304,18 +405,24 @@ void setup_panels(fm_window *win) {
     win->root.children[4].children[0] =
         fm_make_panel(2, 2 + 4 * (SPECTRO_H + 3),
                       SCREEN_WIDTH - 4,
-                      10,
+                      11,
                       0, win, render_box, NULL);
     win->root.children[4].children[0].parent = &win->root.children[4];
 
     win->root.children[4].children[1] =
-        fm_make_panel(2, 13 + 4 * (SPECTRO_H + 3),
+        fm_make_panel(2, 14 + 4 * (SPECTRO_H + 3),
                       SCREEN_WIDTH - 4,
-                      SCREEN_HEIGHT - (13 + 4 * (SPECTRO_H + 3)) - 2,
-                      0, win, render_box, NULL);
+                      SCREEN_HEIGHT - (14 + 4 * (SPECTRO_H + 3)) - 2,
+                      0, win, sequencer_render, sequencer_handler);
     fm_sequencer_data *seq_data = malloc(sizeof(fm_sequencer_data));
     seq_data->part_index = 0;
     seq_data->song = fm_new_song(4, 120);
+    seq_data->scroll_x = 0;
+    seq_data->scroll_y = 0;
+    seq_data->needs_redraw = true;
+    seq_data->song_length = 64;
+    seq_data->canvas = NULL;
+
     win->root.children[4].children[1].parent = &win->root.children[4];
     win->root.children[4].children[1].data = seq_data;
 
@@ -330,20 +437,30 @@ void setup_panels(fm_window *win) {
 }
 
 void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border, Uint32 corner) {
-    SDL_FillRect(s, r, border);
+    if (border != 0) {
+        SDL_FillRect(s, r, border);
+    }
 
-    SDL_Rect inner;
-    inner.x = r->x + 1;
-    inner.y = r->y + 1;
-    inner.w = r->w - 2;
-    inner.h = r->h - 2;
+    if (bg != 0) {
+        SDL_Rect inner;
+        if (border == 0) {
+            inner = *r;
+        } else {
+            inner.x = r->x + 1;
+            inner.y = r->y + 1;
+            inner.w = r->w - 2;
+            inner.h = r->h - 2;
+        }
 
-    SDL_FillRect(s, &inner, bg);
-    
-    set_pixel(s, r->x, r->y, corner);
-    set_pixel(s, r->x + r->w - 1, r->y, corner);
-    set_pixel(s, r->x, r->y + r->h - 1, corner);
-    set_pixel(s, r->x + r->w - 1, r->y + r->h - 1, corner);
+        SDL_FillRect(s, &inner, bg);
+    }
+
+    if (corner != 0) {
+        set_pixel(s, r->x, r->y, corner);
+        set_pixel(s, r->x + r->w - 1, r->y, corner);
+        set_pixel(s, r->x, r->y + r->h - 1, corner);
+        set_pixel(s, r->x + r->w - 1, r->y + r->h - 1, corner);
+    }
 }
 
 SDL_Rect get_safe_area(fm_gui_panel *panel) {
@@ -364,42 +481,13 @@ SDL_Rect make_rect(int x, int y, int w, int h) {
     return r;
 }
 
+bool point_in_rect(int x, int y, SDL_Rect *r) {
+    return x >= r->x && y >= r->y && x < r->x + r->w && y < r->y + r->h;
+}
+
 void set_pixel(SDL_Surface *surface, int x, int y, Uint32 colour) {
     Uint32 * const target_pixel = (Uint32 *) ((Uint8 *) surface->pixels
                                               + y * surface->pitch
                                               + x * surface->format->BytesPerPixel);
     *target_pixel = colour;
 }
-
-/*
-  plotLine(x0, y0, x1, y1)
-    dx = x1 - x0
-    dy = y1 - y0
-    D = 2*dy - dx
-    y = y0
-
-    for x from x0 to x1
-        plot(x,y)
-        if D > 0
-            y = y + 1
-            D = D - 2*dx
-        end if
-        D = D + 2*dy
-void draw_line(SDL_Surface *s, int x0, int y0, int x1, int y1, Uint32 colour) {
-    int dx = x1 - x0;
-    int dy = y1 - y0;
-    int D = 2 * dy - dx;
-    int y = y0;
-
-    for (int x = x0; x <= x1; x++) {
-        set_pixel(s, x, y, colour);
-
-        if (D > 0) {
-            y++;
-            D -= 2 * dx;
-        }
-
-        D += 2 * dy;
-    }
-}
-*/

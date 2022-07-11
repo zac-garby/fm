@@ -34,9 +34,9 @@ int main() {
 
     struct SoundIoDevice *device = init_audio();
 
-    player = fm_new_player(3, device);
+    player = fm_new_player(1, device);
     
-    if (!fm_parse_song("assets/passacaglia.txt", &player->song)) {
+    if (!fm_parse_song("assets/bwv1013.txt", &player->song)) {
         return 0;
     }
 
@@ -44,9 +44,9 @@ int main() {
     // player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_organ(&player->instrs[0]);
-    make_organ(&player->instrs[1]);
-    make_organ(&player->instrs[2]);
+    make_flute(&player->instrs[0]);
+    // make_organ(&player->instrs[1]);
+    // make_organ(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);
@@ -66,8 +66,8 @@ int main() {
     fm_player_pause(player);
     pthread_join(player_thread, NULL);
 
-    double duration = fm_song_duration(&player->song);
-    fm_export_wav("out.wav", player, 48000, 16, duration + 5);
+    // double duration = fm_song_duration(&player->song);
+    // fm_export_wav("out.wav", player, 48000, 16, duration + 5);
     
     return 0;
 }
@@ -105,7 +105,7 @@ struct SoundIoDevice* init_audio() {
 }
 
 void make_flute(fm_instrument *instr) {
-    fm_new_instr(instr, 5);
+    fm_new_instr(instr, 6);
 
     fm_eq_lowpass(&instr->eq, 4000, 2);
     fm_eq_highpass(&instr->eq, 250, 2);
@@ -118,39 +118,47 @@ void make_flute(fm_instrument *instr) {
     carr.recv_level[0] = 4.0f;
     carr.recv_type[0] = FM_RECV_MODULATE;
     carr.recv[1] = 3;
-    carr.recv_level[1] = 4;
+    carr.recv_type[1] = FM_RECV_VIBRATO;
+    carr.recv_level[1] = 1.5;
     carr.send[0] = 0;
     carr.send_level[0] = 0.5f;
     instr->ops[0] = carr;
 
     fm_operator mod1 = fm_new_op(0, 1, false, 2.0f);
-    mod1.envelope = fm_make_envelope(0.05, 0.45, 0.75, 0.35f);
+    mod1.envelope = fm_make_envelope(0.05, 0.45, 0.9, 0.35f);
     mod1.send[0] = 1;
-    mod1.send_level[0] = 0.53f;
+    mod1.send_level[0] = 0.33f;
     instr->ops[1] = mod1;
 
     fm_operator mod2 = fm_new_op(0, 1, false, 1.0f);
-    mod2.envelope = fm_make_envelope(0.06, 0.45, 0.75, 0.35f);
+    mod2.envelope = fm_make_envelope(0.06, 0.45, 0.9, 0.35f);
     mod2.send[0] = 1;
-    mod2.send_level[0] = 0.37f;
+    mod2.send_level[0] = 0.27f;
     instr->ops[2] = mod2;
 
-    fm_operator fb = fm_new_op(2, 1, false, 1.1f);
-    fb.envelope = fm_make_envelope(0.04, 0.5, 0.1, 0.15f);
-    fb.recv[0] = 2;
-    fb.recv_level[0] = 3.0f;
-    fb.recv_type[0] = FM_RECV_MODULATE;
-    fb.send[0] = 2;
-    fb.send_level[0] = 0.5f;
-    fb.send[1] = 1;
-    fb.send_level[0] = 0.35f;
-    instr->ops[3] = fb;
+    fm_operator mod3 = fm_new_op(1, 1, false, 1.01f);
+    mod3.envelope = fm_make_envelope(0.02, 0.45, 0.9, 0.1);
+    mod3.recv[0] = 4;
+    mod3.recv_level[0] = 0.045;
+    mod3.recv_type[0] = FM_RECV_MODULATE;
+    mod3.send[0] = 1;
+    mod3.send_level[0] = 0.2;
+    instr->ops[3] = mod3;
+    
+    fm_operator feedback = fm_new_op(1, 1, false, 1.0f);
+    feedback.envelope = fm_make_envelope(0.05, 1.0, 1.0, 0.35);
+    feedback.recv[0] = 4;
+    feedback.recv_type[0] = FM_RECV_MODULATE;
+    feedback.recv_level[0] = 0.12;
+    feedback.send[0] = 4;
+    feedback.send_level[0] = 1.0;
+    instr->ops[4] = feedback;
 
     fm_operator vib = fm_new_op(0, 1, true, 4.0f);
     vib.envelope = fm_make_envelope(1.3, 0.2, 2.0, 0.0);
     vib.send[0] = 3;
     vib.send_level[0] = 1.0f;
-    instr->ops[4] = vib;
+    instr->ops[5] = vib;
 }
 
 void make_lute(fm_instrument *instr) {

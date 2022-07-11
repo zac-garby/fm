@@ -55,3 +55,15 @@ void fm_font_write(SDL_Surface *surf, fm_font *font, int x, int y, char *text) {
         r.x += font->surfaces[(int) c]->w + 1;
     }
 }
+
+int fm_font_measure(fm_font *font, char *text) {
+    char c;
+
+    int x = 0;
+
+    while ((c = *(text++)) != '\0') {
+        x += font->surfaces[(int) c]->w + 1;
+    }
+
+    return x - 1;
+}

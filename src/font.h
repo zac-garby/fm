@@ -13,5 +13,6 @@ typedef struct fm_font {
 
 fm_font fm_make_font(int r, int g, int b, int a);
 void fm_font_write(SDL_Surface *surf, fm_font *font, int x, int y, char *text);
+int fm_font_measure(fm_font *font, char *text);
 
 #endif
