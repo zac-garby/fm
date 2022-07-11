@@ -30,6 +30,8 @@
 #define FG_COLOUR 210, 210, 210, 255
 #define BG_COLOUR 21, 20, 18, 255
 #define BORDER_COLOUR 48, 41, 50, 255
+#define BORDER_CORNER_COLOUR 34, 29, 36, 255
+#define WIN_BORDER_COLOUR 78, 71, 80, 255
 #define PANEL_COLOUR 29, 24, 30, 255
 
 #define SPECTRO_W 128
@@ -69,7 +71,7 @@ typedef struct fm_gui_panel {
     struct fm_gui_panel *children;
     int num_children;
 
-    Uint32 bg, border;
+    Uint32 bg, border, corner;
 } fm_gui_panel;
 
 typedef struct fm_window {

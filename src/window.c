@@ -2,7 +2,7 @@
 
 void send_mouse_event(fm_window*, fm_gui_panel*, int x, int y, SDL_Event e);
 void setup_panels(fm_window *win);
-void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border);
+void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border, Uint32 corner);
 void render_spectrum(fm_window *win, fm_gui_panel *panel);
 void render_children(fm_window *win, fm_gui_panel *panel);
 void render_box(fm_window *win, fm_gui_panel *panel);
@@ -13,7 +13,7 @@ void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
 fm_window fm_create_window(fm_player *player) {
     fm_window win;
 
-    win.window = SDL_CreateWindow("FM Synthesizer",
+    win.window = SDL_CreateWindow("Synthesizer",
                                   SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   REAL_WIDTH, REAL_HEIGHT,
                                   SDL_WINDOW_SHOWN);
@@ -239,7 +239,7 @@ void spectrum_handle_event(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
 }
 
 void render_box(fm_window *win, fm_gui_panel *panel) {
-    draw_rect(win->surf, &panel->rect, panel->bg, panel->border);
+    draw_rect(win->surf, &panel->rect, panel->bg, panel->border, panel->corner);
     render_children(win, panel);
 }
 
@@ -259,13 +259,17 @@ fm_gui_panel fm_make_panel(int x, int y, int w, int h,
 
     p.bg = SDL_MapRGBA(win->surf->format, PANEL_COLOUR);
     p.border = SDL_MapRGBA(win->surf->format, BORDER_COLOUR);
+    p.corner = SDL_MapRGBA(win->surf->format, BORDER_CORNER_COLOUR);
 
     return p;
 }
 
 void setup_panels(fm_window *win) {
     win->root = fm_make_panel(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-                              6, win, render_children, NULL);
+                              6, win, render_box, NULL);
+    win->root.border = SDL_MapRGBA(win->surf->format, WIN_BORDER_COLOUR);
+    win->root.corner = win->root.border;
+    win->root.bg = SDL_MapRGBA(win->surf->format, BG_COLOUR);
     win->root.parent = NULL;
 
     // spectrum/waveform windows
@@ -294,13 +298,7 @@ void setup_panels(fm_window *win) {
         fm_make_panel(2, 2 + 4 * (SPECTRO_H + 3),
                       SCREEN_WIDTH - 4,
                       SCREEN_HEIGHT - 2 - (2 + 4 * (SPECTRO_H + 3)),
-                      1, win, render_children, NULL);
-
-    fm_sequencer_data *seq_data = malloc(sizeof(fm_sequencer_data));
-    seq_data->part_index = 0;
-    seq_data->song = fm_new_song(4, 120);
-    
-    win->root.children[4].data = seq_data;
+                      2, win, render_children, NULL);
     win->root.children[4].parent = &win->root;
 
     win->root.children[4].children[0] =
@@ -308,8 +306,18 @@ void setup_panels(fm_window *win) {
                       SCREEN_WIDTH - 4,
                       10,
                       0, win, render_box, NULL);
-
     win->root.children[4].children[0].parent = &win->root.children[4];
+
+    win->root.children[4].children[1] =
+        fm_make_panel(2, 13 + 4 * (SPECTRO_H + 3),
+                      SCREEN_WIDTH - 4,
+                      SCREEN_HEIGHT - (13 + 4 * (SPECTRO_H + 3)) - 2,
+                      0, win, render_box, NULL);
+    fm_sequencer_data *seq_data = malloc(sizeof(fm_sequencer_data));
+    seq_data->part_index = 0;
+    seq_data->song = fm_new_song(4, 120);
+    win->root.children[4].children[1].parent = &win->root.children[4];
+    win->root.children[4].children[1].data = seq_data;
 
     // instrument controls panel
     win->root.children[5] =
@@ -321,7 +329,7 @@ void setup_panels(fm_window *win) {
     win->root.children[5].parent = &win->root;
 }
 
-void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border) {
+void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border, Uint32 corner) {
     SDL_FillRect(s, r, border);
 
     SDL_Rect inner;
@@ -331,6 +339,11 @@ void draw_rect(SDL_Surface *s, SDL_Rect *r, Uint32 bg, Uint32 border) {
     inner.h = r->h - 2;
 
     SDL_FillRect(s, &inner, bg);
+    
+    set_pixel(s, r->x, r->y, corner);
+    set_pixel(s, r->x + r->w - 1, r->y, corner);
+    set_pixel(s, r->x, r->y + r->h - 1, corner);
+    set_pixel(s, r->x + r->w - 1, r->y + r->h - 1, corner);
 }
 
 SDL_Rect get_safe_area(fm_gui_panel *panel) {

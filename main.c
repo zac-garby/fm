@@ -41,7 +41,7 @@ int main() {
     }
 
     player->volume = 0.05;
-    player->volume = 0;
+    // player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
     make_organ(&player->instrs[0]);
