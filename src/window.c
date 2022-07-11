@@ -6,7 +6,7 @@ fm_window fm_create_window(fm_player *player) {
     win.window = SDL_CreateWindow("Synthesizer",
                                   SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   REAL_WIDTH, REAL_HEIGHT,
-                                  SDL_WINDOW_SHOWN);
+                                  SDL_WINDOW_ALLOW_HIGHDPI);
     if (win.window == NULL) {
         fprintf(stderr, "could not create a window: %s\n", SDL_GetError());
         exit(1);
