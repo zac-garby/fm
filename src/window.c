@@ -500,6 +500,9 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint32 colour) {
 
 void fm_draw_tooltip(fm_window *win, int x, int y, char *text) {
     int text_w = fm_font_measure(&win->font, text);
+    
+    while (x + text_w >= SCREEN_WIDTH - 4) x--;
+    
     SDL_Rect popup = make_rect(x, y - 7, text_w + 2, 7);
     
     draw_rect(win->surf, &popup,
