@@ -424,7 +424,7 @@ void setup_panels(fm_window *win) {
     seq_data->part_index = 0;
     seq_data->song = fm_new_song(4, 120);
     seq_data->scroll_x = 0;
-    seq_data->scroll_y = 0;
+    seq_data->scroll_y = 12 * 3 * SEQ_CELL_H;
     seq_data->needs_redraw = true;
     seq_data->song_length = 64;
     seq_data->canvas = NULL;
