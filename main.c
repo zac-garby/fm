@@ -36,7 +36,7 @@ int main() {
 
     player = fm_new_player(2, device);
     
-    if (!fm_parse_song("assets/crab.txt", &player->song)) {
+    if (!fm_parse_song("assets/harpsichord5.txt", &player->song)) {
         return 0;
     }
 
@@ -44,9 +44,9 @@ int main() {
     // player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_flute(&player->instrs[0]);
-    make_flute(&player->instrs[1]);
-    // make_organ(&player->instrs[2]);
+    make_lute(&player->instrs[0]);
+    make_lute(&player->instrs[1]);
+    // make_lute(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
     // make_organ(&player->instrs[5]);

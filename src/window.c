@@ -319,11 +319,14 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
         int octave = cell_y / 12;
         int note = cell_y % 12;
 
-        char text[16];
-        sprintf(text, "%s%d", NOTE_NAMES[note], octave);
-        fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
-        sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_subdiv + 1);
-        fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
+        if (cell_subdiv < 8) {
+            // inside a beat (>= 8 would be between beats)
+            char text[16];
+            sprintf(text, "%s%d", NOTE_NAMES[note], octave);
+            fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
+            sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_subdiv + 1);
+            fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
+        }
     }
 }
 
