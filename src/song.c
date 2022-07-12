@@ -60,6 +60,16 @@ int fm_parse_song(char *filename, fm_song *song) {
             break;
 
         case 1:
+            // needs beats per bar
+            if (!fm_parse_string(&line, "beats_per_bar")) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_int(&line, &song->beats_per_bar)) goto error;
+            if (!fm_parse_eol(&line)) goto error;
+
+            state = 2;
+            break;
+
+        case 2:
             // needs num. parts
             if (!fm_parse_string(&line, "num_parts")) goto error;
             if (!fm_parse_spaces(&line)) goto error;
@@ -67,10 +77,10 @@ int fm_parse_song(char *filename, fm_song *song) {
             if (!fm_parse_eol(&line)) goto error;
             
             song->parts = malloc(sizeof(fm_song_part) * song->num_parts);
-            state = 2;
+            state = 3;
             break;
 
-        case 2:
+        case 3:
             // got bpm and num. parts, expecting a part definition
             if (!fm_parse_string(&line, "part")) goto error;
             if (!fm_parse_eol(&line)) goto error;
@@ -81,12 +91,12 @@ int fm_parse_song(char *filename, fm_song *song) {
                 state = -1;
             } else {
                 // otherwise, parse the next part
-                state = 3;
+                state = 4;
             }
             
             break;
 
-        case 3:
+        case 4:
             // inside a part definition, expecting num. notes
             if (!fm_parse_string(&line, "num_notes")) goto error;
             if (!fm_parse_spaces(&line)) goto error;
@@ -95,10 +105,10 @@ int fm_parse_song(char *filename, fm_song *song) {
 
             song->parts[part_num].notes = malloc(sizeof(fm_note) * song->parts[part_num].num_notes);
             note_num = 0;
-            state = 4;
+            state = 5;
             break;
 
-        case 4:
+        case 5:
             // inside a part definition, got num. notes. expecting a note
             if (!fm_parse_int(&line, &note.beat)) goto error;
             if (!fm_parse_string(&line, ":")) goto error;
@@ -114,17 +124,17 @@ int fm_parse_song(char *filename, fm_song *song) {
             song->parts[part_num].notes[note_num++] = note;
 
             if (note_num == song->parts[part_num].num_notes) {
-                state = 5;
+                state = 6;
             }
             
             break;
 
-        case 5:
+        case 6:
             // got all of the notes for one part, expecting an "end"
             if (!fm_parse_string(&line, "end")) goto error;
             if (!fm_parse_eol(&line)) goto error;
 
-            state = 2;
+            state = 3;
 
             break;
         }

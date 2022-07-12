@@ -289,7 +289,7 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
             for (int col = 0; col < data->song_length; col++) {
                 cell.x = col * (SEQ_CELL_W + 1);
 
-                if (col % data->song.beats_per_bar == 0) {
+                if (col % win->player->song.beats_per_bar == 0) {
                     SDL_FillRect(data->canvas, &cell, cell_bg[bg_index + 12]);
                 } else {
                     SDL_FillRect(data->canvas, &cell, cell_bg[bg_index]);
@@ -312,8 +312,8 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
         
         float cell_x_frac = ((float) x + clip.x) / (SEQ_CELL_W + 1);
         int cell_x = (int) cell_x_frac;
-        int bar = cell_x / data->song.beats_per_bar;
-        int beat = cell_x % data->song.beats_per_bar;
+        int bar = cell_x / win->player->song.beats_per_bar;
+        int beat = cell_x % win->player->song.beats_per_bar;
         int cell_subdiv = (int) (10 * (cell_x_frac - (float) cell_x));
         int cell_y = SEQ_NUM_OCTAVES * 12 - 1 - (y + clip.y) / SEQ_CELL_H;
         int octave = cell_y / 12;
@@ -425,7 +425,6 @@ void setup_panels(fm_window *win) {
                       0, win, sequencer_render, sequencer_handler);
     fm_sequencer_data *seq_data = malloc(sizeof(fm_sequencer_data));
     seq_data->part_index = 0;
-    seq_data->song = fm_new_song(4, 120);
     seq_data->scroll_x = 0;
     seq_data->scroll_y = 12 * 3 * SEQ_CELL_H;
     seq_data->needs_redraw = true;

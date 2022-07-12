@@ -66,7 +66,6 @@ typedef struct fm_spectrum_data {
 
 typedef struct fm_sequencer_data {
     int part_index;
-    fm_song song;
 
     float scroll_x, scroll_y;
     int song_length;

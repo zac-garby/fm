@@ -1,4 +1,5 @@
 bpm 60
+beats_per_bar 4
 
 num_parts 2
 
