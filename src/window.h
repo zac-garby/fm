@@ -124,5 +124,10 @@ SDL_Rect make_rect(int x, int y, int w, int h);
 bool point_in_rect(int x, int y, SDL_Rect *r);
 SDL_Rect get_safe_area(fm_gui_panel*);
 void set_pixel(SDL_Surface *s, int x, int y, Uint32 colour);
+void get_sequencer_mouse_location(fm_window *win,
+                                  fm_gui_panel *panel,
+                                  int *bar, int *beat,
+                                  int *div, int *octave,
+                                  int *note);
 
 #endif

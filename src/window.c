@@ -335,23 +335,13 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
     SDL_BlitSurface(data->canvas, &clip, win->surf, &safe);
 
     if (point_in_rect(win->mouse_x, win->mouse_y, &safe)) {
-        int x = win->mouse_x - safe.x;
-        int y = win->mouse_y - safe.y;
-        
-        float cell_x_frac = ((float) x + clip.x) / (SEQ_CELL_W + 1);
-        int cell_x = (int) cell_x_frac;
-        float div_amount = 1.0f / (SEQ_CELL_W + 1);
-        int cell_div = (int) (FM_BEAT_DIVISIONS * (cell_x_frac - (float) cell_x) / (1.0f - div_amount));
-        int bar = cell_x / win->player->song.beats_per_bar;
-        int beat = cell_x % win->player->song.beats_per_bar;
-        int cell_y = SEQ_NUM_OCTAVES * 12 - 1 - (y + clip.y) / SEQ_CELL_H;
-        int octave = cell_y / 12;
-        int note = cell_y % 12;
+        int bar, beat, div, octave, note;
+        get_sequencer_mouse_location(win, panel, &bar, &beat, &div, &octave, &note);
 
         char text[16];
         sprintf(text, "%s%d", NOTE_NAMES[note], octave);
         fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
-        sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_div);
+        sprintf(text, "%d:%d.%d", bar + 1, beat + 1, div);
         fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
     }
 
@@ -367,6 +357,27 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
     }
 }
 
+void get_sequencer_mouse_location(fm_window *win, fm_gui_panel *panel,
+                                  int *bar, int *beat, int *div, int *octave, int *note) {
+    fm_sequencer_data *data = (fm_sequencer_data*) panel->data;
+    
+    SDL_Rect safe = get_safe_area(panel);
+    int x = win->mouse_x - safe.x;
+    int y = win->mouse_y - safe.y;
+    
+    int clip_y = data->canvas->h - panel->rect.h - (int) data->scroll_y;
+    float cell_x_frac = ((float) x + data->scroll_x) / (SEQ_CELL_W + 1);
+    int cell_x = (int) cell_x_frac;
+    float div_amount = 1.0f / (SEQ_CELL_W + 1);
+    *div = (int) (FM_BEAT_DIVISIONS * (cell_x_frac - (float) cell_x) / (1.0f - div_amount));
+    *bar = cell_x / win->player->song.beats_per_bar;
+    *beat = cell_x % win->player->song.beats_per_bar;
+    
+    int cell_y = SEQ_NUM_OCTAVES * 12 - 1 - (y + clip_y) / SEQ_CELL_H;
+    *octave = cell_y / 12;
+    *note = cell_y % 12;    
+}
+
 void sequencer_handler(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
     UNUSED(win);
     
@@ -380,6 +391,11 @@ void sequencer_handler(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
         
         data->scroll_y = CLAMP(data->scroll_y + e.wheel.preciseY,
                                0, data->canvas->h - safe.h);
+        
+        break;
+
+    case SDL_MOUSEBUTTONDOWN:
+        data->needs_redraw = true;
         
         break;
     }
