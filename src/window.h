@@ -53,6 +53,7 @@
 #define SEQ_CELL_BG_COLOUR_OCTAVE 84, 65, 87, 255
 #define SEQ_CELL_DIVIDER_COLOUR 65, 57, 66, 255
 #define SEQ_NOTE_COLOUR 203, 185, 191, 255
+#define SEQ_PLAYHEAD_COLOUR 240, 44, 44, 255
 
 struct fm_window;
 struct fm_gui_panel;

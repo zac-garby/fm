@@ -354,6 +354,17 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
         sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_div);
         fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
     }
+
+    SDL_Rect playhead;
+    playhead.x = safe.x + win->player->playhead * (SEQ_CELL_W + 1) - data->scroll_x;
+    playhead.y = safe.y;
+    playhead.w = 1;
+    playhead.h = safe.h;
+
+    if (playhead.x >= safe.x && playhead.x < safe.x + safe.w) {
+        Uint32 playhead_colour = SDL_MapRGBA(data->canvas->format, SEQ_PLAYHEAD_COLOUR);
+        SDL_FillRect(win->surf, &playhead, playhead_colour);
+    }
 }
 
 void sequencer_handler(fm_window *win, fm_gui_panel *panel, SDL_Event e) {
