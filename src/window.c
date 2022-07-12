@@ -298,6 +298,34 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
             
             bg_index = (bg_index + 1) % 12;
         }
+
+        fm_song_part part = win->player->song.parts[data->part_index];
+        Uint32 note_colour = SDL_MapRGBA(data->canvas->format, SEQ_NOTE_COLOUR);
+        SDL_Rect r1, r2;
+        r1.h = SEQ_CELL_H - 2;
+        r2.h = SEQ_CELL_H;
+
+        for (int n = 0; n < part.num_notes; n++) {
+            fm_note note = part.notes[n];
+
+            r1.w = (int) (((float) SEQ_CELL_W / FM_BEAT_DIVISIONS) * (float) note.duration);
+            r1.x = (1 + SEQ_CELL_W) * note.beat + (int) (((float) SEQ_CELL_W / FM_BEAT_DIVISIONS) * (float) note.division);
+            r1.y = data->canvas->h - ((note.pitch + 1) * SEQ_CELL_H - 1);
+
+            if (r1.w == 0) r1.w = 1;
+
+            // extend by one pixel for each cell divider
+            for (int x = r1.x + 1; x < r1.x + r1.w - 1; x++) {
+                if (x % (SEQ_CELL_W + 1) == 0) r1.w++;
+            }
+
+            r2.w = r1.w - 2;
+            r2.x = r1.x + 1;
+            r2.y = r1.y - 1;
+
+            SDL_FillRect(data->canvas, &r1, note_colour);
+            SDL_FillRect(data->canvas, &r2, note_colour);
+        }
     }
 
     SDL_Rect clip = get_safe_area(panel);
@@ -426,7 +454,7 @@ void setup_panels(fm_window *win) {
     fm_sequencer_data *seq_data = malloc(sizeof(fm_sequencer_data));
     seq_data->part_index = 0;
     seq_data->scroll_x = 0;
-    seq_data->scroll_y = 12 * 3 * SEQ_CELL_H;
+    seq_data->scroll_y = (12 * 4 - 4) * SEQ_CELL_H;
     seq_data->needs_redraw = true;
     seq_data->song_length = 64;
     seq_data->canvas = NULL;
