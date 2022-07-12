@@ -5,7 +5,7 @@
 
 #include "envelope.h"
 
-#define FM_BEAT_DIVISIONS 32
+#define FM_BEAT_DIVISIONS 96
 
 typedef struct fm_note {
     // the pitch of the note. C0 is represented as 0, and each successive

@@ -44,8 +44,8 @@ int main() {
     // player->volume = 0;
     player->bps = (float) player->song.bpm / 60.0f;
     
-    make_flute(&player->instrs[0]);
-    make_flute(&player->instrs[1]);
+    make_lute(&player->instrs[0]);
+    make_lute(&player->instrs[1]);
     // make_lute(&player->instrs[2]);
     // make_lute(&player->instrs[3]);
     // make_organ(&player->instrs[4]);
