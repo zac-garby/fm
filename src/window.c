@@ -340,21 +340,19 @@ void sequencer_render(fm_window *win, fm_gui_panel *panel) {
         
         float cell_x_frac = ((float) x + clip.x) / (SEQ_CELL_W + 1);
         int cell_x = (int) cell_x_frac;
+        float div_amount = 1.0f / (SEQ_CELL_W + 1);
+        int cell_div = (int) (FM_BEAT_DIVISIONS * (cell_x_frac - (float) cell_x) / (1.0f - div_amount));
         int bar = cell_x / win->player->song.beats_per_bar;
         int beat = cell_x % win->player->song.beats_per_bar;
-        int cell_subdiv = (int) (10 * (cell_x_frac - (float) cell_x));
         int cell_y = SEQ_NUM_OCTAVES * 12 - 1 - (y + clip.y) / SEQ_CELL_H;
         int octave = cell_y / 12;
         int note = cell_y % 12;
 
-        if (cell_subdiv < 8) {
-            // inside a beat (>= 8 would be between beats)
-            char text[16];
-            sprintf(text, "%s%d", NOTE_NAMES[note], octave);
-            fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
-            sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_subdiv + 1);
-            fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
-        }
+        char text[16];
+        sprintf(text, "%s%d", NOTE_NAMES[note], octave);
+        fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y, text);
+        sprintf(text, "%d:%d.%d", bar + 1, beat + 1, cell_div);
+        fm_draw_tooltip(win, win->mouse_x + 6, win->mouse_y - 7, text);
     }
 }
 

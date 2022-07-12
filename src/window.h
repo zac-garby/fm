@@ -42,7 +42,7 @@
 #define INSTR2_COLOUR 126, 144, 238, 255
 #define INSTR3_COLOUR 255, 251, 181, 255
 
-#define SEQ_CELL_W 8
+#define SEQ_CELL_W 12
 #define SEQ_CELL_H 5
 #define SEQ_NUM_OCTAVES 9
 
