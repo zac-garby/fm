@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include "note.h"
+#include "parse.h"
 
 typedef struct fm_song_part {
     int num_notes;

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -O3 -Wall -Wextra -Winline --std=c99
 CLIBS = -lsoundio -lkissfft-float -lsdl2
-OBJECTS = $(addprefix bin/,synth.o operator.o window.o player.o envelope.o note.o song.o export.o filter.o font.o)
+OBJECTS = $(addprefix bin/,synth.o operator.o window.o player.o envelope.o note.o song.o export.o filter.o font.o parse.o)
 
 font:
 	python3 tools/make-font.py assets/font.png > src/font-data.h

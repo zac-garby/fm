@@ -1,12 +1,27 @@
 #ifndef H_FM_NOTE
 #define H_FM_NOTE
 
+#include <math.h>
+
 #include "envelope.h"
 
+#define FM_BEAT_DIVISIONS 32
+
 typedef struct fm_note {
-    float freq;
-    double start;
-    float duration;
+    // the pitch of the note. C0 is represented as 0, and each successive
+    // pitch goes up by one semitone.
+    // the frequency is therefore: C0 * powf(2.0f, (float) pitch / 12.0);
+    int pitch;
+
+    // the start time of the note, represented as the beat in which it
+    // starts, and the division (between 0 and FM_BEAT_DIVISIONS-1.)
+    int beat, division;
+
+    // the duration of the note, as a number of divisions. a quarter-note
+    // is represented by FM_BEAT_DIVISIONS (i.e. one whole beat.)
+    int duration;
+
+    // the velocity (loudness) of the note.
     float velocity;
 } fm_note;
 
@@ -14,8 +29,11 @@ static const char * NOTE_NAMES[12] = {
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
 };
 
-fm_note fm_make_note(float freq, double start, float duration, float velocity);
-
+fm_note fm_make_note(int pitch, int beat, int div, int dur, float velocity);
+float fm_note_get_freq(fm_note *note);
+double fm_note_get_start_time(fm_note *note, double bps);
+double fm_note_get_duration(fm_note *note, double bps);
+double fm_note_get_end_time(fm_note *note, double bps);
 
 // NOTE FREQUENCY DEFINITIONS
 // relative to C0 = 16.35159783Hz

@@ -79,9 +79,12 @@ typedef struct fm_synth {
     // the phases of each of the synth's oscillators.
     float *phases;
 
-    // a pointer to the current note to play.
-    // if frequency is 0, play nothing.
-    fm_note note;
+    // the details of the current note to play. if the frequency
+    // is 0, play nothing. the pitch is just used for comparing notes,
+    // and doesn't come into the synthesis itself.
+    int note_pitch;
+    float note_freq, note_velocity;
+    double note_start, note_duration;
 } fm_synth;
 
 void fm_new_instr(fm_instrument *instr, int n_ops);

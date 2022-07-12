@@ -83,10 +83,10 @@ fm_synth fm_new_synth(fm_instrument *instr) {
     s.instr = instr;
     s.phases = calloc(MAX_OPERATORS, sizeof(float));
 
-    s.note.freq = 0;
-    s.note.start = 0;
-    s.note.duration = 0;
-    s.note.velocity = 0;
+    s.note_freq = 0;
+    s.note_start = 0;
+    s.note_duration = 0;
+    s.note_velocity = 0;
     
     for (int i = 0; i < N_CHANNELS; i++) {
         s.channels[i] = 0;
@@ -112,7 +112,7 @@ void fm_synth_frame(fm_synth *s, double time) {
         
         for (int n = 0; n < op->recv_n; n++) {
             float mod = s->channels[op->recv[n]] * op->recv_level[n] * fm_config.dt;
-            if (op->recv_type[n] == FM_RECV_MODULATE) mod *= s->note.freq;
+            if (op->recv_type[n] == FM_RECV_MODULATE) mod *= s->note_freq;
             s->phases[i] += mod;
         }
 
@@ -120,12 +120,12 @@ void fm_synth_frame(fm_synth *s, double time) {
 
         float sample = 0;
 
-        if (s->note.freq > 0) {
+        if (s->note_freq > 0) {
             float env = fm_envelope_evaluate(&op->envelope,
-                                             time - s->note.start,
-                                             s->note.duration);
-            float vel = env * s->note.velocity;
-            double f = op->fixed ? op->transpose : s->note.freq * op->transpose;
+                                             time - s->note_start,
+                                             s->note_duration);
+            float vel = env * s->note_velocity;
+            double f = op->fixed ? op->transpose : s->note_freq * op->transpose;
             double t = f * time + (double) s->phases[i];
             float wave;
 

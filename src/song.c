@@ -27,92 +27,114 @@ int fm_parse_song(char *filename, fm_song *song) {
         return 0;
     }
 
-    char line[256];
-    int i;
-    int bpm_done = 0, num_parts_done = 0, num_notes_done = 0;
-    int part_index = -1, in_part = 0;
-    int note_index = -1;
+    song->parts = NULL;
+    song->num_parts = 0;
+
+    char *line = malloc(256 * sizeof(char));
+    int i, state = 0, linum = 0, part_num = -1, note_num = -1;
+    fm_note note;
 
     while ((line[0] = fgetc(fp)) != EOF) {
-        if (line[0] == '\n') continue;
-
+        linum++;
+        
         for (i = 1; (line[i] = fgetc(fp)) != '\n'; i++);
         line[i] = '\0';
 
-        if (line[0] == '#') continue;
+        // get to the first non-whitespace character.
+        fm_parse_spaces(&line);
 
-        if (strncmp(line, "bpm", 3) == 0) {
-            if (!parse_int(line + 3, &song->bpm)) {
-                printf("invalid syntax after bpm: expecting int\n");
-                return 0;
-            }
+        switch (state) {
+        case -1:
+            // everything is finished, no input expected
+            if (!fm_parse_eol(&line)) goto error;
+            break;
+            
+        case 0:
+            // needs bpm
+            if (!fm_parse_string(&line, "bpm")) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_int(&line, &song->bpm)) goto error;
+            if (!fm_parse_eol(&line)) goto error;
+            
+            state = 1;
+            break;
 
-            bpm_done = 1;
-        } else if (strncmp(line, "num_parts", 9) == 0) {
-            if (!parse_int(line + 9, &song->num_parts)) {
-                printf("invalid syntax after num_parts: expecting int\n");
-                return 0;
-            }
+        case 1:
+            // needs num. parts
+            if (!fm_parse_string(&line, "num_parts")) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_int(&line, &song->num_parts)) goto error;
+            if (!fm_parse_eol(&line)) goto error;
             
             song->parts = malloc(sizeof(fm_song_part) * song->num_parts);
-            num_parts_done = 1;
-        } else if (strncmp(line, "part", 4) == 0) {
-            if (!bpm_done || !num_parts_done) {
-                printf("invalid syntax: part definitions should come after the preamble\n");
-                return 0;
-            }
+            state = 2;
+            break;
 
-            if (in_part) {
-                printf("invalid syntax: parts cannot be embedded\n");
-                return 0;
-            }
+        case 2:
+            // got bpm and num. parts, expecting a part definition
+            if (!fm_parse_string(&line, "part")) goto error;
+            if (!fm_parse_eol(&line)) goto error;
 
-            if (part_index >= song->num_parts) {
-                printf("invalid syntax: too many parts!\n");
-                return 0;
-            }
-
-            in_part = 1;
-            num_notes_done = 0;
-            part_index++;
-        } else if (in_part) {
-            fm_song_part *part = &song->parts[part_index];
-            
-            if (strncmp(line, "end", 3) == 0) {
-                in_part = 0;
-            } else if (strncmp(line, "num_notes", 9) == 0) {
-                if (!parse_int(line + 9, &part->num_notes)) {
-                    printf("invalid syntax after num_notes: expecting int\n");
-                    return 0;
-                }
-
-                part->notes = malloc(sizeof(fm_note) * part->num_notes);
-                num_notes_done = 1;
-                note_index = 0;
+            part_num++;
+            if (part_num == song->num_parts) {
+                // got all the parts we need
+                state = -1;
             } else {
-                if (!num_notes_done) {
-                    printf("invalid syntax: num_notes must be declared before any notes\n");
-                    return 0;
-                }
-
-                if (note_index >= part->num_notes) {
-                    printf("invalid syntax: too many notes!\n");
-                    return 0;
-                }
-                
-                fm_note *note = &part->notes[note_index];
-                if (!parse_note(line, note)) {
-                    printf("invalid syntax: could not parse a note\n");
-                    printf("  '%s'\n", line);
-                    return 0;
-                }
-
-                note_index++;
+                // otherwise, parse the next part
+                state = 3;
             }
+            
+            break;
+
+        case 3:
+            // inside a part definition, expecting num. notes
+            if (!fm_parse_string(&line, "num_notes")) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_int(&line, &song->parts[part_num].num_notes)) goto error;
+            if (!fm_parse_eol(&line)) goto error;
+
+            song->parts[part_num].notes = malloc(sizeof(fm_note) * song->parts[part_num].num_notes);
+            note_num = 0;
+            state = 4;
+            break;
+
+        case 4:
+            // inside a part definition, got num. notes. expecting a note
+            if (!fm_parse_int(&line, &note.beat)) goto error;
+            if (!fm_parse_string(&line, ":")) goto error;
+            if (!fm_parse_int(&line, &note.division)) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_int(&line, &note.pitch)) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_int(&line, &note.duration)) goto error;
+            if (!fm_parse_spaces(&line)) goto error;
+            if (!fm_parse_float(&line, &note.velocity)) goto error;
+            if (!fm_parse_eol(&line)) goto error;
+
+            song->parts[part_num].notes[note_num++] = note;
+
+            if (note_num == song->parts[part_num].num_notes) {
+                state = 5;
+            }
+            
+            break;
+
+        case 5:
+            // got all of the notes for one part, expecting an "end"
+            if (!fm_parse_string(&line, "end")) goto error;
+            if (!fm_parse_eol(&line)) goto error;
+
+            state = 2;
+
+            break;
         }
     }
 
     return 1;
+
+ error:
+    printf("syntax error on line %d\n", linum);
+    return 0;
 }
 
 double fm_song_duration(fm_song *song) {
@@ -121,13 +143,14 @@ double fm_song_duration(fm_song *song) {
     for (int i = 0; i < song->num_parts; i++) {
         fm_song_part *part = &song->parts[i];
         fm_note last_note = part->notes[part->num_notes - 1];
-        double part_dur = last_note.start + last_note.duration;
+        double part_dur = fm_note_get_end_time(&last_note, (double) song->bpm / 60);
         if (part_dur > d) d = part_dur;
     }
 
     return d;
 }
 
+/*
 int parse_int(char *s, int *i) {
     char *ep;
     long l = strtol(s, &ep, 10);
@@ -186,3 +209,4 @@ int parse_note(char *s, fm_note *note) {
 
     return 1;
 }
+*/

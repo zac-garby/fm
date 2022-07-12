@@ -114,24 +114,28 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
 
         // while there are notes remaining in this part which have a start time before or
         // at the current playhead, play them.
-        while (p->next_notes[i] < part.num_notes) {            
-            if (part.notes[p->next_notes[i]].start >= (p->playhead + time_per_quantum) * p->bps) {
+        while (p->next_notes[i] < part.num_notes) {
+            // get the next note which needs to be played, and calculate its start time.
+            fm_note note = part.notes[p->next_notes[i]];
+            double next_start = fm_note_get_start_time(&note, p->bps);
+            
+            if (next_start >= (p->playhead + time_per_quantum) * p->bps) {
                 break;
             }
             
             // find the best candidate note to remove from the synth, which
             // ideally will be one which has already finished playing.
+            // also, notes at the same pitch are replaced first, if any exist.
             double earliest_finish = DBL_MAX;
             int earliest_idx = 0;
 
-            // get the note which needs to be played.
-            fm_note note = part.notes[p->next_notes[i]];
-
             for (int n = 0; n < MAX_POLYPHONY; n++) {
-                fm_note candidate = instr->voices[n].note;
-                double finish = candidate.start + (double) candidate.duration;                
+                double candidate_start = instr->voices[n].note_start;
+                double candidate_duration = instr->voices[n].note_duration;
+                int candidate_pitch = instr->voices[n].note_pitch;
+                double finish = candidate_start + candidate_duration;
 
-                if (candidate.freq == note.freq) {
+                if (candidate_pitch == note.pitch) {
                     earliest_finish = finish;
                     earliest_idx = n;
                     break;
@@ -143,11 +147,16 @@ void fm_player_schedule(fm_player *p, double time_per_quantum) {
                 }
             }
 
-            // replace the note that finished longest ago
-            double error = p->playhead - note.start;
-            note.start = p->playhead;
-            note.duration = (note.duration / p->bps) - error;
-            instr->voices[earliest_idx].note = note;
+            // replace the note that finished longest ago.
+            double error = p->playhead - next_start;
+            double duration = fm_note_get_duration(&note, p->bps) - error;
+
+            instr->voices[earliest_idx].note_pitch = note.pitch;
+            instr->voices[earliest_idx].note_freq = fm_note_get_freq(&note);
+            instr->voices[earliest_idx].note_velocity = note.velocity;
+            instr->voices[earliest_idx].note_start = p->playhead;
+            instr->voices[earliest_idx].note_duration = duration;
+            
             p->next_notes[i]++;
         }
     }
@@ -179,10 +188,10 @@ void fm_player_reset(fm_player *p) {
             fm_synth *voice = &instr->voices[v];
             voice->hold_index = HOLD_BUFFER_SIZE;
             
-            voice->note.start = 0;
-            voice->note.duration = 0;
-            voice->note.velocity = 0;
-            voice->note.freq = 0;
+            voice->note_start = 0;
+            voice->note_duration = 0;
+            voice->note_velocity = 0;
+            voice->note_freq = 0;
 
             for (int j = 0; j < N_CHANNELS; j++) {
                 voice->channels[j] = 0;
