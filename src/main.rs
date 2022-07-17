@@ -1,5 +1,4 @@
 extern crate cpal;
-extern crate sdl2;
 
 pub mod song;
 pub mod synth;
@@ -30,6 +29,7 @@ pub fn main() -> anyhow::Result<()> {
     s.add_note(0, Note::new(31, 2, 0, 90, 0.9));
     
     let (mut player, note_channel) = Player::new();
+    player.volume = 0.0;
     player.instruments.push(make_organ());
     
     s.sequence(note_channel);
@@ -120,8 +120,9 @@ fn write_data<T>(output: &mut [T], channels: usize, dt: f64, player: Arc<Mutex<P
 where
     T: cpal::Sample,
 {
+    let mut p = player.lock().unwrap();
+    
     for frame in output.chunks_mut(channels) {
-        let mut p = player.lock().unwrap();
         let value: T = cpal::Sample::from::<f32>(&p.sample(dt));
         for sample in frame.iter_mut() {
             *sample = value;
