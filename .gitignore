@@ -1,12 +1,1 @@
-*~
-\#*\#
-.\#*
-
-.DS_Store
-
-bin
-out.wav
-*.wav
-TODO.txt
-*.mp3
-*.log
+/target

@@ -1,0 +1,9 @@
+[package]
+name = "cancrizans"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cpal = "0.13.5"
+sdl2 = "0.35.2"
+anyhow = "1.0.58"
