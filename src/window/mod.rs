@@ -1,17 +1,19 @@
 extern crate sdl2;
 
 mod font;
+mod colour;
 
 use sdl2::event::Event;
 use sdl2::rect::Rect;
 use sdl2::pixels::Color;
 use sdl2::render;
 
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, borrow::Borrow};
 
-use crate::player::Player;
+use crate::{player::Player, song};
 
-use self::font::FONT_HEIGHT;
+use colour::*;
+use font::FONT_HEIGHT;
 
 pub const SCREEN_WIDTH: u32 = 300;
 pub const SCREEN_HEIGHT: u32 = 250;
@@ -21,21 +23,6 @@ pub const REAL_HEIGHT: u32 = SCREEN_HEIGHT * SCREEN_SCALE;
 
 pub const SPECTRUM_WIDTH: u32 = 128;
 pub const SPECTRUM_HEIGHT: u32 = 32;
-
-pub const FG: Color = Color { r: 210, g: 210, b: 210, a: 255 };
-pub const PANEL_BG: Color = Color { r: 29, g: 24, b: 30, a: 255 };
-pub const WIN_BG: Color = Color { r: 21, g: 20, b: 18, a: 255 };
-pub const EMPTY_SPECTRUM_BG: Color = Color { r: 22, g: 18, b: 23, a: 255 };
-pub const BORDER: Color = Color { r: 48, g: 41, b: 50, a: 255 };
-pub const WIN_BORDER: Color = Color { r: 78, g: 71, b: 80, a: 255 };
-pub const CORNER: Color = Color { r: 34, g: 29, b: 36, a: 255 };
-
-pub const SPECTRUM_FG: [Color; 4] = [
-    Color { r: 252, g: 131, b: 131, a: 255 },
-    Color { r: 145, g: 224, b: 145, a: 255 },
-    Color { r: 126, g: 144, b: 238, a: 255 },
-    Color { r: 255, g: 251, b: 181, a: 255 },
-];
 
 pub struct Window {
     canvas: render::WindowCanvas,
@@ -73,6 +60,17 @@ pub struct Spectrum {
     player: Arc<Mutex<Player>>,
     index: usize,
     wave_scale: f32,
+}
+
+pub struct Sequencer {
+    rect: Rect,
+    scroll_x: f32,
+    scroll_y: f32,
+    cell_width: u32,
+    cell_height: u32,
+    num_octaves: u32,
+    player: Arc<Mutex<Player>>,
+    song: song::Song,
 }
 
 impl Element for Panel {
@@ -154,6 +152,60 @@ impl Element for Spectrum {
     }
 }
 
+impl Element for Sequencer {
+    fn render(&self, buf: &mut [u8]) {
+        let safe = safe_area(self.rect);
+        draw_rect(buf, self.rect, SEQ_BACKGROUND[0], Some(BORDER), Some(CORNER));
+        
+        for real_y in 0..safe.height() {
+            let y = real_y + self.scroll_y as u32;
+            let row = (y / self.cell_height) as usize;
+            
+            for real_x in 0..safe.width() {
+                let x = real_x + self.scroll_x as u32;
+                let col = x / (self.cell_width + 1);
+                let subdiv = x - col as u32 * (self.cell_width + 1);
+                
+                let bg = if subdiv == self.cell_width {
+                    SEQ_DIVIDER
+                } else {
+                    SEQ_BACKGROUND[12 * if col % self.song.beats_per_bar == 0 { 0 } else { 1 } + row % 12]
+                };
+                
+                set_pixel(buf, real_x + safe.x as u32, safe.height() - real_y - 1 + safe.y as u32, bg);
+            }
+        }
+        
+        if let Some(playhead) = {
+            let p = self.player.lock().unwrap();
+            let cell_x = (p.playhead * p.bps) as i32;
+            let div = (p.playhead.fract() * self.cell_width as f64) as i32;
+            let head_x = cell_x * (self.cell_width as i32 + 1) + div;
+            
+            clamp_rect(Rect::new(
+                safe.x + head_x - self.scroll_x as i32,
+                safe.y, 1, safe.height()), safe)
+        } {
+            draw_rect(buf, playhead, SEQ_PLAYHEAD, None, None);
+        }
+    }
+
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    fn handle(&mut self, event: InputEvent) {
+        match event.event {
+            Event::MouseWheel { x, y, .. } => {
+                self.scroll_x = (self.scroll_x + x as f32).max(0.0);
+                self.scroll_y = (self.scroll_y + y as f32)
+                    .clamp(0.0, (self.cell_height * 12 * self.num_octaves - (self.rect.height() - 2)) as f32);
+            },
+            _ => {},
+        }
+    }
+}
+
 impl Window {
     pub fn new(video: sdl2::VideoSubsystem, player_mutex: Arc<Mutex<Player>>)
     -> Result<Window, String> {
@@ -211,7 +263,22 @@ impl Window {
         root.children.push(Box::new(Panel {
             rect: Rect::new(1, (SPECTRUM_HEIGHT + 2) as i32 * 4 + 9,
                 SCREEN_WIDTH - 2, SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 10),
-            children: Vec::new(),
+            children: Vec::from([
+                Box::new(Sequencer {
+                    rect: Rect::new(
+                        1,
+                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 20,
+                        SCREEN_WIDTH - 2,
+                        SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 21),
+                    player: player_mutex.clone(),
+                    song: song::Song::new(4, 60, 4),
+                    scroll_x: 0.0,
+                    scroll_y: 210.0,
+                    cell_width: 16,
+                    cell_height: 5,
+                    num_octaves: 9,
+                }) as Box<dyn Element>
+            ]),
             background: PANEL_BG,
             border: Some(BORDER),
             corner: Some(CORNER),
@@ -327,4 +394,18 @@ fn coord_index(x: u32, y: u32) -> usize {
 
 fn safe_area(rect: Rect) -> Rect {
     Rect::new(rect.x + 1, rect.y + 1, rect.w as u32 - 2, rect.h as u32 - 2)
+}
+
+fn clamp_rect(rect: Rect, inside: Rect) -> Option<Rect> {
+    if rect.right() < inside.left() || rect.left() >= inside.right() ||
+       rect.top() >= inside.bottom() || rect.bottom() < inside.top() {
+        None
+    } else {
+        Some(Rect::new(
+            rect.x.clamp(inside.left(), inside.right()),
+            rect.y.clamp(inside.top(), inside.bottom()),
+            rect.width().min(inside.right() as u32),
+            rect.height().min(inside.bottom() as u32),
+        ))
+    }
 }

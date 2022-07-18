@@ -9,7 +9,7 @@ pub struct Player {
     pub mute: bool,
     pub instruments: Vec<synth::Instrument>,
     
-    playhead: f64,
+    pub playhead: f64,
     note_recv: mpsc::Receiver<(usize, song::Note)>,
     next_note: Option<(usize, song::Note, f64)>,
 }
