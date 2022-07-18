@@ -8,7 +8,7 @@ use sdl2::rect::Rect;
 use sdl2::pixels::Color;
 use sdl2::render;
 
-use std::{sync::{Arc, Mutex}, borrow::Borrow};
+use std::sync::{Arc, Mutex};
 
 use crate::{player::Player, song};
 
@@ -163,10 +163,10 @@ impl Element for Sequencer {
             
             for real_x in 0..safe.width() {
                 let x = real_x + self.scroll_x as u32;
-                let col = x / (self.cell_width + 1);
-                let subdiv = x - col as u32 * (self.cell_width + 1);
+                let col = x / self.cell_width;
+                let subdiv = x - col as u32 * self.cell_width;
                 
-                let bg = if subdiv == self.cell_width {
+                let bg = if subdiv == 0 {
                     SEQ_DIVIDER
                 } else {
                     SEQ_BACKGROUND[12 * if col % self.song.beats_per_bar == 0 { 0 } else { 1 } + row % 12]
@@ -180,7 +180,7 @@ impl Element for Sequencer {
             let p = self.player.lock().unwrap();
             let cell_x = (p.playhead * p.bps) as i32;
             let div = (p.playhead.fract() * self.cell_width as f64) as i32;
-            let head_x = cell_x * (self.cell_width as i32 + 1) + div;
+            let head_x = cell_x * self.cell_width as i32 + div;
             
             clamp_rect(Rect::new(
                 safe.x + head_x - self.scroll_x as i32,
