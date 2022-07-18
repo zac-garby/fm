@@ -6,6 +6,7 @@ use std::sync::mpsc;
 pub struct Player {
     pub bps: f64,
     pub volume: f32,
+    pub mute: bool,
     pub instruments: Vec<synth::Instrument>,
     
     playhead: f64,
@@ -20,6 +21,7 @@ impl Player {
         (Player {
             bps: 1.0,
             volume: 1.0,
+            mute: false,
             instruments: Vec::new(),
             
             playhead: 0.0,
@@ -59,6 +61,10 @@ impl Player {
 
         self.playhead += dt;
         
-        s * self.volume
+        if self.mute {
+            0.0
+        } else {
+            s * self.volume
+        }
     }
 }
