@@ -3,13 +3,14 @@ extern crate sdl2;
 mod font;
 mod colour;
 
-use sdl2::event::Event;
+use sdl2::{event::Event, mouse};
 use sdl2::rect::Rect;
 use sdl2::pixels::Color;
 use sdl2::render;
 
 use std::sync::{Arc, Mutex};
 
+use crate::song::BEAT_DIVISIONS;
 use crate::{player::Player, song};
 
 use colour::*;
@@ -71,6 +72,7 @@ pub struct Sequencer {
     num_octaves: u32,
     player: Arc<Mutex<Player>>,
     song: song::Song,
+    current_part: usize,
 }
 
 impl Element for Panel {
@@ -152,6 +154,19 @@ impl Element for Spectrum {
     }
 }
 
+impl Sequencer {
+    pub fn x_to_t(&self, x: u32) -> song::Time {
+        let beat = x / self.cell_width;
+        let pixel = x - beat as u32 * self.cell_width;
+        let division = ((pixel as f32 / self.cell_width as f32) * BEAT_DIVISIONS as f32) as u32;
+        song::Time::new(beat, division)
+    }
+    
+    pub fn t_to_x(&self, t: song::Time) -> u32 {
+        (self.cell_width as f32 * (t.beat as f32 + t.division as f32 / BEAT_DIVISIONS as f32)) as u32
+    }
+}
+
 impl Element for Sequencer {
     fn render(&self, buf: &mut [u8]) {
         let safe = safe_area(self.rect);
@@ -173,6 +188,22 @@ impl Element for Sequencer {
                 };
                 
                 set_pixel(buf, real_x + safe.x as u32, safe.height() - real_y - 1 + safe.y as u32, bg);
+            }
+        }
+        
+        for note in &self.song.parts[self.current_part] {
+            let mut rect = Rect::new(
+                self.t_to_x(note.start) as i32,
+                ((note.pitch + 1) * self.cell_height) as i32,
+                self.t_to_x(song::Time::new(0, note.duration)),
+                self.cell_height,
+            );
+            
+            rect.x = rect.x + safe.x - self.scroll_x as i32;
+            rect.y = safe.y + safe.h - (rect.y - self.scroll_y as i32);
+           
+            if let Some(rect) = clamp_rect(rect, safe) {
+                draw_rect(buf, rect, SEQ_NOTE, None, None);
             }
         }
         
@@ -243,7 +274,7 @@ impl Window {
                         SPECTRUM_WIDTH + 2, SPECTRUM_HEIGHT + 2),
                     player: player_mutex.clone(),
                     index: i as usize,
-                    wave_scale: 20.0,
+                    wave_scale: 12.0,
                 }) as Box<dyn Element>
             }).collect(),
             background: PANEL_BG,
@@ -271,12 +302,18 @@ impl Window {
                         SCREEN_WIDTH - 2,
                         SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 21),
                     player: player_mutex.clone(),
-                    song: song::Song::new(4, 60, 4),
+                    song: {
+                        let mut s = song::Song::new(4, 60, 4);
+                        s.add_note(0, song::Note::new(48, 0, 0, 96, 1.0));
+                        s.add_note(0, song::Note::new(50, 1, 0, 96, 1.0));
+                        s
+                    },
                     scroll_x: 0.0,
                     scroll_y: 210.0,
                     cell_width: 16,
                     cell_height: 5,
                     num_octaves: 9,
+                    current_part: 0,
                 }) as Box<dyn Element>
             ]),
             background: PANEL_BG,
@@ -401,11 +438,13 @@ fn clamp_rect(rect: Rect, inside: Rect) -> Option<Rect> {
        rect.top() >= inside.bottom() || rect.bottom() < inside.top() {
         None
     } else {
+        let x = rect.x.clamp(inside.left(), inside.right());
+        let y = rect.y.clamp(inside.top(), inside.bottom());
+        
         Some(Rect::new(
-            rect.x.clamp(inside.left(), inside.right()),
-            rect.y.clamp(inside.top(), inside.bottom()),
-            rect.width().min(inside.right() as u32),
-            rect.height().min(inside.bottom() as u32),
+            x, y,
+            rect.width().min(inside.right() as u32) + (rect.x - x) as u32,
+            rect.height().min(inside.bottom() as u32) + (rect.y - y) as u32,
         ))
     }
 }

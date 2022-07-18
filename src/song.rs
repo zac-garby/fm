@@ -4,24 +4,42 @@ pub const BEAT_DIVISIONS: u32 = 96;
 pub const NUM_PARTS: usize = 4;
 pub const C0: f32 = 16.35159783;
 
+/// a particular point of time, quantized as a moment in a song.
+#[derive(Copy, Clone)]
+pub struct Time {
+    pub beat: u32,
+    pub division: u32,
+}
+
+impl Time {
+    pub fn new(beat: u32, division: u32) -> Time {
+        Time { beat, division }
+    }
+    
+    pub fn add(&self, divisions: u32) -> Time {
+        Time {
+            beat: self.beat + divisions / BEAT_DIVISIONS,
+            division: self.division + divisions % BEAT_DIVISIONS,
+        }
+    }
+}
+
 /// an individual note in a song.
 #[derive(Copy, Clone)]
 pub struct Note {
-    // the pitch of the note. C0 is represented as 0, and each successive
-    // pitch goes up by one semitone.
-    // the frequency is therefore: C0 * 2.0^(pitch / 12.0)
+    /// the pitch of the note. C0 is represented as 0, and each successive
+    /// pitch goes up by one semitone.
+    /// the frequency is therefore: C0 * 2.0^(pitch / 12.0)
     pub pitch: u32,
     
-    // the start time of the note, represented as the beat in which it
-    // starts, and the division (between 0 and BEAT_DIVISIONS-1.)
-    pub beat: u32,
-    pub division: u32,
+    /// the start time of the note.
+    pub start: Time,
     
-    // the duration of the note, as a number of divisions. a quarter-note
-    // is represented by BEAT_DIVISIONS (i.e. one whole beat.)
+    /// the duration of the note, as a number of divisions. a quarter-note
+    /// is represented by BEAT_DIVISIONS (i.e. one whole beat.)
     pub duration: u32,
     
-    // the velocity (loudness) of the note.
+    /// the velocity (loudness) of the note.
     pub velocity: f32
 }
 
@@ -29,21 +47,21 @@ pub struct Note {
 /// notes to be played.
 #[derive(Clone)]
 pub struct Song {
-    // the beats-per-minute of the song.
+    /// the beats-per-minute of the song.
     pub bpm: u32,
     bps: f64,
     
-    // the amount of beats in a bar (e.g. 4 for a 4/4 piece, or 3 for a 3/4.) a
-    // beat is always a quarter note.
+    /// the amount of beats in a bar (e.g. 4 for a 4/4 piece, or 3 for a 3/4.) a
+    /// beat is always a quarter note.
     pub beats_per_bar: u32,
     
-    // the parts making up the song, each represented as a vector of notes.
+    /// the parts making up the song, each represented as a vector of notes.
     pub parts: Vec<Vec<Note>>,
 }
 
 impl Note {
     pub fn new(pitch: u32, beat: u32, division: u32, duration: u32, velocity: f32) -> Note {
-        Note { pitch, beat, division, duration, velocity }
+        Note { pitch, start: Time::new(beat, division), duration, velocity }
     }
     
     /// get the real frequency of the note (as opposed to its pitch) in Hz.
@@ -53,7 +71,7 @@ impl Note {
     
     /// get the time (in seconds) at which the note should start to play.
     pub fn start_time(&self, bps: f64) -> f64 {
-        ((self.beat as f64) + (self.division as f64) / (BEAT_DIVISIONS as f64)) / bps
+        ((self.start.beat as f64) + (self.start.division as f64) / (BEAT_DIVISIONS as f64)) / bps
     }
     
     /// get the time (in seconds) at which the note should finish playing.
