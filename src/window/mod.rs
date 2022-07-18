@@ -1,5 +1,7 @@
 extern crate sdl2;
 
+mod font;
+
 use sdl2::event::Event;
 use sdl2::rect::Rect;
 use sdl2::pixels::Color;
@@ -8,6 +10,8 @@ use sdl2::render;
 use std::sync::{Arc, Mutex};
 
 use crate::player::Player;
+
+use self::font::FONT_HEIGHT;
 
 pub const SCREEN_WIDTH: u32 = 300;
 pub const SCREEN_HEIGHT: u32 = 250;
@@ -18,6 +22,7 @@ pub const REAL_HEIGHT: u32 = SCREEN_HEIGHT * SCREEN_SCALE;
 pub const SPECTRUM_WIDTH: u32 = 128;
 pub const SPECTRUM_HEIGHT: u32 = 32;
 
+pub const FG: Color = Color { r: 210, g: 210, b: 210, a: 255 };
 pub const PANEL_BG: Color = Color { r: 29, g: 24, b: 30, a: 255 };
 pub const WIN_BG: Color = Color { r: 21, g: 20, b: 18, a: 255 };
 pub const EMPTY_SPECTRUM_BG: Color = Color { r: 22, g: 18, b: 23, a: 255 };
@@ -82,7 +87,7 @@ impl Element for Panel {
     fn rect(&self) -> Rect {
         self.rect
     }
-
+    
     fn handle(&mut self, event: InputEvent) {
         for child in &mut self.children {
             let mut e = event.clone();
@@ -91,7 +96,7 @@ impl Element for Panel {
             e.y = event.y - (child.rect().y - self.rect.y);
             
             if e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
-                e.real_y >= child.rect().top() && e.real_y < child.rect().bottom() {
+            e.real_y >= child.rect().top() && e.real_y < child.rect().bottom() {
                 child.handle(e);
             }
         }
@@ -101,18 +106,18 @@ impl Element for Panel {
 impl Element for Spectrum {
     fn render(&self, buf: &mut [u8]) {
         let player = self.player.lock().unwrap();
+        let safe = safe_area(self.rect());
         
         if self.index < player.instruments.len() {
             draw_rect(buf, self.rect, WIN_BG, Some(BORDER), Some(CORNER));
             
-            let safe = safe_area(self.rect());
             assert_eq!(SPECTRUM_WIDTH, safe.width());
-                    
+            
             let colour = SPECTRUM_FG[self.index];
             let axis = safe.y + safe.h / 2;
             
             draw_rect(buf, Rect::new(safe.x, safe.y + safe.h / 2, safe.width(), 1), colour, None, None);
-                        
+            
             let samples = &player.instruments[self.index].hold_buf;
             for i in 0..SPECTRUM_WIDTH as usize {
                 let sample = ((samples[i] * self.wave_scale) as i32 + axis).clamp(safe.top(), safe.bottom());
@@ -127,6 +132,9 @@ impl Element for Spectrum {
                     set_pixel(buf, safe.x as u32 + i as u32, y as u32, colour);
                 }
             }
+            
+            draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, FG,
+                &format!("INSTR.{}", self.index)[..]);
         } else {
             draw_rect(buf, self.rect, EMPTY_SPECTRUM_BG, Some(BORDER), Some(CORNER));
         }
@@ -135,7 +143,7 @@ impl Element for Spectrum {
     fn rect(&self) -> Rect {
         self.rect
     }
-
+    
     fn handle(&mut self, event: InputEvent) {
         match event.event {
             Event::MouseWheel { y, .. } => {
@@ -148,7 +156,7 @@ impl Element for Spectrum {
 
 impl Window {
     pub fn new(video: sdl2::VideoSubsystem, player_mutex: Arc<Mutex<Player>>)
-      -> Result<Window, String> {
+    -> Result<Window, String> {
         let win = video
             .window("Cancrizans", REAL_WIDTH, REAL_HEIGHT)
             .allow_highdpi()
@@ -268,7 +276,7 @@ fn draw_rect(buf: &mut [u8], rect: Rect,
     bg: Color, border: Option<Color>, corner: Option<Color>) {
     for y in rect.y..rect.y + rect.h {
         let i0 = coord_index(rect.x as u32, y as u32);
-            
+        
         for x in 0..rect.w as usize {
             let vert = x == 0 || x == rect.w as usize - 1;
             let horiz = y == rect.y || y == rect.y + rect.h - 1;
@@ -288,6 +296,22 @@ fn draw_rect(buf: &mut [u8], rect: Rect,
     }
 }
 
+fn draw_text(buf: &mut [u8], mut x: u32, y: u32, colour: Color, str: &str) {
+    for ch in str.chars() {
+        if let Some(data) = &font::FONT_DATA[ch as usize] {
+            for j in 0..FONT_HEIGHT {
+                for i in 0..data.width as usize {
+                    if data.data[j * data.width as usize + i] == 1 {
+                        set_pixel(buf, x + i as u32, y + j as u32, colour);
+                    }
+                }
+            }
+            
+            x += data.width + 1;
+        }
+    }
+}
+
 #[inline]
 fn set_pixel(buf: &mut [u8], x: u32, y: u32, colour: Color) {
     let idx = coord_index(x, y);
@@ -296,7 +320,7 @@ fn set_pixel(buf: &mut [u8], x: u32, y: u32, colour: Color) {
     buf[idx + 2] = colour.r;
     buf[idx + 3] = colour.a;
 }
-    
+
 fn coord_index(x: u32, y: u32) -> usize {
     (y as usize) * 4 * SCREEN_WIDTH as usize + (x as usize) * 4
 }
