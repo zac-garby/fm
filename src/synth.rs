@@ -4,7 +4,7 @@ use crate::song;
 
 pub const NUM_CHANNELS: usize = 8;
 pub const MAX_OPERATORS: usize = 8;
-pub const HOLD_BUFFER_SIZE: usize = 128;
+pub const HOLD_BUFFER_SIZE: usize = 256;
 
 #[derive(Clone)]
 pub enum WaveType {
@@ -70,7 +70,7 @@ pub struct Instrument {
     voices: Vec<Voice>,
     operators: Vec<Operator>,
     
-    hold_buf: [f32; HOLD_BUFFER_SIZE],
+    pub hold_buf: [f32; HOLD_BUFFER_SIZE],
     hold_buf_back: [f32; HOLD_BUFFER_SIZE],
     hold_index: usize,
 }
