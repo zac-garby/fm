@@ -8,7 +8,6 @@ use sdl2::render;
 use std::sync::{Arc, Mutex};
 
 use crate::player::Player;
-use crate::synth;
 
 pub const SCREEN_WIDTH: u32 = 300;
 pub const SCREEN_HEIGHT: u32 = 250;
@@ -37,11 +36,23 @@ pub struct Window {
     canvas: render::WindowCanvas,
     texture: render::Texture,
     root: Box<dyn Element>,
+    mouse_x: u32,
+    mouse_y: u32,
+}
+
+#[derive(Clone)]
+pub struct InputEvent {
+    real_x: i32,
+    real_y: i32,
+    x: i32,
+    y: i32,
+    event: Event,
 }
 
 pub trait Element {
     fn render(&self, buf: &mut [u8]);
     fn rect(&self) -> Rect;
+    fn handle(&mut self, event: InputEvent);
 }
 
 pub struct Panel {
@@ -70,6 +81,20 @@ impl Element for Panel {
     
     fn rect(&self) -> Rect {
         self.rect
+    }
+
+    fn handle(&mut self, event: InputEvent) {
+        for child in &mut self.children {
+            let mut e = event.clone();
+            
+            e.x = event.x - (child.rect().x - self.rect.x);
+            e.y = event.y - (child.rect().y - self.rect.y);
+            
+            if e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
+                e.real_y >= child.rect().top() && e.real_y < child.rect().bottom() {
+                child.handle(e);
+            }
+        }
     }
 }
 
@@ -109,6 +134,15 @@ impl Element for Spectrum {
     
     fn rect(&self) -> Rect {
         self.rect
+    }
+
+    fn handle(&mut self, event: InputEvent) {
+        match event.event {
+            Event::MouseWheel { y, .. } => {
+                self.wave_scale = (self.wave_scale + y as f32 * 0.5).clamp(1.0, 60.0);
+            },
+            _ => {},
+        }
     }
 }
 
@@ -179,6 +213,8 @@ impl Window {
             canvas,
             texture,
             root: Box::new(root),
+            mouse_x: 0,
+            mouse_y: 0,
         })
     }
     
@@ -190,6 +226,23 @@ impl Window {
             for e in events.poll_iter() {
                 match e {
                     Event::Quit { .. } => break 'run,
+                    Event::MouseMotion { x, y, .. } => {
+                        self.mouse_x = x as u32 / SCREEN_SCALE;
+                        self.mouse_y = y as u32 / SCREEN_SCALE;
+                    },
+                    _ => {}
+                }
+                
+                match e {
+                    Event::MouseMotion { .. } |
+                    Event::MouseButtonUp { .. } |
+                    Event::MouseButtonDown { .. } |
+                    Event::MouseWheel { .. } => self.send_event(InputEvent {
+                        real_x: self.mouse_x as i32,
+                        real_y: self.mouse_y as i32,
+                        x: self.mouse_x as i32 - self.root.rect().x,
+                        y: self.mouse_y as i32 - self.root.rect().y,
+                        event: e }),
                     _ => {}
                 }
             }
@@ -204,6 +257,10 @@ impl Window {
         }
         
         Ok(())
+    }
+    
+    fn send_event(&mut self, e: InputEvent) {
+        self.root.handle(e);
     }
 }
 
