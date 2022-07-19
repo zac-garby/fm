@@ -8,7 +8,6 @@ use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
 use sdl2::{render, mouse};
 
-use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 
 use crate::song::BEAT_DIVISIONS;
@@ -222,7 +221,9 @@ impl Sequencer {
             part.remove(i - n);
         }
         
-        part.push(note);
+        if overlaps.len() == 0 {
+            part.push(note);
+        }
     }
 }
 
