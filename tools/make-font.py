@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# this script generates the font data file "font.h" which is used
+# this script generates the font data file "font.rs" which is used
 # in the GUI for my synth. it requires Pillow to run.
 
 # and yes
