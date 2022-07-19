@@ -426,12 +426,7 @@ impl Window {
                         SCREEN_WIDTH - 2,
                         SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 21),
                     player: player_mutex.clone(),
-                    song: {
-                        let mut s = song::Song::new(4, 60, 4);
-                        s.add_note(0, song::Note::new(48, 0, 0, 96, 1.0));
-                        s.add_note(0, song::Note::new(50, 1, 0, 96, 1.0));
-                        s
-                    },
+                    song: song::Song::new(4, 60, 4),
                     scroll_x: 0.0,
                     scroll_y: 160.0,
                     cell_width: 16,
