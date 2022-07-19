@@ -7,6 +7,7 @@ pub struct Player {
     pub bps: f64,
     pub volume: f32,
     pub mute: bool,
+    pub paused: bool,
     pub instruments: Vec<synth::Instrument>,
     
     pub playhead: f64,
@@ -19,9 +20,10 @@ impl Player {
         let (tx, rx) = mpsc::channel();
         
         (Player {
-            bps: 1.0,
+            bps: 2.0,
             volume: 1.0,
             mute: false,
+            paused: true,
             instruments: Vec::new(),
             
             playhead: 0.0,
@@ -55,11 +57,13 @@ impl Player {
         
         let mut s = 0.0;
         
-        for instr in &mut self.instruments {
-            s += instr.next_output(self.playhead, dt);
+        if !self.paused {
+            for instr in &mut self.instruments {
+                s += instr.next_output(self.playhead, dt);
+            }
+    
+            self.playhead += dt;
         }
-
-        self.playhead += dt;
         
         if self.mute {
             0.0
