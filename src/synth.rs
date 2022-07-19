@@ -7,6 +7,8 @@ pub const MAX_OPERATORS: usize = 8;
 pub const HOLD_BUFFER_SIZE: usize = 256;
 
 #[derive(Clone)]
+/// the type of wave for a synth to play. the default and most
+/// common is a sine wave, but others are available.
 pub enum WaveType {
     Sine,
     Square,
@@ -15,13 +17,24 @@ pub enum WaveType {
 }
 
 #[derive(Clone)]
+/// the way in which a receipt from a channel should be computed.
+/// normally, the channel is simply added to the phase (after being
+/// multiplied by the delta time), but for modulation, it is also
+/// multiplied by the note's base frequency.
 pub enum ReceiveKind {
+    /// normal receiving (e.g. for feedback, or combining signals.)
     Normal,
+    
+    /// frequency modulation.
     Modulate,
+    
+    /// vibrato. functionally identical to normal.
     Vibrato,
 }
 
 #[derive(Clone)]
+/// a note which has been placed into a synth and is currently being
+/// played. mostly differs from a `Note` by having its frequency calculated.
 struct PlayedNote {
     pitch: u32,
     freq: f32,

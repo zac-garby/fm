@@ -18,14 +18,31 @@ pub enum ControlSignal {
     Volume(f32),
 }
 
+/// a player collects together a number of instruments and plays
+/// them together, allocating notes to them and handling control
+/// signals.
 pub struct Player {
+    /// how many beats (quarter notes) are played per second?
     pub bps: f64,
+    
+    /// the volume of the output. 1.0 is normal.
     pub volume: f32,
+    
+    /// whether the player is muted. a muted player will still
+    /// synthesise its instruments, it just won't output them to the
+    /// speakers.
     pub mute: bool,
+    
+    /// whether the player is paused. a paused instrument will not
+    /// advance its playhead, and will not run its synthesisers.
     pub paused: bool,
+    
+    /// the set of instruments which the player owns.
     pub instruments: Vec<synth::Instrument>,
     
+    /// the location, in seconds, of the player's playhead.
     pub playhead: f64,
+    
     note_recv: mpsc::Receiver<(usize, song::Note)>,
     signals: mpsc::Receiver<ControlSignal>,
     next_note: Option<(usize, song::Note, f64)>,
@@ -33,6 +50,10 @@ pub struct Player {
 }
 
 impl Player {
+    /// constructs a new player with default settings, and
+    /// returns two channels, one for sending notes and one
+    /// for sending control signals. by default, the player is
+    /// paused.
     pub fn new() -> (Player,
                      mpsc::Sender<(usize, song::Note)>,
                      mpsc::Sender<ControlSignal>) {
@@ -54,6 +75,8 @@ impl Player {
         }, tx_note, tx_sig)
     }
     
+    /// advances the player's instruments and playhead, and returns
+    /// the next sample. the playhead is advanced by `dt` seconds.
     pub fn sample(&mut self, dt: f64) -> f32 {
         if self.quantize_count >= QUANTIZE {
             self.quantum();
