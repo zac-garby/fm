@@ -8,6 +8,7 @@ pub const BORDER: Color = Color { r: 48, g: 41, b: 50, a: 255 };
 pub const CORNER: Color = Color { r: 34, g: 29, b: 36, a: 255 };
 
 pub const SEQ_NOTE: Color = Color { r: 203, g: 185, b: 191, a: 255 };
+pub const SEQ_GHOST_NOTE: Color = Color { r: 121, g: 89, b: 128, a: 255 };
 pub const SEQ_PLAYHEAD: Color = Color { r: 240, g: 44, b: 44, a: 255 };
 pub const SEQ_DIVIDER: Color = Color { r: 65, g: 57, b: 66, a: 255 };
 

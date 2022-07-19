@@ -4,10 +4,11 @@ mod font;
 mod colour;
 
 use sdl2::event::Event;
-use sdl2::rect::Rect;
+use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
-use sdl2::render;
+use sdl2::{render, mouse};
 
+use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 
 use crate::song::BEAT_DIVISIONS;
@@ -73,6 +74,11 @@ pub struct Sequencer {
     player: Arc<Mutex<Player>>,
     song: song::Song,
     current_part: usize,
+    drag_start: Option<Point>,
+    drag_end: Option<Point>,
+    temp_note: Option<song::Note>,
+    place_dur: u32,
+    beat_quantize: u32,
 }
 
 impl Element for Panel {
@@ -158,12 +164,65 @@ impl Sequencer {
     pub fn x_to_t(&self, x: u32) -> song::Time {
         let beat = x / self.cell_width;
         let pixel = x - beat as u32 * self.cell_width;
-        let division = ((pixel as f32 / self.cell_width as f32) * BEAT_DIVISIONS as f32) as u32;
+        let p = (self.beat_quantize as f32 * pixel as f32 / self.cell_width as f32).floor() / self.beat_quantize as f32;
+        let division = (p * BEAT_DIVISIONS as f32) as u32;
         song::Time::new(beat, division)
     }
     
     pub fn t_to_x(&self, t: song::Time) -> u32 {
         (self.cell_width as f32 * (t.beat as f32 + t.division as f32 / BEAT_DIVISIONS as f32)) as u32
+    }
+    
+    pub fn y_to_pitch(&self, y: u32) -> u32 {
+        y / self.cell_height
+    }
+    
+    fn draw_note(&self, buf: &mut [u8], note: &song::Note, bg: Color) {
+        let safe = safe_area(self.rect);
+        
+        let mut rect = Rect::new(
+            self.t_to_x(note.start) as i32,
+            ((note.pitch + 1) * self.cell_height) as i32,
+            self.t_to_x(song::Time::new(0, note.duration)),
+            self.cell_height,
+        );
+        
+        rect.x = rect.x + safe.x - self.scroll_x as i32;
+        rect.y = safe.y + safe.h - (rect.y - self.scroll_y as i32);
+        
+        if rect.w <= 1 {
+            if let Some(rect) = clamp_rect(rect, safe) {
+                draw_rect(buf, rect, bg, None, None);
+            }
+        } else {
+            let r1 = Rect::new(rect.x, rect.y + 1, rect.w as u32, rect.h as u32 - 2);
+            let r2 = Rect::new(rect.x + 1, rect.y, rect.w as u32 - 2, rect.h as u32);
+            
+            if let Some(rect) = clamp_rect(r1, safe) {
+                draw_rect(buf, rect, bg, None, None);
+            }
+            
+            if let Some(rect) = clamp_rect(r2, safe) {
+                draw_rect(buf, rect, bg, None, None);
+            }
+        }
+    }
+    
+    fn add_note(&mut self, note: song::Note) {
+        let mut overlaps = Vec::new();
+        let part = &mut self.song.parts[self.current_part];
+        
+        for (i, existing) in part.iter().enumerate() {
+            if existing.pitch == note.pitch && existing.overlap(note) {
+                overlaps.push(i);
+            }
+        }
+        
+        for (n, i) in overlaps.iter().enumerate() {
+            part.remove(i - n);
+        }
+        
+        part.push(note);
     }
 }
 
@@ -181,7 +240,7 @@ impl Element for Sequencer {
                 let col = x / self.cell_width;
                 let subdiv = x - col as u32 * self.cell_width;
                 
-                let bg = if subdiv == 0 {
+                let bg = if subdiv == self.cell_width-1 {
                     SEQ_DIVIDER
                 } else {
                     SEQ_BACKGROUND[12 * if col % self.song.beats_per_bar == 0 { 0 } else { 1 } + row % 12]
@@ -192,19 +251,11 @@ impl Element for Sequencer {
         }
         
         for note in &self.song.parts[self.current_part] {
-            let mut rect = Rect::new(
-                self.t_to_x(note.start) as i32,
-                ((note.pitch + 1) * self.cell_height) as i32,
-                self.t_to_x(song::Time::new(0, note.duration)),
-                self.cell_height,
-            );
-            
-            rect.x = rect.x + safe.x - self.scroll_x as i32;
-            rect.y = safe.y + safe.h - (rect.y - self.scroll_y as i32);
-           
-            if let Some(rect) = clamp_rect(rect, safe) {
-                draw_rect(buf, rect, SEQ_NOTE, None, None);
-            }
+            self.draw_note(buf, note, SEQ_NOTE);
+        }
+        
+        if let Some(note) = self.temp_note {
+            self.draw_note(buf, &note, SEQ_GHOST_NOTE);
         }
         
         if let Some(playhead) = {
@@ -230,12 +281,59 @@ impl Element for Sequencer {
     }
 
     fn handle(&mut self, event: InputEvent) {
+        let safe = safe_area(self.rect);
+                        
+        let point = Point::new(
+            event.x + self.scroll_x as i32 - 1,
+            safe.h - event.y + self.scroll_y as i32,
+        );
+        
         match event.event {
             Event::MouseWheel { x, y, .. } => {
                 self.scroll_x = (self.scroll_x + x as f32).max(0.0);
                 self.scroll_y = (self.scroll_y + y as f32)
                     .clamp(0.0, (self.cell_height * 12 * self.num_octaves - (self.rect.height() - 2)) as f32);
             },
+            Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
+                if safe.contains_point(Point::new(event.real_x, event.real_y)) {
+                    self.drag_start = Some(point);
+                    let t = self.x_to_t(point.x as u32);
+                    let pitch = self.y_to_pitch(point.y as u32);
+                    
+                    self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
+                }   
+            },
+            Event::MouseMotion { mousestate, .. } => {
+                if safe.contains_point(Point::new(event.real_x, event.real_y)) {
+                    let t = self.x_to_t(point.x as u32);
+                    let pitch = self.y_to_pitch(point.y as u32);
+                    
+                    if let Some(start) = self.drag_start {
+                        let start_t = self.x_to_t(start.x as u32);
+                        let dur = t.diff(start_t);
+                        
+                        if mousestate.left() && dur >= BEAT_DIVISIONS / self.beat_quantize {
+                            self.drag_end = Some(point);
+                            self.temp_note = self.temp_note.map(|mut n| {
+                                n.duration = t.diff(n.start);
+                                n
+                            });
+                        }
+                    } else {
+                        self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
+                    }
+                }
+            },
+            Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
+                if let Some(note) = self.temp_note {
+                    self.add_note(note);
+                    self.place_dur = note.duration;
+                }
+                
+                self.drag_start = None;
+                self.drag_end = None;
+                self.temp_note = None;
+            }
             _ => {},
         }
     }
@@ -313,11 +411,16 @@ impl Window {
                         s
                     },
                     scroll_x: 0.0,
-                    scroll_y: 210.0,
+                    scroll_y: 160.0,
                     cell_width: 16,
-                    cell_height: 5,
+                    cell_height: 4,
                     num_octaves: 9,
                     current_part: 0,
+                    drag_start: None,
+                    drag_end: None,
+                    temp_note: None,
+                    place_dur: BEAT_DIVISIONS,
+                    beat_quantize: 4,
                 }) as Box<dyn Element>
             ]),
             background: PANEL_BG,
@@ -444,11 +547,13 @@ fn clamp_rect(rect: Rect, inside: Rect) -> Option<Rect> {
     } else {
         let x = rect.x.clamp(inside.left(), inside.right());
         let y = rect.y.clamp(inside.top(), inside.bottom());
+        let w = rect.width().min((inside.right() - rect.x) as u32) as i32 + (rect.x - x);
+        let h = rect.height().min((inside.bottom() - rect.y) as u32) as i32 + (rect.y - y);
         
-        Some(Rect::new(
-            x, y,
-            rect.width().min(inside.right() as u32) + (rect.x - x) as u32,
-            rect.height().min(inside.bottom() as u32) + (rect.y - y) as u32,
-        ))
+        if w <= 0 || h <= 0 {
+            None
+        } else {
+            Some(Rect::new(x, y, w as u32, h as u32))
+        }
     }
 }

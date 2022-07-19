@@ -22,6 +22,14 @@ impl Time {
             division: self.division + divisions % BEAT_DIVISIONS,
         }
     }
+    
+    pub fn diff(&self, t: Time) -> u32 {
+        self.as_divs() - t.as_divs()
+    }
+    
+    pub fn as_divs(&self) -> u32 {
+        self.beat * BEAT_DIVISIONS + self.division
+    }
 }
 
 /// an individual note in a song.
@@ -82,6 +90,16 @@ impl Note {
     /// get the duration (in seconds) of the note.
     pub fn real_duration(&self, bps: f64) -> f64 {
         ((self.duration as f64) / BEAT_DIVISIONS as f64) / bps
+    }
+    
+    /// check if two notes overlap.
+    pub fn overlap(&self, note: Note) -> bool {
+        let s1 = self.start.as_divs();
+        let e1 = s1 + self.duration;
+        let s2 = note.start.as_divs();
+        let e2 = s2 + note.duration;
+        
+        (s1 < e2 && e1 > s2) || (s2 < e1 && e2 > s1)
     }
 }
 
