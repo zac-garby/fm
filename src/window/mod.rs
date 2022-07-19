@@ -3,7 +3,7 @@ extern crate sdl2;
 mod font;
 mod colour;
 
-use sdl2::{event::Event, mouse};
+use sdl2::event::Event;
 use sdl2::rect::Rect;
 use sdl2::pixels::Color;
 use sdl2::render;
@@ -43,7 +43,7 @@ pub struct InputEvent {
 }
 
 pub trait Element {
-    fn render(&self, buf: &mut [u8]);
+    fn render(&mut self, buf: &mut [u8]);
     fn rect(&self) -> Rect;
     fn handle(&mut self, event: InputEvent);
 }
@@ -76,10 +76,10 @@ pub struct Sequencer {
 }
 
 impl Element for Panel {
-    fn render(&self, buf: &mut [u8]) {
+    fn render(&mut self, buf: &mut [u8]) {
         draw_rect(buf, self.rect, self.background, self.border, self.corner);
         
-        for child in &self.children {
+        for child in &mut self.children {
             child.render(buf);
         }
     }
@@ -104,7 +104,7 @@ impl Element for Panel {
 }
 
 impl Element for Spectrum {
-    fn render(&self, buf: &mut [u8]) {
+    fn render(&mut self, buf: &mut [u8]) {
         let player = self.player.lock().unwrap();
         let safe = safe_area(self.rect());
         
@@ -168,7 +168,7 @@ impl Sequencer {
 }
 
 impl Element for Sequencer {
-    fn render(&self, buf: &mut [u8]) {
+    fn render(&mut self, buf: &mut [u8]) {
         let safe = safe_area(self.rect);
         draw_rect(buf, self.rect, SEQ_BACKGROUND[0], Some(BORDER), Some(CORNER));
         
@@ -209,15 +209,19 @@ impl Element for Sequencer {
         
         if let Some(playhead) = {
             let p = self.player.lock().unwrap();
-            let cell_x = (p.playhead * p.bps) as i32;
-            let div = (p.playhead.fract() * self.cell_width as f64) as i32;
-            let head_x = cell_x * self.cell_width as i32 + div;
+            let cell_x = p.playhead * p.bps;
+            let div = (cell_x.fract() * self.cell_width as f64) as i32;
+            let head_x = cell_x as i32 * self.cell_width as i32 + div;
             
             clamp_rect(Rect::new(
                 safe.x + head_x - self.scroll_x as i32,
                 safe.y, 1, safe.height()), safe)
         } {
             draw_rect(buf, playhead, SEQ_PLAYHEAD, None, None);
+            
+            if playhead.right() >= safe.right() {
+                self.scroll_x += safe.w as f32 * 0.75;
+            }
         }
     }
 
