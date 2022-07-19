@@ -7,6 +7,7 @@ pub mod window;
 
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
+use std::time::Duration;
 
 use cpal::traits::{HostTrait, DeviceTrait, StreamTrait};
 
@@ -28,11 +29,24 @@ pub fn main() -> anyhow::Result<()> {
     s.add_note(0, Note::new(29, 1, 0, 90, 1.0));
     s.add_note(0, Note::new(31, 2, 0, 90, 0.9));
     
-    let (mut player, note_channel) = Player::new();
+    let (mut player, note_channel, control) = Player::new();
     player.volume = 0.5;
+    player.mute = true;
+    player.instruments.push(make_organ());
     player.instruments.push(make_organ());
     
-    s.sequence(note_channel);
+    // s.sequence(note_channel);
+    thread::spawn(move || {
+        let mut i = 0;
+        
+        loop {
+            note_channel.send((0, Note { start: Time::new(i, 0), duration: 90, pitch: 48 + 2 * (i % 2), velocity: 0.8 })).unwrap();
+            note_channel.send((1, Note { start: Time::new(i, 48), duration: 90, pitch: 48 + 2 * (i % 2), velocity: 0.8 })).unwrap();
+            
+            thread::sleep(Duration::from_millis(500));
+            i += 1;
+        }
+    });
     
     let player_mutex = Arc::new(Mutex::new(player));
     
@@ -41,6 +55,7 @@ pub fn main() -> anyhow::Result<()> {
         .expect("No audio output device found");
     
     let tx = start_audio(device, player_mutex.clone())?;
+    control.send(ControlSignal::PlayPause)?;
 
     let mut win = Window::new(video, player_mutex.clone()).expect("could not create window");
     win.start(sdl).expect("could not start window");
