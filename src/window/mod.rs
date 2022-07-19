@@ -324,10 +324,14 @@ impl Element for Sequencer {
                         let start_t = self.x_to_t(start.x as u32);
                         let dur = t.diff(start_t);
                         
-                        if mousestate.left() && dur >= BEAT_DIVISIONS / self.beat_quantize {
+                        if mousestate.left() && dur >= (BEAT_DIVISIONS / self.beat_quantize) as i32 {
                             self.drag_end = Some(point);
+                            
                             self.temp_note = self.temp_note.map(|mut n| {
-                                n.duration = t.diff(n.start);
+                                let diff = t.diff(n.start);
+                                if diff > 0 {
+                                    n.duration = diff as u32;
+                                }
                                 n
                             });
                         }

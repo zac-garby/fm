@@ -23,8 +23,8 @@ impl Time {
         }
     }
     
-    pub fn diff(&self, t: Time) -> u32 {
-        self.as_divs() - t.as_divs()
+    pub fn diff(&self, t: Time) -> i32 {
+        self.as_divs() as i32 - t.as_divs() as i32
     }
     
     pub fn as_divs(&self) -> u32 {
