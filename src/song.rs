@@ -101,6 +101,11 @@ impl Note {
         
         (s1 < e2 && e1 > s2) || (s2 < e1 && e2 > s1)
     }
+    
+    /// check if the note contains a particular time.
+    pub fn contains(&self, time: Time) -> bool {
+        time.as_divs() >= self.start.as_divs() && time.as_divs() < self.start.as_divs() + self.duration
+    }
 }
 
 impl Song {

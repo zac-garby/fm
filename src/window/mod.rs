@@ -78,6 +78,7 @@ pub struct Sequencer {
     temp_note: Option<song::Note>,
     place_dur: u32,
     beat_quantize: u32,
+    to_delete: Option<usize>,
 }
 
 impl Element for Panel {
@@ -221,9 +222,17 @@ impl Sequencer {
             part.remove(i - n);
         }
         
-        if overlaps.len() == 0 {
-            part.push(note);
+        part.push(note);
+    }
+    
+    fn find_hovered(&mut self, t: song::Time, pitch: u32) -> Option<(usize, &song::Note)> {
+        for (i, note) in self.song.parts[self.current_part].iter().enumerate() {
+            if note.pitch == pitch && note.contains(t) {
+                return Some((i, note))
+            }
         }
+        
+        None
     }
 }
 
@@ -302,9 +311,11 @@ impl Element for Sequencer {
                     let pitch = self.y_to_pitch(point.y as u32);
                     
                     self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
-                }   
+                }
             },
             Event::MouseMotion { mousestate, .. } => {
+                self.to_delete = None;
+                
                 if safe.contains_point(Point::new(event.real_x, event.real_y)) {
                     let t = self.x_to_t(point.x as u32);
                     let pitch = self.y_to_pitch(point.y as u32);
@@ -320,13 +331,19 @@ impl Element for Sequencer {
                                 n
                             });
                         }
+                    } else if let Some((i, hovered)) = self.find_hovered(t, pitch) {
+                        self.temp_note = Some(*hovered);
+                        self.to_delete = Some(i);
                     } else {
                         self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
                     }
                 }
             },
             Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
-                if let Some(note) = self.temp_note {
+                if let Some(i) = self.to_delete {
+                    self.song.parts[self.current_part].remove(i);
+                    self.to_delete = None;
+                } else if let Some(note) = self.temp_note {
                     self.add_note(note);
                     self.place_dur = note.duration;
                 }
@@ -422,6 +439,7 @@ impl Window {
                     temp_note: None,
                     place_dur: BEAT_DIVISIONS,
                     beat_quantize: 4,
+                    to_delete: None,
                 }) as Box<dyn Element>
             ]),
             background: PANEL_BG,
