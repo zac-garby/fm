@@ -1,6 +1,7 @@
 use sdl2::pixels::Color;
 
 pub const FG: Color = Color { r: 210, g: 210, b: 210, a: 255 };
+pub const FG2: Color = Color { r: 139, g: 139, b: 139, a: 139 };
 pub const PANEL_BG: Color = Color { r: 29, g: 24, b: 30, a: 255 };
 pub const WIN_BG: Color = Color { r: 21, g: 20, b: 18, a: 255 };
 pub const EMPTY_SPECTRUM_BG: Color = Color { r: 22, g: 18, b: 23, a: 255 };
@@ -11,6 +12,8 @@ pub const SEQ_NOTE: Color = Color { r: 203, g: 185, b: 191, a: 255 };
 pub const SEQ_GHOST_NOTE: Color = Color { r: 121, g: 89, b: 128, a: 255 };
 pub const SEQ_PLAYHEAD: Color = Color { r: 240, g: 44, b: 44, a: 255 };
 pub const SEQ_DIVIDER: Color = Color { r: 65, g: 57, b: 66, a: 255 };
+
+pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };
 
 /// the background colours for sequencer cells. the first 12
 /// colours are for the first beat of a bar, the next 12 are for

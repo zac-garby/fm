@@ -34,19 +34,8 @@ pub fn main() -> anyhow::Result<()> {
     player.mute = true;
     player.instruments.push(make_organ());
     player.instruments.push(make_organ());
-    
-    // s.sequence(note_channel);
-    thread::spawn(move || {
-        let mut i = 0;
-        
-        loop {
-            note_channel.send((0, Note { start: Time::new(i, 0), duration: 90, pitch: 48 + 2 * (i % 2), velocity: 0.8 })).unwrap();
-            note_channel.send((1, Note { start: Time::new(i, 48), duration: 90, pitch: 48 + 2 * (i % 2), velocity: 0.8 })).unwrap();
-            
-            thread::sleep(Duration::from_millis(500));
-            i += 1;
-        }
-    });
+    player.instruments.push(make_organ());
+    player.instruments.push(make_organ());
     
     let player_mutex = Arc::new(Mutex::new(player));
     
@@ -55,7 +44,6 @@ pub fn main() -> anyhow::Result<()> {
         .expect("No audio output device found");
     
     let tx = start_audio(device, player_mutex.clone())?;
-    control.send(ControlSignal::PlayPause)?;
 
     let mut win = Window::new(video, player_mutex.clone()).expect("could not create window");
     win.start(sdl).expect("could not start window");

@@ -81,6 +81,15 @@ pub struct Sequencer {
     to_delete: Option<usize>,
 }
 
+pub struct Stepper {
+    rect: Rect,
+    value: i32,
+    min_value: i32,
+    max_value: i32,
+    background: Color,
+    foreground: Color,
+}
+
 impl Element for Panel {
     fn render(&mut self, buf: &mut [u8]) {
         draw_rect(buf, self.rect, self.background, self.border, self.corner);
@@ -190,21 +199,8 @@ impl Sequencer {
         rect.x = rect.x + safe.x - self.scroll_x as i32;
         rect.y = safe.y + safe.h - (rect.y - self.scroll_y as i32);
         
-        if rect.w <= 1 {
-            if let Some(rect) = clamp_rect(rect, safe) {
-                draw_rect(buf, rect, bg, None, None);
-            }
-        } else {
-            let r1 = Rect::new(rect.x, rect.y + 1, rect.w as u32, rect.h as u32 - 2);
-            let r2 = Rect::new(rect.x + 1, rect.y, rect.w as u32 - 2, rect.h as u32);
-            
-            if let Some(rect) = clamp_rect(r1, safe) {
-                draw_rect(buf, rect, bg, None, None);
-            }
-            
-            if let Some(rect) = clamp_rect(r2, safe) {
-                draw_rect(buf, rect, bg, None, None);
-            }
+        if let Some(rect) = clamp_rect(rect, safe) {
+            draw_rect(buf, rect, bg, None, if rect.w <= 1 { None } else { Some(TRANSPARENT) });
         }
     }
     
@@ -361,6 +357,27 @@ impl Element for Sequencer {
     }
 }
 
+impl Element for Stepper {
+    fn render(&mut self, buf: &mut [u8]) {
+        draw_rect(buf, self.rect, self.background, None, Some(TRANSPARENT));
+        draw_text(buf, self.rect.x as u32 + 2, self.rect.y as u32 + 1, self.foreground,
+            &format!("{}", self.value)[..]);
+    }
+
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    fn handle(&mut self, event: InputEvent) {
+        match event.event {
+            Event::MouseWheel { y, .. } => {
+                self.value = (self.value + y).clamp(self.min_value, self.max_value);
+            },
+            _ => {},
+        }
+    }
+}
+
 impl Window {
     pub fn new(video: sdl2::VideoSubsystem, player_mutex: Arc<Mutex<Player>>)
     -> Result<Window, String> {
@@ -419,12 +436,37 @@ impl Window {
             rect: Rect::new(1, (SPECTRUM_HEIGHT + 2) as i32 * 4 + 9,
                 SCREEN_WIDTH - 2, SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 10),
             children: Vec::from([
+                Box::new(Panel {
+                    rect: Rect::new(
+                        2,
+                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 10,
+                        SCREEN_WIDTH - 4,
+                        8),
+                    children: Vec::from([
+                        Box::new(Stepper {
+                            rect: Rect::new(
+                                3,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                15,
+                                7,
+                            ),
+                            value: 120,
+                            min_value: 1,
+                            max_value: 999,
+                            background: BORDER,
+                            foreground: FG2,
+                        }) as Box<dyn Element>,
+                    ]),
+                    background: PANEL_BG,
+                    border: None,
+                    corner: None,
+                }) as Box<dyn Element>,
                 Box::new(Sequencer {
                     rect: Rect::new(
                         1,
-                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 20,
+                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 19,
                         SCREEN_WIDTH - 2,
-                        SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 21),
+                        SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
                     player: player_mutex.clone(),
                     song: song::Song::new(4, 60, 4),
                     scroll_x: 0.0,
@@ -517,10 +559,12 @@ fn draw_rect(buf: &mut [u8], rect: Rect,
                 bg
             };
             
-            buf[i0 + x * 4 + 0] = color.b;
-            buf[i0 + x * 4 + 1] = color.g;
-            buf[i0 + x * 4 + 2] = color.r;
-            buf[i0 + x * 4 + 3] = color.a;
+            if color.a == 255 {
+                buf[i0 + x * 4 + 0] = color.b;
+                buf[i0 + x * 4 + 1] = color.g;
+                buf[i0 + x * 4 + 2] = color.r;
+                buf[i0 + x * 4 + 3] = color.a;
+            }
         }
     }
 }
