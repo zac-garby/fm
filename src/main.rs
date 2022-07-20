@@ -7,7 +7,6 @@ pub mod window;
 
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
-use std::time::Duration;
 
 use cpal::traits::{HostTrait, DeviceTrait, StreamTrait};
 

@@ -43,7 +43,7 @@ pub struct InputEvent {
 }
 
 pub trait Element {
-    fn render(&mut self, buf: &mut [u8]);
+    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32);
     fn rect(&self) -> Rect;
     fn handle(&mut self, event: InputEvent);
 }
@@ -87,15 +87,22 @@ pub struct Stepper {
     min_value: i32,
     max_value: i32,
     background: Color,
+    background_hover: Color,
     foreground: Color,
 }
 
+pub struct Label {
+    position: Point,
+    text: String,
+    colour: Color,
+}
+
 impl Element for Panel {
-    fn render(&mut self, buf: &mut [u8]) {
+    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32) {
         draw_rect(buf, self.rect, self.background, self.border, self.corner);
         
         for child in &mut self.children {
-            child.render(buf);
+            child.render(buf, mouse_x, mouse_y);
         }
     }
     
@@ -119,7 +126,7 @@ impl Element for Panel {
 }
 
 impl Element for Spectrum {
-    fn render(&mut self, buf: &mut [u8]) {
+    fn render(&mut self, buf: &mut [u8], _mouse_x: u32, _mouse_y: u32) {
         let player = self.player.lock().unwrap();
         let safe = safe_area(self.rect());
         
@@ -233,7 +240,7 @@ impl Sequencer {
 }
 
 impl Element for Sequencer {
-    fn render(&mut self, buf: &mut [u8]) {
+    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32) {
         let safe = safe_area(self.rect);
         draw_rect(buf, self.rect, SEQ_BACKGROUND[0], Some(BORDER), Some(CORNER));
         
@@ -260,8 +267,10 @@ impl Element for Sequencer {
             self.draw_note(buf, note, SEQ_NOTE);
         }
         
-        if let Some(note) = self.temp_note {
-            self.draw_note(buf, &note, SEQ_GHOST_NOTE);
+        if safe.contains_point(Point::new(mouse_x as i32, mouse_y as i32)) {
+            if let Some(note) = self.temp_note {
+                self.draw_note(buf, &note, SEQ_GHOST_NOTE);
+            }
         }
         
         if let Some(playhead) = {
@@ -358,8 +367,10 @@ impl Element for Sequencer {
 }
 
 impl Element for Stepper {
-    fn render(&mut self, buf: &mut [u8]) {
-        draw_rect(buf, self.rect, self.background, None, Some(TRANSPARENT));
+    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32) {
+        let hover = self.rect.contains_point(Point::new(mouse_x as i32, mouse_y as i32));
+        
+        draw_rect(buf, self.rect, if hover { self.background_hover } else { self.background }, None, Some(TRANSPARENT));
         draw_text(buf, self.rect.x as u32 + 2, self.rect.y as u32 + 1, self.foreground,
             &format!("{}", self.value)[..]);
     }
@@ -376,6 +387,23 @@ impl Element for Stepper {
             _ => {},
         }
     }
+}
+
+impl Element for Label {
+    fn render(&mut self, buf: &mut [u8], _mouse_x: u32, _mouse_y: u32) {
+        draw_text(buf, self.position.x as u32, self.position.y as u32, self.colour, &self.text[..]);
+    }
+
+    fn rect(&self) -> Rect {
+        Rect::new(
+            self.position.x,
+            self.position.y,
+            measure_text(&self.text[..]),
+            5,
+        )
+    }
+
+    fn handle(&mut self, _event: InputEvent) {}
 }
 
 impl Window {
@@ -453,9 +481,18 @@ impl Window {
                             value: 120,
                             min_value: 1,
                             max_value: 999,
-                            background: BORDER,
+                            background: CONTROL_BG,
+                            background_hover: CONTROL_HOVER,
                             foreground: FG2,
                         }) as Box<dyn Element>,
+                        Box::new(Label {
+                            position: Point::new(
+                                20,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                            ),
+                            text: String::from("bpm"),
+                            colour: DIM_LABEL,
+                        })
                     ]),
                     background: PANEL_BG,
                     border: None,
@@ -527,7 +564,7 @@ impl Window {
             }
             
             self.texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
-                self.root.render(buf);
+                self.root.render(buf, self.mouse_x, self.mouse_y);
             })?;
             
             self.canvas.clear();
@@ -583,6 +620,18 @@ fn draw_text(buf: &mut [u8], mut x: u32, y: u32, colour: Color, str: &str) {
             x += data.width + 1;
         }
     }
+}
+
+fn measure_text(str: &str) -> u32 {
+    let mut w = 0;
+    
+    for char in str.chars() {
+        if let Some(data) = &font::FONT_DATA[char as usize] {
+            w += data.width + 1;
+        }
+    }
+    
+    w - 1
 }
 
 #[inline]
