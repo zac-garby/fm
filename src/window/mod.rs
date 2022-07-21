@@ -377,10 +377,12 @@ impl Element for Sequencer {
 impl Element for Stepper {
     fn render(&mut self, buf: &mut [u8], state: &WindowState) {
         let hover = self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32));
+        let text = &format!("{}", self.value)[..];
+        let text_width = measure_text(text);
+        let text_offset = self.rect.w as u32 - 2 - text_width;
         
         draw_rect(buf, self.rect, if hover { self.background_hover } else { self.background }, None, Some(TRANSPARENT));
-        draw_text(buf, self.rect.x as u32 + 2, self.rect.y as u32 + 1, self.foreground,
-            &format!("{}", self.value)[..]);
+        draw_text(buf, self.rect.x as u32 + text_offset, self.rect.y as u32 + 1, self.foreground, text);
     }
 
     fn rect(&self) -> Rect {
