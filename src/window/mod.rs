@@ -26,6 +26,7 @@ pub const SPECTRUM_WIDTH: u32 = 128;
 pub const SPECTRUM_HEIGHT: u32 = 32;
 
 pub struct WindowState {
+    player: Arc<Mutex<Player>>,
     song: song::Song,
     mouse_x: u32,
     mouse_y: u32,
@@ -104,7 +105,6 @@ pub struct Sequencer {
     cell_width: u32,
     cell_height: u32,
     num_octaves: u32,
-    player: Arc<Mutex<Player>>,
     current_part: usize,
     drag_start: Option<Point>,
     drag_end: Option<Point>,
@@ -282,7 +282,7 @@ impl Element for Sequencer {
         }
         
         if let Some(playhead) = {
-            let p = self.player.lock().unwrap();
+            let p = state.player.lock().unwrap();
             let cell_x = p.playhead * p.bps;
             let div = (cell_x.fract() * self.cell_width as f64) as i32;
             let head_x = cell_x as i32 * self.cell_width as i32 + div;
@@ -541,7 +541,6 @@ impl Window {
                         (SPECTRUM_HEIGHT + 2) as i32 * 4 + 19,
                         SCREEN_WIDTH - 2,
                         SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
-                    player: player_mutex.clone(),
                     scroll_x: 0.0,
                     scroll_y: 160.0,
                     cell_width: 16,
@@ -568,6 +567,7 @@ impl Window {
             state: WindowState {
                 mouse_x: 0,
                 mouse_y: 0,
+                player: player_mutex,
                 song: song::Song::new(4, 60, 4),
             }
         })
