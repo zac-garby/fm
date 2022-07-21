@@ -23,7 +23,8 @@ pub const SEQ_PLAYHEAD: Color = Color { r: 240, g: 44, b: 44, a: 255 };
 pub const SEQ_DIVIDER: Color = Color { r: 65, g: 57, b: 66, a: 255 };
 
 pub const CONTROL_BG: Color = Color { r: 15, g: 14, b: 15, a: 255 };
-pub const CONTROL_HOVER: Color = Color { r: 90, g: 70, b: 85, a: 255 };
+pub const CONTROL_HOVER: Color = Color { r: 53, g: 24, b: 51, a: 255 };
+pub const CONTROL_ACTIVE: Color = Color { r: 109, g: 73, b: 106, a: 255 };
 pub const DIM_LABEL: Color = Color { r: 72, g: 62, b: 74, a: 255 };
 
 pub const TOOLTIP_BG: Color = Color { r: 8, g: 2, b: 8, a: 255 };

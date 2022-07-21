@@ -154,6 +154,17 @@ impl Instrument {
         self.voices[best_index].note = PlayedNote::from(note, bps);
     }
     
+    /// flushes all notes from the instrument's voices.
+    pub fn flush(&mut self) {
+        for voice in self.voices.iter_mut() {
+            voice.note.freq = 0.0;
+            voice.note.pitch = 0;
+            voice.note.duration = 0.0;
+            voice.note.start = -0.0;
+            voice.note.velocity = 0.0;
+        }
+    }
+    
     pub fn add_operator(&mut self, op: Operator) {
         if self.operators.len() < MAX_OPERATORS {
             self.operators.push(op);

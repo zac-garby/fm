@@ -46,6 +46,7 @@ pub struct Sequencer {
     pub place_dur: u32,
     pub beat_quantize: u32,
     pub to_delete: Option<usize>,
+    pub on_change: Box<dyn FnMut(&mut WindowState) -> ()>,
 }
 
 pub struct Stepper {
@@ -57,6 +58,34 @@ pub struct Stepper {
     pub background_hover: Color,
     pub foreground: Color,
     pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
+}
+
+pub enum ButtonType {
+    Momentary {
+        label: String,
+    },
+    
+    Toggle {
+        on_label: String,
+        off_label: String,
+    },
+}
+
+#[derive(PartialEq)]
+pub enum ButtonState {
+    Off, Active,
+}
+
+pub struct Button {
+    pub rect: Rect,
+    pub kind: ButtonType,
+    pub state: ButtonState,
+    pub value: bool,
+    pub background: Color,
+    pub background_hover: Color,
+    pub background_active: Color,
+    pub foreground: Color,
+    pub on_change: Box<dyn FnMut(bool, &mut WindowState) -> ()>,
 }
 
 pub struct Label {
@@ -98,11 +127,16 @@ impl Element for Panel {
         for child in &mut self.children {
             let mut e = event.clone();
             
+            let is_mouse_up = match e.event {
+                Event::MouseButtonUp { .. } => true,
+                _ => false,
+            };
+            
             e.x = event.x - (child.rect().x - self.rect.x);
             e.y = event.y - (child.rect().y - self.rect.y);
             
-            if e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
-            e.real_y >= child.rect().top() && e.real_y < child.rect().bottom() {
+            if is_mouse_up || (e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
+                e.real_y >= child.rect().top() && e.real_y < child.rect().bottom()) {
                 child.handle(e, state);
             }
         }
@@ -261,6 +295,10 @@ impl Element for Sequencer {
     fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         let safe = safe_area(self.rect);
         
+        if !safe.contains_point(Point::new(event.real_x, event.real_y)) {
+            return;
+        }
+        
         let point = Point::new(
             event.x + self.scroll_x as i32 - 1,
             safe.h - event.y + self.scroll_y as i32,
@@ -273,42 +311,38 @@ impl Element for Sequencer {
                     .clamp(0.0, (self.cell_height * 12 * self.num_octaves - (self.rect.height() - 2)) as f32);
             },
             Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
-                if safe.contains_point(Point::new(event.real_x, event.real_y)) {
-                    self.drag_start = Some(point);
-                    let t = self.x_to_t(point.x as u32);
-                    let pitch = self.y_to_pitch(point.y as u32);
-                    
-                    self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
-                }
+                self.drag_start = Some(point);
+                let t = self.x_to_t(point.x as u32);
+                let pitch = self.y_to_pitch(point.y as u32);
+                
+                self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
             },
             Event::MouseMotion { mousestate, .. } => {
                 self.to_delete = None;
                 
-                if safe.contains_point(Point::new(event.real_x, event.real_y)) {
-                    let t = self.x_to_t(point.x as u32);
-                    let pitch = self.y_to_pitch(point.y as u32);
+                let t = self.x_to_t(point.x as u32);
+                let pitch = self.y_to_pitch(point.y as u32);
+                
+                if let Some(start) = self.drag_start {
+                    let start_t = self.x_to_t(start.x as u32);
+                    let dur = t.diff(start_t);
                     
-                    if let Some(start) = self.drag_start {
-                        let start_t = self.x_to_t(start.x as u32);
-                        let dur = t.diff(start_t);
+                    if mousestate.left() && dur >= (song::BEAT_DIVISIONS / self.beat_quantize) as i32 {
+                        self.drag_end = Some(point);
                         
-                        if mousestate.left() && dur >= (song::BEAT_DIVISIONS / self.beat_quantize) as i32 {
-                            self.drag_end = Some(point);
-                            
-                            self.temp_note = self.temp_note.map(|mut n| {
-                                let diff = t.diff(n.start);
-                                if diff > 0 {
-                                    n.duration = diff as u32;
-                                }
-                                n
-                            });
-                        }
-                    } else if let Some((i, hovered)) = state.find_note(self.current_part, t, pitch) {
-                        self.temp_note = Some(hovered);
-                        self.to_delete = Some(i);
-                    } else {
-                        self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
+                        self.temp_note = self.temp_note.map(|mut n| {
+                            let diff = t.diff(n.start);
+                            if diff > 0 {
+                                n.duration = diff as u32;
+                            }
+                            n
+                        });
                     }
+                } else if let Some((i, hovered)) = state.find_note(self.current_part, t, pitch) {
+                    self.temp_note = Some(hovered);
+                    self.to_delete = Some(i);
+                } else {
+                    self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
                 }
             },
             Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
@@ -317,6 +351,7 @@ impl Element for Sequencer {
                     self.to_delete = None;
                 } else if let Some(note) = self.temp_note {
                     state.add_note(self.current_part, note);
+                    (self.on_change)(state);
                     self.place_dur = note.duration;
                 }
                 
@@ -359,6 +394,69 @@ impl Element for Stepper {
             Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
                 self.value = (self.value - 1).clamp(self.min_value, self.max_value);
                 (self.on_change)(self.value, state);
+            }
+            _ => {},
+        }
+    }
+}
+
+impl Element for Button {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        
+        let background = match self.state {
+            ButtonState::Off => if self.rect.contains_point(mouse) {
+                self.background_hover
+            } else { 
+                self.background
+            },
+            ButtonState::Active => self.background_active,
+        };
+        
+        let label = match &self.kind {
+            ButtonType::Momentary { label } => label,
+            ButtonType::Toggle { on_label, off_label } => if self.value { on_label } else { off_label },
+        };
+        
+        let label_w = measure_text(&label[..]);
+        
+        draw_rect(buf, self.rect, background, None, Some(TRANSPARENT));
+        draw_text(buf, (self.rect.x + self.rect.w / 2) as u32 - label_w / 2, self.rect.y as u32 + 1, self.foreground, &label[..]);
+    }
+
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
+        match event.event {
+            Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
+                self.state = ButtonState::Active;
+                
+                match self.kind {
+                    ButtonType::Momentary { .. } => {
+                        self.value = true;
+                        (self.on_change)(self.value, state);
+                    },
+                    ButtonType::Toggle { .. } => {},
+                }
+            },
+            Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
+                if self.state == ButtonState::Active ||
+                    self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
+                    match self.kind {
+                        ButtonType::Momentary { .. } => {
+                            self.state = ButtonState::Off;
+                            self.value = false;
+                        },
+                        ButtonType::Toggle { .. } => {
+                            self.state = ButtonState::Off;
+                            self.value = !self.value;
+                        },
+                    }
+                    
+                    (self.on_change)(self.value, state);
+                }
             }
             _ => {},
         }

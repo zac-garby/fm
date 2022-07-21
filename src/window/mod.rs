@@ -8,7 +8,7 @@ use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::render;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 
 use crate::{player::Player, song};
 
@@ -23,7 +23,8 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(video: sdl2::VideoSubsystem, player_mutex: Arc<Mutex<Player>>)
+    pub fn new(video: sdl2::VideoSubsystem, player_mutex: Arc<Mutex<Player>>,
+        note_channel: mpsc::Sender<(usize, song::Note)>)
     -> Result<Window, String> {
         let win = video
             .window("Cancrizans", REAL_WIDTH, REAL_HEIGHT)
@@ -137,6 +138,84 @@ impl Window {
                             text: String::from("/4"),
                             colour: DIM_LABEL,
                         }),
+                        Box::new(Button {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 - 16,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                11,
+                                7,
+                            ),
+                            kind: ButtonType::Momentary { label: String::from("\x02") },
+                            state: ButtonState::Off,
+                            value: false,
+                            background: CONTROL_BG,
+                            background_hover: CONTROL_HOVER,
+                            background_active: CONTROL_ACTIVE,
+                            foreground: FG,
+                            on_change: {
+                                let chan = note_channel.clone();
+                                
+                                Box::new(move |pressed, s| {
+                                    if !pressed {
+                                        let mut player = s.player.lock().unwrap();
+                                        
+                                        if !player.paused {
+                                            player.flush_notes();
+                                            s.song.sequence(chan.clone());
+                                        }
+                                        
+                                        player.playhead = 0.0;
+                                    }
+                                })
+                            },
+                        }),
+                        Box::new(Button {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 - 5,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                11,
+                                7,
+                            ),
+                            kind: ButtonType::Toggle { on_label: String::from("\x01"), off_label: String::from("\x00") },
+                            state: ButtonState::Off,
+                            value: false,
+                            background: CONTROL_BG,
+                            background_hover: CONTROL_HOVER,
+                            background_active: CONTROL_ACTIVE,
+                            foreground: FG,
+                            on_change: {
+                                let chan = note_channel.clone();
+                                
+                                Box::new(move |playing, s| {
+                                    let mut player = s.player.lock().unwrap();
+                                    
+                                    if playing {
+                                        player.flush_notes();
+                                        s.song.sequence(chan.clone());
+                                    }
+                                    
+                                    player.paused = !playing;
+                                })
+                            },
+                        }),
+                        Box::new(Button {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 + 6,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                11,
+                                7,
+                            ),
+                            kind: ButtonType::Momentary { label: String::from("\x03") },
+                            state: ButtonState::Off,
+                            value: false,
+                            background: CONTROL_BG,
+                            background_hover: CONTROL_HOVER,
+                            background_active: CONTROL_ACTIVE,
+                            foreground: FG,
+                            on_change: Box::new(|_pressed, _s| {
+                                
+                            }),
+                        }),
                     ]),
                     background: PANEL_BG,
                     border: None,
@@ -160,6 +239,18 @@ impl Window {
                     place_dur: song::BEAT_DIVISIONS,
                     beat_quantize: 4,
                     to_delete: None,
+                    on_change: {
+                        let chan = note_channel.clone();
+                        
+                        Box::new(move |s| {
+                            let mut player = s.player.lock().unwrap();
+                            
+                            if !player.paused {
+                                player.flush_notes();
+                                s.song.sequence(chan.clone());
+                            }
+                        })
+                    }
                 }) as Box<dyn Element>
             ]),
             background: PANEL_BG,

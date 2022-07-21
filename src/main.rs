@@ -28,9 +28,10 @@ pub fn main() -> anyhow::Result<()> {
     s.add_note(0, Note::new(29, 1, 0, 90, 1.0));
     s.add_note(0, Note::new(31, 2, 0, 90, 0.9));
     
-    let (mut player, note_channel, control) = Player::new();
+    let (mut player, note_channel) = Player::new();
     player.volume = 0.5;
-    player.mute = true;
+    player.mute = false;
+    
     player.instruments.push(make_organ());
     player.instruments.push(make_organ());
     player.instruments.push(make_organ());
@@ -44,7 +45,7 @@ pub fn main() -> anyhow::Result<()> {
     
     let tx = start_audio(device, player_mutex.clone())?;
 
-    let mut win = Window::new(video, player_mutex.clone()).expect("could not create window");
+    let mut win = Window::new(video, player_mutex.clone(), note_channel).expect("could not create window");
     win.start(sdl).expect("could not start window");
     
     tx.send(())?;

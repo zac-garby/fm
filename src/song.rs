@@ -167,7 +167,9 @@ impl Song {
         notes.sort_by(|(_, _, a), (_, _, b)| a.partial_cmp(b).unwrap());
         
         // play the notes in the order in which they begin.
-        notes.iter().for_each(|(i, note, _)| chan.send((*i, **note))
-                                                 .expect("could not send note"));
+        notes.iter().for_each(|(i, note, _)| {
+            chan.send((*i, **note))
+                .expect("could not send note")
+        });
     }
 }

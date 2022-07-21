@@ -5,19 +5,6 @@ use std::sync::mpsc;
 
 const QUANTIZE: u32 = 256;
 
-/// a signal which, when sent to a player's control signal, will
-/// have some effect.
-pub enum ControlSignal {
-    /// toggles between playing and paused states.
-    PlayPause,
-    
-    /// toggles between muted and unmuted states.
-    MuteUnmute,
-    
-    /// sets the player's volume.
-    Volume(f32),
-}
-
 /// a player collects together a number of instruments and plays
 /// them together, allocating notes to them and handling control
 /// signals.
@@ -44,21 +31,15 @@ pub struct Player {
     pub playhead: f64,
     
     note_recv: mpsc::Receiver<(usize, song::Note)>,
-    signals: mpsc::Receiver<ControlSignal>,
     next_note: Option<(usize, song::Note, f64)>,
     quantize_count: u32,
 }
 
 impl Player {
-    /// constructs a new player with default settings, and
-    /// returns two channels, one for sending notes and one
-    /// for sending control signals. by default, the player is
-    /// paused.
-    pub fn new() -> (Player,
-                     mpsc::Sender<(usize, song::Note)>,
-                     mpsc::Sender<ControlSignal>) {
+    /// constructs a new player with default settings, and returns a channel
+    /// for sending notes. by default, the player is paused.
+    pub fn new() -> (Player, mpsc::Sender<(usize, song::Note)>) {
         let (tx_note, rx_note) = mpsc::channel();
-        let (tx_sig, rx_sig) = mpsc::channel();
         
         (Player {
             bps: 2.0,
@@ -69,10 +50,9 @@ impl Player {
             
             playhead: 0.0,
             note_recv: rx_note,
-            signals: rx_sig,
             next_note: None,
             quantize_count: QUANTIZE,
-        }, tx_note, tx_sig)
+        }, tx_note)
     }
     
     /// advances the player's instruments and playhead, and returns
@@ -102,24 +82,26 @@ impl Player {
         }
     }
     
-    fn quantum(&mut self) {
-        for sig in self.signals.try_iter() {
-            match sig {
-                ControlSignal::PlayPause => {
-                    self.paused = !self.paused
-                },
-                ControlSignal::MuteUnmute => {
-                    self.mute = !self.mute
-                },
-                ControlSignal::Volume(vol) => {
-                    self.volume = vol;
-                }
-            }
-        }
+    /// empties the note input stream, so a new song can be started
+    /// without interference.
+    pub fn flush_notes(&mut self) {
+        for _ in self.note_recv.try_iter() {}
         
-        if let Some((i, next, start)) = &self.next_note {
-            if *start <= self.playhead {
-                self.instruments.get_mut(*i).map(|i| i.schedule(*next, self.bps));
+        self.next_note = None;
+        self.quantize_count = QUANTIZE;
+        
+        for instr in self.instruments.iter_mut() {
+            instr.flush();
+        }
+    }
+    
+    fn quantum(&mut self) {
+        if let Some((i, next, start)) = self.next_note {
+            if start <= self.playhead {
+                if let Some(instr) = self.instruments.get_mut(i) {
+                    instr.schedule(next, self.bps);
+                }
+                
                 self.next_note = None;
             }
         }
@@ -128,7 +110,7 @@ impl Player {
             for (i, note) in self.note_recv.try_iter() {
                 let start = note.start_time(self.bps);
                 
-                if note.start_time(self.bps) > self.playhead {
+                if start > self.playhead {
                     self.next_note = Some((i, note, start));
                     break;
                 }
