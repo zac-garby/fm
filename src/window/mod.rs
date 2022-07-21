@@ -511,12 +511,12 @@ impl Window {
                             rect: Rect::new(
                                 38,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
-                                7,
+                                11,
                                 7,
                             ),
                             value: 4,
                             min_value: 1,
-                            max_value: 8,
+                            max_value: 64,
                             background: CONTROL_BG,
                             background_hover: CONTROL_HOVER,
                             foreground: FG2,
@@ -526,7 +526,7 @@ impl Window {
                         }) as Box<dyn Element>,
                         Box::new(Label {
                             position: Point::new(
-                                46,
+                                50,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
                             ),
                             text: String::from("/4"),
