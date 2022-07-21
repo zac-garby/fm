@@ -199,7 +199,9 @@ impl Window {
                     Event::MouseMotion { .. } |
                     Event::MouseButtonUp { .. } |
                     Event::MouseButtonDown { .. } |
-                    Event::MouseWheel { .. } => self.send_event(InputEvent {
+                    Event::MouseWheel { .. } |
+                    Event::KeyDown { .. } |
+                    Event::KeyUp { .. } => self.send_event(InputEvent {
                         real_x: self.state.mouse_x as i32,
                         real_y: self.state.mouse_y as i32,
                         x: self.state.mouse_x as i32 - self.root.rect().x,

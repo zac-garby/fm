@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use sdl2::mouse;
+use sdl2::{mouse, keyboard};
 use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
@@ -341,10 +341,20 @@ impl Element for Stepper {
     
     fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         match event.event {
-            Event::MouseWheel { y, .. } => {
-                self.value = (self.value + y).clamp(self.min_value, self.max_value);
+            Event::MouseWheel { x, y, .. } => {
+                self.value = (self.value + x + y).clamp(self.min_value, self.max_value);
                 (self.on_change)(self.value, state);
             },
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
+                self.value = (self.value + 1).clamp(self.min_value, self.max_value);
+                (self.on_change)(self.value, state);
+            },
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
+                self.value = (self.value - 1).clamp(self.min_value, self.max_value);
+                (self.on_change)(self.value, state);
+            }
             _ => {},
         }
     }
