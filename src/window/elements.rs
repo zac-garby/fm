@@ -139,7 +139,7 @@ impl Element for Spectrum {
                 }
             }
             
-            draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, FG,
+            draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, DIM_LABEL,
                 &format!("INSTR.{}", self.index)[..]);
         } else {
             draw_rect(buf, self.rect, EMPTY_SPECTRUM_BG, Some(BORDER), Some(CORNER));
