@@ -228,6 +228,10 @@ impl Element for Sequencer {
         if safe.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
             if let Some(note) = self.temp_note {
                 self.draw_note(buf, &note, SEQ_GHOST_NOTE);
+                
+                draw_tooltip(buf, state.mouse_x, state.mouse_y, Vec::from([
+                    format!("{} {}", note.name(), note.octave()),
+                ]));
             }
         }
         
@@ -406,8 +410,9 @@ impl WindowState {
     }
 }
 
-fn draw_rect(buf: &mut [u8], rect: Rect,
+pub(crate) fn draw_rect(buf: &mut [u8], rect: Rect,
     bg: Color, border: Option<Color>, corner: Option<Color>) {
+    if let Some(rect) = clamp_rect(rect, Rect::new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)) {
         for y in rect.y..rect.y + rect.h {
             let i0 = coord_index(rect.x as u32, y as u32);
             
@@ -431,8 +436,9 @@ fn draw_rect(buf: &mut [u8], rect: Rect,
             }
         }
     }
+}
 
-fn draw_text(buf: &mut [u8], mut x: u32, y: u32, colour: Color, str: &str) {
+pub(crate) fn draw_text(buf: &mut [u8], mut x: u32, y: u32, colour: Color, str: &str) {
     for ch in str.chars() {
         if let Some(data) = &font::FONT_DATA[ch as usize] {
             for j in 0..font::FONT_HEIGHT {
@@ -448,7 +454,32 @@ fn draw_text(buf: &mut [u8], mut x: u32, y: u32, colour: Color, str: &str) {
     }
 }
 
-fn measure_text(str: &str) -> u32 {
+pub(crate) fn draw_tooltip(buf: &mut [u8], x: u32, y: u32, text: Vec<String>) {
+    if let Some(text_width) = text.iter().map(|s| measure_text(&s[..])).max() {
+        let text_height = (text.len() * (font::FONT_HEIGHT + 2) - 2) as u32;
+        
+        let rect = Rect::new(
+            x as i32 + 4,
+            y as i32 - text_height as i32 - 8,
+            text_width + 4,
+            text_height + 4
+        );
+        
+        draw_rect(buf, rect, TOOLTIP_BG, None, Some(TRANSPARENT));
+        
+        for (i, line) in text.iter().enumerate() {
+            draw_text(
+                buf,
+                rect.x as u32 + 2,
+                rect.y as u32 + 2 + (i * (font::FONT_HEIGHT + 2)) as u32,
+                FG,
+                &line[..],
+            );
+        }
+    }
+}
+
+pub(crate) fn measure_text(str: &str) -> u32 {
     let mut w = 0;
     
     for char in str.chars() {
@@ -461,12 +492,14 @@ fn measure_text(str: &str) -> u32 {
 }
 
 #[inline]
-fn set_pixel(buf: &mut [u8], x: u32, y: u32, colour: Color) {
-    let idx = coord_index(x, y);
-    buf[idx + 0] = colour.b;
-    buf[idx + 1] = colour.g;
-    buf[idx + 2] = colour.r;
-    buf[idx + 3] = colour.a;
+pub(crate) fn set_pixel(buf: &mut [u8], x: u32, y: u32, colour: Color) {
+    if x < SCREEN_WIDTH && y < SCREEN_HEIGHT {
+        let idx = coord_index(x, y);
+        buf[idx + 0] = colour.b;
+        buf[idx + 1] = colour.g;
+        buf[idx + 2] = colour.r;
+        buf[idx + 3] = colour.a;
+    }
 }
 
 fn coord_index(x: u32, y: u32) -> usize {

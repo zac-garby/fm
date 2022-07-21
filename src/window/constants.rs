@@ -26,6 +26,8 @@ pub const CONTROL_BG: Color = Color { r: 15, g: 14, b: 15, a: 255 };
 pub const CONTROL_HOVER: Color = Color { r: 90, g: 70, b: 85, a: 255 };
 pub const DIM_LABEL: Color = Color { r: 72, g: 62, b: 74, a: 255 };
 
+pub const TOOLTIP_BG: Color = Color { r: 8, g: 2, b: 8, a: 255 };
+
 pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };
 
 /// the background colours for sequencer cells. the first 12

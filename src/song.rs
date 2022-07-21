@@ -4,6 +4,10 @@ pub const BEAT_DIVISIONS: u32 = 96;
 pub const NUM_PARTS: usize = 4;
 pub const C0: f32 = 16.35159783;
 
+pub const NOTE_NAMES: [&str; 12] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+];
+
 /// a particular point of time, quantized as a moment in a song.
 #[derive(Copy, Clone)]
 pub struct Time {
@@ -105,6 +109,16 @@ impl Note {
     /// check if the note contains a particular time.
     pub fn contains(&self, time: Time) -> bool {
         time.as_divs() >= self.start.as_divs() && time.as_divs() < self.start.as_divs() + self.duration
+    }
+    
+    /// gets the name of the note's pitch (e.g. "C#")
+    pub fn name(&self) -> &str {
+        NOTE_NAMES[(self.pitch % 12) as usize]
+    }
+    
+    /// gets the octave which the note is in
+    pub fn octave(&self) -> u32 {
+        self.pitch / 12
     }
 }
 
