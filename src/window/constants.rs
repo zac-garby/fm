@@ -1,5 +1,14 @@
 use sdl2::pixels::Color;
 
+pub const SCREEN_WIDTH: u32 = 300;
+pub const SCREEN_HEIGHT: u32 = 250;
+pub const SCREEN_SCALE: u32 = 4;
+pub const REAL_WIDTH: u32 = SCREEN_WIDTH * SCREEN_SCALE;
+pub const REAL_HEIGHT: u32 = SCREEN_HEIGHT * SCREEN_SCALE;
+
+pub const SPECTRUM_WIDTH: u32 = 128;
+pub const SPECTRUM_HEIGHT: u32 = 32;
+
 pub const FG: Color = Color { r: 210, g: 210, b: 210, a: 255 };
 pub const FG2: Color = Color { r: 139, g: 139, b: 139, a: 139 };
 pub const PANEL_BG: Color = Color { r: 29, g: 24, b: 30, a: 255 };
