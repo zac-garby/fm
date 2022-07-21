@@ -263,7 +263,8 @@ impl Element for Sequencer {
                 let bg = if subdiv == self.cell_width-1 {
                     SEQ_DIVIDER
                 } else {
-                    SEQ_BACKGROUND[12 * if col % state.song.beats_per_bar == 0 { 0 } else { 1 } + row % 12]
+                    let is_first = state.song.beats_per_bar > 1 && col % state.song.beats_per_bar == 0;
+                    SEQ_BACKGROUND[12 * if is_first { 0 } else { 1 } + row % 12]
                 };
                 
                 set_pixel(buf, real_x + safe.x as u32, safe.height() - real_y - 1 + safe.y as u32, bg);
