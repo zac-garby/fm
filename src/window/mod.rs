@@ -503,7 +503,32 @@ impl Window {
                             ),
                             text: String::from("bpm"),
                             colour: DIM_LABEL,
-                        })
+                        }),
+                        Box::new(Stepper {
+                            rect: Rect::new(
+                                38,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                7,
+                                7,
+                            ),
+                            value: 4,
+                            min_value: 1,
+                            max_value: 8,
+                            background: CONTROL_BG,
+                            background_hover: CONTROL_HOVER,
+                            foreground: FG2,
+                            on_change: Box::new(|x, s| {
+                                s.song.beats_per_bar = x as u32;
+                            }),
+                        }) as Box<dyn Element>,
+                        Box::new(Label {
+                            position: Point::new(
+                                46,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                            ),
+                            text: String::from("/4"),
+                            colour: DIM_LABEL,
+                        }),
                     ]),
                     background: PANEL_BG,
                     border: None,
