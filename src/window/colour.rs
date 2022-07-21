@@ -14,7 +14,7 @@ pub const SEQ_PLAYHEAD: Color = Color { r: 240, g: 44, b: 44, a: 255 };
 pub const SEQ_DIVIDER: Color = Color { r: 65, g: 57, b: 66, a: 255 };
 
 pub const CONTROL_BG: Color = Color { r: 15, g: 14, b: 15, a: 255 };
-pub const CONTROL_HOVER: Color = Color { r: 23, g: 17, b: 23, a: 255 };
+pub const CONTROL_HOVER: Color = Color { r: 90, g: 70, b: 85, a: 255 };
 pub const DIM_LABEL: Color = Color { r: 72, g: 65, b: 72, a: 255 };
 
 pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };

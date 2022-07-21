@@ -25,12 +25,46 @@ pub const REAL_HEIGHT: u32 = SCREEN_HEIGHT * SCREEN_SCALE;
 pub const SPECTRUM_WIDTH: u32 = 128;
 pub const SPECTRUM_HEIGHT: u32 = 32;
 
+pub struct WindowState {
+    song: song::Song,
+    mouse_x: u32,
+    mouse_y: u32,
+}
+
+impl WindowState {
+    fn add_note(&mut self, part: usize, note: song::Note) {
+        let mut overlaps = Vec::new();
+        let part = &mut self.song.parts[part];
+        
+        for (i, existing) in part.iter().enumerate() {
+            if existing.pitch == note.pitch && existing.overlap(note) {
+                overlaps.push(i);
+            }
+        }
+        
+        for (n, i) in overlaps.iter().enumerate() {
+            part.remove(i - n);
+        }
+        
+        part.push(note);
+    }
+    
+    fn find_note(&mut self, part: usize, t: song::Time, pitch: u32) -> Option<(usize, song::Note)> {
+        for (i, note) in self.song.parts[part].iter().enumerate() {
+            if note.pitch == pitch && note.contains(t) {
+                return Some((i, note.clone()))
+            }
+        }
+        
+        None
+    }
+}
+
 pub struct Window {
     canvas: render::WindowCanvas,
     texture: render::Texture,
     root: Box<dyn Element>,
-    mouse_x: u32,
-    mouse_y: u32,
+    state: WindowState,
 }
 
 #[derive(Clone)]
@@ -43,9 +77,9 @@ pub struct InputEvent {
 }
 
 pub trait Element {
-    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32);
+    fn render(&mut self, buf: &mut [u8], state: &WindowState);
     fn rect(&self) -> Rect;
-    fn handle(&mut self, event: InputEvent);
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState);
 }
 
 pub struct Panel {
@@ -71,7 +105,6 @@ pub struct Sequencer {
     cell_height: u32,
     num_octaves: u32,
     player: Arc<Mutex<Player>>,
-    song: song::Song,
     current_part: usize,
     drag_start: Option<Point>,
     drag_end: Option<Point>,
@@ -89,6 +122,7 @@ pub struct Stepper {
     background: Color,
     background_hover: Color,
     foreground: Color,
+    on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
 }
 
 pub struct Label {
@@ -98,11 +132,11 @@ pub struct Label {
 }
 
 impl Element for Panel {
-    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32) {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
         draw_rect(buf, self.rect, self.background, self.border, self.corner);
         
         for child in &mut self.children {
-            child.render(buf, mouse_x, mouse_y);
+            child.render(buf, state);
         }
     }
     
@@ -110,7 +144,7 @@ impl Element for Panel {
         self.rect
     }
     
-    fn handle(&mut self, event: InputEvent) {
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         for child in &mut self.children {
             let mut e = event.clone();
             
@@ -119,14 +153,14 @@ impl Element for Panel {
             
             if e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
             e.real_y >= child.rect().top() && e.real_y < child.rect().bottom() {
-                child.handle(e);
+                child.handle(e, state);
             }
         }
     }
 }
 
 impl Element for Spectrum {
-    fn render(&mut self, buf: &mut [u8], _mouse_x: u32, _mouse_y: u32) {
+    fn render(&mut self, buf: &mut [u8], _state: &WindowState) {
         let player = self.player.lock().unwrap();
         let safe = safe_area(self.rect());
         
@@ -166,7 +200,7 @@ impl Element for Spectrum {
         self.rect
     }
     
-    fn handle(&mut self, event: InputEvent) {
+    fn handle(&mut self, event: InputEvent, _state: &mut WindowState) {
         match event.event {
             Event::MouseWheel { y, .. } => {
                 self.wave_scale = (self.wave_scale + y as f32 * 0.5).clamp(1.0, 60.0);
@@ -210,37 +244,10 @@ impl Sequencer {
             draw_rect(buf, rect, bg, None, if rect.w <= 1 { None } else { Some(TRANSPARENT) });
         }
     }
-    
-    fn add_note(&mut self, note: song::Note) {
-        let mut overlaps = Vec::new();
-        let part = &mut self.song.parts[self.current_part];
-        
-        for (i, existing) in part.iter().enumerate() {
-            if existing.pitch == note.pitch && existing.overlap(note) {
-                overlaps.push(i);
-            }
-        }
-        
-        for (n, i) in overlaps.iter().enumerate() {
-            part.remove(i - n);
-        }
-        
-        part.push(note);
-    }
-    
-    fn find_hovered(&mut self, t: song::Time, pitch: u32) -> Option<(usize, &song::Note)> {
-        for (i, note) in self.song.parts[self.current_part].iter().enumerate() {
-            if note.pitch == pitch && note.contains(t) {
-                return Some((i, note))
-            }
-        }
-        
-        None
-    }
 }
 
 impl Element for Sequencer {
-    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32) {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
         let safe = safe_area(self.rect);
         draw_rect(buf, self.rect, SEQ_BACKGROUND[0], Some(BORDER), Some(CORNER));
         
@@ -256,18 +263,18 @@ impl Element for Sequencer {
                 let bg = if subdiv == self.cell_width-1 {
                     SEQ_DIVIDER
                 } else {
-                    SEQ_BACKGROUND[12 * if col % self.song.beats_per_bar == 0 { 0 } else { 1 } + row % 12]
+                    SEQ_BACKGROUND[12 * if col % state.song.beats_per_bar == 0 { 0 } else { 1 } + row % 12]
                 };
                 
                 set_pixel(buf, real_x + safe.x as u32, safe.height() - real_y - 1 + safe.y as u32, bg);
             }
         }
         
-        for note in &self.song.parts[self.current_part] {
+        for note in &state.song.parts[self.current_part] {
             self.draw_note(buf, note, SEQ_NOTE);
         }
         
-        if safe.contains_point(Point::new(mouse_x as i32, mouse_y as i32)) {
+        if safe.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
             if let Some(note) = self.temp_note {
                 self.draw_note(buf, &note, SEQ_GHOST_NOTE);
             }
@@ -295,7 +302,7 @@ impl Element for Sequencer {
         self.rect
     }
 
-    fn handle(&mut self, event: InputEvent) {
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         let safe = safe_area(self.rect);
                         
         let point = Point::new(
@@ -340,8 +347,8 @@ impl Element for Sequencer {
                                 n
                             });
                         }
-                    } else if let Some((i, hovered)) = self.find_hovered(t, pitch) {
-                        self.temp_note = Some(*hovered);
+                    } else if let Some((i, hovered)) = state.find_note(self.current_part, t, pitch) {
+                        self.temp_note = Some(hovered);
                         self.to_delete = Some(i);
                     } else {
                         self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
@@ -350,10 +357,10 @@ impl Element for Sequencer {
             },
             Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
                 if let Some(i) = self.to_delete {
-                    self.song.parts[self.current_part].remove(i);
+                    state.song.parts[self.current_part].remove(i);
                     self.to_delete = None;
                 } else if let Some(note) = self.temp_note {
-                    self.add_note(note);
+                    state.add_note(self.current_part, note);
                     self.place_dur = note.duration;
                 }
                 
@@ -367,8 +374,8 @@ impl Element for Sequencer {
 }
 
 impl Element for Stepper {
-    fn render(&mut self, buf: &mut [u8], mouse_x: u32, mouse_y: u32) {
-        let hover = self.rect.contains_point(Point::new(mouse_x as i32, mouse_y as i32));
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
+        let hover = self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32));
         
         draw_rect(buf, self.rect, if hover { self.background_hover } else { self.background }, None, Some(TRANSPARENT));
         draw_text(buf, self.rect.x as u32 + 2, self.rect.y as u32 + 1, self.foreground,
@@ -379,10 +386,11 @@ impl Element for Stepper {
         self.rect
     }
 
-    fn handle(&mut self, event: InputEvent) {
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         match event.event {
             Event::MouseWheel { y, .. } => {
                 self.value = (self.value + y).clamp(self.min_value, self.max_value);
+                (self.on_change)(self.value, state);
             },
             _ => {},
         }
@@ -390,7 +398,7 @@ impl Element for Stepper {
 }
 
 impl Element for Label {
-    fn render(&mut self, buf: &mut [u8], _mouse_x: u32, _mouse_y: u32) {
+    fn render(&mut self, buf: &mut [u8], _state: &WindowState) {
         draw_text(buf, self.position.x as u32, self.position.y as u32, self.colour, &self.text[..]);
     }
 
@@ -403,7 +411,7 @@ impl Element for Label {
         )
     }
 
-    fn handle(&mut self, _event: InputEvent) {}
+    fn handle(&mut self, _event: InputEvent, _state: &mut WindowState) {}
 }
 
 impl Window {
@@ -478,12 +486,15 @@ impl Window {
                                 15,
                                 7,
                             ),
-                            value: 120,
+                            value: 60,
                             min_value: 1,
                             max_value: 999,
                             background: CONTROL_BG,
                             background_hover: CONTROL_HOVER,
                             foreground: FG2,
+                            on_change: Box::new(|x, s| {
+                                s.song.bpm = x as u32;
+                            }),
                         }) as Box<dyn Element>,
                         Box::new(Label {
                             position: Point::new(
@@ -505,7 +516,6 @@ impl Window {
                         SCREEN_WIDTH - 2,
                         SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
                     player: player_mutex.clone(),
-                    song: song::Song::new(4, 60, 4),
                     scroll_x: 0.0,
                     scroll_y: 160.0,
                     cell_width: 16,
@@ -529,8 +539,11 @@ impl Window {
             canvas,
             texture,
             root: Box::new(root),
-            mouse_x: 0,
-            mouse_y: 0,
+            state: WindowState {
+                mouse_x: 0,
+                mouse_y: 0,
+                song: song::Song::new(4, 60, 4),
+            }
         })
     }
     
@@ -543,8 +556,8 @@ impl Window {
                 match e {
                     Event::Quit { .. } => break 'run,
                     Event::MouseMotion { x, y, .. } => {
-                        self.mouse_x = x as u32 / SCREEN_SCALE;
-                        self.mouse_y = y as u32 / SCREEN_SCALE;
+                        self.state.mouse_x = x as u32 / SCREEN_SCALE;
+                        self.state.mouse_y = y as u32 / SCREEN_SCALE;
                     },
                     _ => {}
                 }
@@ -554,17 +567,17 @@ impl Window {
                     Event::MouseButtonUp { .. } |
                     Event::MouseButtonDown { .. } |
                     Event::MouseWheel { .. } => self.send_event(InputEvent {
-                        real_x: self.mouse_x as i32,
-                        real_y: self.mouse_y as i32,
-                        x: self.mouse_x as i32 - self.root.rect().x,
-                        y: self.mouse_y as i32 - self.root.rect().y,
+                        real_x: self.state.mouse_x as i32,
+                        real_y: self.state.mouse_y as i32,
+                        x: self.state.mouse_x as i32 - self.root.rect().x,
+                        y: self.state.mouse_y as i32 - self.root.rect().y,
                         event: e }),
                     _ => {}
                 }
             }
             
             self.texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
-                self.root.render(buf, self.mouse_x, self.mouse_y);
+                self.root.render(buf, &self.state);
             })?;
             
             self.canvas.clear();
@@ -576,7 +589,7 @@ impl Window {
     }
     
     fn send_event(&mut self, e: InputEvent) {
-        self.root.handle(e);
+        self.root.handle(e, &mut self.state);
     }
 }
 
