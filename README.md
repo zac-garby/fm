@@ -2,7 +2,9 @@
 
 (formerly `fm`)
 
-A synthesiser. I'm currently in the process of porting the [old](https://github.com/zac-garby/fm/tree/old) C version to Rust, because segfaults are annoying.
+![](assets/screenshot.png)
+
+A synthesiser, early WIP. I'm currently in the process of porting the [old](https://github.com/zac-garby/fm/tree/old) C version to Rust, because segfaults are annoying.
 
 Once this rewrite is complete, the features will include:
 
