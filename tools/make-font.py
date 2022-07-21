@@ -9,7 +9,7 @@
 import sys
 from PIL import Image
 
-CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,()[]{}<>/\\|!-_+=;:?'\"%#~"
+CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,()[]{}<>/\\|!-_+=;:?'\"%#~\0\1\2\3\4"
 SPACE_WIDTH = 2
 
 TEMPLATE = """// font.rs
@@ -24,8 +24,8 @@ pub const FONT_WIDTH: usize = 5;
 
 /// stores the raw pixel data for one character in a font.
 pub struct CharData {
-    width: u32,
-    data: [u32; FONT_HEIGHT * FONT_WIDTH],
+    pub width: u32,
+    pub data: [u32; FONT_HEIGHT * FONT_WIDTH],
 }
 
 pub const FONT_DATA: [Option<CharData>; 256] = [
@@ -54,7 +54,7 @@ for c in CHARSET:
         
         for y in range(5):
             p = im.getpixel((x2, y))
-            if p == 1:
+            if p != 0:
                 empty = False
                 break
 
@@ -62,7 +62,7 @@ for c in CHARSET:
             
     for x in range(x1, x2):
         for y in range(5):
-            data[y].append(im.getpixel((x, y)))
+            data[y].append(1 if im.getpixel((x, y)) == 1 else 0)
 
     all_data[ord(c)] = data
    

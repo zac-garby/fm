@@ -15,11 +15,11 @@ pub struct CharData {
 }
 
 pub const FONT_DATA: [Option<CharData>; 256] = [
-    None,
-    None,
-    None,
-    None,
-    None,
+    Some(CharData { width: 3, data: [1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }),
+    Some(CharData { width: 5, data: [1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1] }),
+    Some(CharData { width: 5, data: [1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1] }),
+    Some(CharData { width: 5, data: [1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1] }),
+    Some(CharData { width: 3, data: [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }),
     None,
     None,
     None,
