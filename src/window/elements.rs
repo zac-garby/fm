@@ -18,67 +18,67 @@ pub trait Element {
 }
 
 pub struct Panel {
-    pub(crate) rect: Rect,
-    pub(crate) children: Vec<Box<dyn Element>>,
-    pub(crate) background: Color,
-    pub(crate) border: Option<Color>,
-    pub(crate) corner: Option<Color>,
+    pub rect: Rect,
+    pub children: Vec<Box<dyn Element>>,
+    pub background: Color,
+    pub border: Option<Color>,
+    pub corner: Option<Color>,
 }
 
 pub struct Spectrum {
-    pub(crate) rect: Rect,
-    pub(crate) player: Arc<Mutex<Player>>,
-    pub(crate) index: usize,
-    pub(crate) wave_scale: f32,
+    pub rect: Rect,
+    pub player: Arc<Mutex<Player>>,
+    pub index: usize,
+    pub wave_scale: f32,
 }
 
 pub struct Sequencer {
-    pub(crate) rect: Rect,
-    pub(crate) scroll_x: f32,
-    pub(crate) scroll_y: f32,
-    pub(crate) cell_width: u32,
-    pub(crate) cell_height: u32,
-    pub(crate) num_octaves: u32,
-    pub(crate) current_part: usize,
-    pub(crate) drag_start: Option<Point>,
-    pub(crate) drag_end: Option<Point>,
-    pub(crate) temp_note: Option<song::Note>,
-    pub(crate) place_dur: u32,
-    pub(crate) beat_quantize: u32,
-    pub(crate) to_delete: Option<usize>,
+    pub rect: Rect,
+    pub scroll_x: f32,
+    pub scroll_y: f32,
+    pub cell_width: u32,
+    pub cell_height: u32,
+    pub num_octaves: u32,
+    pub current_part: usize,
+    pub drag_start: Option<Point>,
+    pub drag_end: Option<Point>,
+    pub temp_note: Option<song::Note>,
+    pub place_dur: u32,
+    pub beat_quantize: u32,
+    pub to_delete: Option<usize>,
 }
 
 pub struct Stepper {
-    pub(crate) rect: Rect,
-    pub(crate) value: i32,
-    pub(crate) min_value: i32,
-    pub(crate) max_value: i32,
-    pub(crate) background: Color,
-    pub(crate) background_hover: Color,
-    pub(crate) foreground: Color,
-    pub(crate) on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
+    pub rect: Rect,
+    pub value: i32,
+    pub min_value: i32,
+    pub max_value: i32,
+    pub background: Color,
+    pub background_hover: Color,
+    pub foreground: Color,
+    pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
 }
 
 pub struct Label {
-    pub(crate) position: Point,
-    pub(crate) text: String,
-    pub(crate) colour: Color,
+    pub position: Point,
+    pub text: String,
+    pub colour: Color,
 }
 
 pub struct WindowState {
-    pub(crate) player: Arc<Mutex<Player>>,
-    pub(crate) song: song::Song,
-    pub(crate) mouse_x: u32,
-    pub(crate) mouse_y: u32,
+    pub player: Arc<Mutex<Player>>,
+    pub song: song::Song,
+    pub mouse_x: u32,
+    pub mouse_y: u32,
 }
 
 #[derive(Clone)]
 pub struct InputEvent {
-    pub(crate) real_x: i32,
-    pub(crate) real_y: i32,
-    pub(crate) x: i32,
-    pub(crate) y: i32,
-    pub(crate) event: Event,
+    pub real_x: i32,
+    pub real_y: i32,
+    pub x: i32,
+    pub y: i32,
+    pub event: Event,
 }
 
 impl Element for Panel {
