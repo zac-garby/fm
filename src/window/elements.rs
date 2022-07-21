@@ -230,6 +230,7 @@ impl Element for Sequencer {
                 self.draw_note(buf, &note, SEQ_GHOST_NOTE);
                 
                 draw_tooltip(buf, state.mouse_x, state.mouse_y, Vec::from([
+                    format!("{}:{}, bar {}", note.start.beat, note.start.division, 1 + note.start.beat / state.song.beats_per_bar),
                     format!("{} {}", note.name(), note.octave()),
                 ]));
             }
