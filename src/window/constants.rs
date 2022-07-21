@@ -24,7 +24,7 @@ pub const SEQ_DIVIDER: Color = Color { r: 65, g: 57, b: 66, a: 255 };
 
 pub const CONTROL_BG: Color = Color { r: 15, g: 14, b: 15, a: 255 };
 pub const CONTROL_HOVER: Color = Color { r: 90, g: 70, b: 85, a: 255 };
-pub const DIM_LABEL: Color = Color { r: 72, g: 65, b: 72, a: 255 };
+pub const DIM_LABEL: Color = Color { r: 72, g: 62, b: 74, a: 255 };
 
 pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };
 
@@ -39,7 +39,7 @@ pub const SEQ_BACKGROUND: [Color; 24] = [
     Color { r: 70, g: 59, b: 72, a: 255 },
     Color { r: 75, g: 63, b: 74, a: 255 },
     Color { r: 70, g: 59, b: 72, a: 255 },
-    Color { r: 78, g: 66, b: 78, a: 255 },
+    Color { r: 78, g: 66, b: 78, a: 255 }, // perfect fifth
     Color { r: 70, g: 59, b: 72, a: 255 },
     Color { r: 75, g: 63, b: 74, a: 255 },
     Color { r: 70, g: 59, b: 72, a: 255 },
@@ -52,7 +52,7 @@ pub const SEQ_BACKGROUND: [Color; 24] = [
     Color { r: 78, g: 70, b: 83, a: 255 },
     Color { r: 85, g: 76, b: 87, a: 255 },
     Color { r: 78, g: 70, b: 83, a: 255 },
-    Color { r: 89, g: 80, b: 92, a: 255 },
+    Color { r: 89, g: 80, b: 92, a: 255 }, // perfect fifth
     Color { r: 78, g: 70, b: 83, a: 255 },
     Color { r: 85, g: 76, b: 87, a: 255 },
     Color { r: 78, g: 70, b: 83, a: 255 },
