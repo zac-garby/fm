@@ -22,8 +22,6 @@ pub fn main() -> anyhow::Result<()> {
         .expect("video could not be initialised");
     
     let (mut player, note_channel) = Player::new();
-    player.volume = 0.5;
-    player.mute = true;
     
     player.instruments.push(make_organ());
     player.instruments.push(make_organ());

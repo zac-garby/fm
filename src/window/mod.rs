@@ -234,6 +234,27 @@ impl Window {
                                 s.player.lock().unwrap().mute = !on;
                             }),
                         }),
+                        Box::new(Slider {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 + 44,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                36,
+                                7,
+                            ),
+                            state: ButtonState::Off,
+                            value: 16,
+                            min_value: 0,
+                            max_value: 32,
+                            background: CONTROL_BG,
+                            track: BORDER,
+                            handle: SLIDER_HANDLE,
+                            handle_hover: CONTROL_HOVER,
+                            handle_active: CONTROL_ACTIVE,
+                            on_change: Box::new(|val, s| {
+                                let vol = val as f32 / 16.0;
+                                s.player.lock().unwrap().volume = vol;
+                            }),
+                        }),
                     ]),
                     background: PANEL_BG,
                     border: None,

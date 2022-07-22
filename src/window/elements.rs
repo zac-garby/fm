@@ -59,6 +59,20 @@ pub struct Stepper {
     pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
 }
 
+pub struct Slider {
+    pub rect: Rect,
+    pub state: ButtonState,
+    pub value: i32,
+    pub min_value: i32,
+    pub max_value: i32,
+    pub background: Color,
+    pub track: Color,
+    pub handle: Color,
+    pub handle_hover: Color,
+    pub handle_active: Color,
+    pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
+}
+
 pub enum ButtonType {
     Momentary {
         label: String,
@@ -127,15 +141,15 @@ impl Element for Panel {
         for child in &mut self.children {
             let mut e = event.clone();
             
-            let is_mouse_up = match e.event {
-                Event::MouseButtonUp { .. } => true,
+            let propagate_anyway = match e.event {
+                Event::MouseButtonUp { .. } | Event::MouseMotion { .. } => true,
                 _ => false,
             };
             
             e.x = event.x - (child.rect().x - self.rect.x);
             e.y = event.y - (child.rect().y - self.rect.y);
             
-            if is_mouse_up || (e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
+            if propagate_anyway || (e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
                 e.real_y >= child.rect().top() && e.real_y < child.rect().bottom()) {
                 child.handle(e, state);
             }
@@ -405,6 +419,66 @@ impl Element for Stepper {
             }
             _ => {},
         }
+    }
+}
+
+impl Element for Slider {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        
+        let input_rect = Rect::new(self.rect.x + 2, self.rect.y + 1, self.rect.width() - 4, self.rect.height() - 2);
+        let track = Rect::new(input_rect.x, input_rect.y + input_rect.h / 2, input_rect.width(), 1);
+        draw_rect(buf, self.rect, self.background, None, Some(TRANSPARENT));
+        draw_rect(buf, track, self.track, None, None);
+        
+        let p = (self.value as f32 - self.min_value as f32) / (self.max_value as f32 - self.min_value as f32);
+        let handle = Rect::new(track.x + (p * track.w as f32) as i32 - 1, input_rect.y, 2, input_rect.height());
+        let handle_colour = match self.state {
+            ButtonState::Off => if handle.contains_point(mouse) {
+                self.handle_hover
+            } else {
+                self.handle
+            },
+            ButtonState::Active => self.handle_active,
+        };
+        
+        draw_rect(buf, handle, handle_colour, None, None);
+    }
+
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        let input_rect = Rect::new(self.rect.x + 2, self.rect.y + 1, self.rect.width() - 4, self.rect.height() - 2);
+        let track = Rect::new(input_rect.x, input_rect.y + input_rect.h / 2, input_rect.width(), 1);
+        let p = (self.value as f32 - self.min_value as f32) / (self.max_value as f32 - self.min_value as f32);
+        let handle = Rect::new(track.x + (p * track.w as f32) as i32 - 1, input_rect.y, 2, input_rect.height());
+        
+        match event.event {
+            Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
+                if input_rect.contains_point(mouse) {
+                    self.state = ButtonState::Active;
+                    let p_new = (mouse.x as f32 - track.left() as f32) / (track.width() as f32);
+                    self.value = ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
+                        .clamp(self.min_value, self.max_value);
+                }
+            },
+            Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
+                self.state = ButtonState::Off;
+            },
+            Event::MouseMotion { .. } => {
+                if self.state == ButtonState::Active {
+                    let p_new = (mouse.x as f32 - track.left() as f32) / (track.width() as f32);
+                    self.value = ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
+                        .clamp(self.min_value, self.max_value);
+                }
+            }
+            _ => {},
+        }
+        
+        (self.on_change)(self.value, state);
     }
 }
 
