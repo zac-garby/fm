@@ -232,7 +232,6 @@ impl Window {
                     cell_width: 16,
                     cell_height: 4,
                     num_octaves: 9,
-                    current_part: 0,
                     drag_start: None,
                     drag_end: None,
                     temp_note: None,
@@ -265,6 +264,7 @@ impl Window {
             state: WindowState {
                 mouse_x: 0,
                 mouse_y: 0,
+                selected_instrument: 0,
                 player: player_mutex,
                 song: song::Song::new(4, 60, 4),
             }

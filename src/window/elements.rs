@@ -39,7 +39,6 @@ pub struct Sequencer {
     pub cell_width: u32,
     pub cell_height: u32,
     pub num_octaves: u32,
-    pub current_part: usize,
     pub drag_start: Option<Point>,
     pub drag_end: Option<Point>,
     pub temp_note: Option<song::Note>,
@@ -97,6 +96,7 @@ pub struct Label {
 pub struct WindowState {
     pub player: Arc<Mutex<Player>>,
     pub song: song::Song,
+    pub selected_instrument: usize,
     pub mouse_x: u32,
     pub mouse_y: u32,
 }
@@ -144,7 +144,7 @@ impl Element for Panel {
 }
 
 impl Element for Spectrum {
-    fn render(&mut self, buf: &mut [u8], _state: &WindowState) {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
         let player = self.player.lock().unwrap();
         let safe = safe_area(self.rect());
         
@@ -173,7 +173,8 @@ impl Element for Spectrum {
                 }
             }
             
-            draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, DIM_LABEL,
+            let fg = if self.index == state.selected_instrument { FG } else { DIM_LABEL };
+            draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, fg,
                 &format!("INSTR.{}", self.index)[..]);
         } else {
             draw_rect(buf, self.rect, EMPTY_SPECTRUM_BG, Some(BORDER), Some(CORNER));
@@ -184,11 +185,14 @@ impl Element for Spectrum {
         self.rect
     }
     
-    fn handle(&mut self, event: InputEvent, _state: &mut WindowState) {
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         match event.event {
             Event::MouseWheel { y, .. } => {
                 self.wave_scale = (self.wave_scale + y as f32 * 0.5).clamp(1.0, 60.0);
             },
+            Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
+                state.selected_instrument = self.index;
+            }
             _ => {},
         }
     }
@@ -255,7 +259,7 @@ impl Element for Sequencer {
             }
         }
         
-        for note in &state.song.parts[self.current_part] {
+        for note in &state.song.parts[state.selected_instrument] {
             self.draw_note(buf, note, SEQ_NOTE);
         }
         
@@ -338,7 +342,7 @@ impl Element for Sequencer {
                             n
                         });
                     }
-                } else if let Some((i, hovered)) = state.find_note(self.current_part, t, pitch) {
+                } else if let Some((i, hovered)) = state.find_note(state.selected_instrument, t, pitch) {
                     self.temp_note = Some(hovered);
                     self.to_delete = Some(i);
                 } else {
@@ -347,10 +351,10 @@ impl Element for Sequencer {
             },
             Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
                 if let Some(i) = self.to_delete {
-                    state.song.parts[self.current_part].remove(i);
+                    state.song.parts[state.selected_instrument].remove(i);
                     self.to_delete = None;
                 } else if let Some(note) = self.temp_note {
-                    state.add_note(self.current_part, note);
+                    state.add_note(state.selected_instrument, note);
                     (self.on_change)(state);
                     self.place_dur = note.duration;
                 }
