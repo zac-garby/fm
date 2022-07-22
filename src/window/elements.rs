@@ -527,20 +527,23 @@ impl Element for Button {
                 }
             },
             Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
-                if self.state == ButtonState::Active ||
-                    self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
-                    match self.kind {
-                        ButtonType::Momentary { .. } => {
-                            self.state = ButtonState::Off;
-                            self.value = false;
-                        },
-                        ButtonType::Toggle { .. } => {
-                            self.state = ButtonState::Off;
-                            self.value = !self.value;
-                        },
+                if self.state == ButtonState::Active {
+                    if self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
+                        match self.kind {
+                            ButtonType::Momentary { .. } => {
+                                self.state = ButtonState::Off;
+                                self.value = false;
+                            },
+                            ButtonType::Toggle { .. } => {
+                                self.state = ButtonState::Off;
+                                self.value = !self.value;
+                            },
+                        }
+                        
+                        (self.on_change)(self.value, state);
+                    } else {
+                        self.state = ButtonState::Off;
                     }
-                    
-                    (self.on_change)(self.value, state);
                 }
             }
             _ => {},
