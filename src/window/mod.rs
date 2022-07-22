@@ -274,6 +274,8 @@ impl Window {
     pub fn start(&mut self, sdl: sdl2::Sdl) -> Result<(), String> {
         let mut events = sdl.event_pump()?;
         
+        self.canvas.window().grab();
+        
         'run:
         loop {
             for e in events.poll_iter() {

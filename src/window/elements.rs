@@ -173,9 +173,13 @@ impl Element for Spectrum {
                 }
             }
             
-            let fg = if self.index == state.selected_instrument { FG } else { DIM_LABEL };
-            draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, fg,
-                &format!("INSTR.{}", self.index)[..]);
+            if state.selected_instrument == self.index {
+                draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, FG,
+                    &format!("\x05INSTR.{}", self.index)[..]);
+            } else {
+                draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, DIM_LABEL,
+                    &format!("INSTR.{}", self.index)[..]);
+            }
         } else {
             draw_rect(buf, self.rect, EMPTY_SPECTRUM_BG, Some(BORDER), Some(CORNER));
         }

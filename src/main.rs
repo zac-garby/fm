@@ -10,7 +10,6 @@ use std::thread;
 
 use cpal::traits::{HostTrait, DeviceTrait, StreamTrait};
 
-use song::*;
 use synth::*;
 use player::*;
 use window::*;
@@ -22,15 +21,9 @@ pub fn main() -> anyhow::Result<()> {
     let video = sdl.video()
         .expect("video could not be initialised");
     
-    let mut s = Song::new(1, 60, 4);
-    
-    s.add_note(0, Note::new(24, 0, 0, 90, 1.0));
-    s.add_note(0, Note::new(29, 1, 0, 90, 1.0));
-    s.add_note(0, Note::new(31, 2, 0, 90, 0.9));
-    
     let (mut player, note_channel) = Player::new();
     player.volume = 0.5;
-    player.mute = false;
+    player.mute = true;
     
     player.instruments.push(make_organ());
     player.instruments.push(make_organ());
