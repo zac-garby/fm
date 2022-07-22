@@ -9,7 +9,7 @@
 import sys
 from PIL import Image
 
-CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,()[]{}<>/\\|!-_+=;:?'\"%#~\0\1\2\3\4\5\6\7"
+CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,()[]{}<>/\\|!-_+=;:?'\"%#~*\0\1\2\3\4\5\6\7"
 SPACE_WIDTH = 2
 
 TEMPLATE = """// font.rs
