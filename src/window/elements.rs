@@ -81,6 +81,7 @@ pub enum ButtonType {
     Toggle {
         on_label: String,
         off_label: String,
+        off_foreground: Color,
     },
 }
 
@@ -453,8 +454,6 @@ impl Element for Slider {
         let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
         let input_rect = Rect::new(self.rect.x + 2, self.rect.y + 1, self.rect.width() - 4, self.rect.height() - 2);
         let track = Rect::new(input_rect.x, input_rect.y + input_rect.h / 2, input_rect.width(), 1);
-        let p = (self.value as f32 - self.min_value as f32) / (self.max_value as f32 - self.min_value as f32);
-        let handle = Rect::new(track.x + (p * track.w as f32) as i32 - 1, input_rect.y, 2, input_rect.height());
         
         match event.event {
             Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
@@ -495,15 +494,19 @@ impl Element for Button {
             ButtonState::Active => self.background_active,
         };
         
-        let label = match &self.kind {
-            ButtonType::Momentary { label } => label,
-            ButtonType::Toggle { on_label, off_label } => if self.value { on_label } else { off_label },
+        let (label, fg) = match &self.kind {
+            ButtonType::Momentary { label } => (label, self.foreground),
+            ButtonType::Toggle { on_label, off_label, off_foreground } => if self.value {
+                (on_label, self.foreground)
+            } else {
+                (off_label, *off_foreground)
+            },
         };
         
         let label_w = measure_text(&label[..]);
         
         draw_rect(buf, self.rect, background, None, Some(TRANSPARENT));
-        draw_text(buf, (self.rect.x + self.rect.w / 2) as u32 - label_w / 2, self.rect.y as u32 + 1, self.foreground, &label[..]);
+        draw_text(buf, (self.rect.x + self.rect.w / 2) as u32 - label_w / 2, self.rect.y as u32 + 1, fg, &label[..]);
     }
 
     fn rect(&self) -> Rect {
