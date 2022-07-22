@@ -216,6 +216,24 @@ impl Window {
                                 
                             }),
                         }),
+                        Box::new(Button {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 + 33,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                11,
+                                7,
+                            ),
+                            kind: ButtonType::Toggle { on_label: String::from("\x06\x07"), off_label: String::from("\x06") },
+                            state: ButtonState::Off,
+                            value: true,
+                            background: CONTROL_BG,
+                            background_hover: CONTROL_HOVER,
+                            background_active: CONTROL_ACTIVE,
+                            foreground: FG,
+                            on_change: Box::new(|on, s| {
+                                s.player.lock().unwrap().mute = !on;
+                            }),
+                        }),
                     ]),
                     background: PANEL_BG,
                     border: None,
