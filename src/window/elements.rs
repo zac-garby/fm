@@ -138,6 +138,10 @@ impl Element for Panel {
             if is_mouse_up || (e.real_x >= child.rect().left() && e.real_x < child.rect().right() &&
                 e.real_y >= child.rect().top() && e.real_y < child.rect().bottom()) {
                 child.handle(e, state);
+                
+                if !is_mouse_up {
+                    break;
+                }
             }
         }
     }
