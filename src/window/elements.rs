@@ -175,10 +175,10 @@ impl Element for Spectrum {
             
             if state.selected_instrument == self.index {
                 draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, FG,
-                    &format!("\x05INSTR.{}", self.index)[..]);
+                    &format!("\x05INSTR-{}", self.index + 1)[..]);
             } else {
                 draw_text(buf, safe.left() as u32 + 1, safe.top() as u32 + 1, DIM_LABEL,
-                    &format!("INSTR.{}", self.index)[..]);
+                    &format!("INSTR-{}", self.index + 1)[..]);
             }
         } else {
             draw_rect(buf, self.rect, EMPTY_SPECTRUM_BG, Some(BORDER), Some(CORNER));
