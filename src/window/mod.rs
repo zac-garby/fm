@@ -103,6 +103,11 @@ impl Window {
                             foreground: FG2,
                             on_change: Box::new(|x, s| {
                                 s.song.bpm = x as u32;
+                                let mut player = s.player.lock().unwrap();
+                                let old_bps = player.bps;
+                                let new_bps = x as f64 / 60.0;
+                                player.bps = new_bps;
+                                player.playhead /= new_bps / old_bps;
                             }),
                         }) as Box<dyn Element>,
                         Box::new(Label {

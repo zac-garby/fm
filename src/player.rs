@@ -42,7 +42,7 @@ impl Player {
         let (tx_note, rx_note) = mpsc::channel();
         
         (Player {
-            bps: 2.0,
+            bps: 1.0,
             volume: 1.0,
             mute: false,
             paused: true,
