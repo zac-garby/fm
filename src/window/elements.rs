@@ -36,14 +36,11 @@ pub struct Sequencer {
     pub rect: Rect,
     pub scroll_x: f32,
     pub scroll_y: f32,
-    pub cell_width: u32,
-    pub cell_height: u32,
     pub num_octaves: u32,
     pub drag_start: Option<Point>,
     pub drag_end: Option<Point>,
     pub temp_note: Option<song::Note>,
     pub place_dur: u32,
-    pub beat_quantize: u32,
     pub to_delete: Option<usize>,
     pub on_change: Box<dyn FnMut(&mut WindowState) -> ()>,
 }
@@ -71,7 +68,7 @@ pub struct Slider {
     pub handle_hover: Color,
     pub handle_active: Color,
     pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
-    pub make_tooltip: Box<dyn Fn(i32, i32, i32) -> String>,
+    pub make_tooltip: Box<dyn Fn(i32, &WindowState) -> String>,
 }
 
 pub enum ButtonType {
@@ -116,6 +113,9 @@ pub struct WindowState {
     pub selected_instrument: usize,
     pub mouse_x: u32,
     pub mouse_y: u32,
+    pub seq_scale_x: u32,
+    pub seq_scale_y: u32,
+    pub seq_quantize: u32,
 }
 
 #[derive(Clone)]
@@ -220,30 +220,30 @@ impl Element for Spectrum {
 }
 
 impl Sequencer {
-    pub fn x_to_t(&self, x: u32) -> song::Time {
-        let beat = x / self.cell_width;
-        let pixel = x - beat as u32 * self.cell_width;
-        let p = (self.beat_quantize as f32 * pixel as f32 / self.cell_width as f32).floor() / self.beat_quantize as f32;
+    pub fn x_to_t(&self, x: u32, state: &WindowState) -> song::Time {
+        let beat = x / state.seq_scale_x;
+        let pixel = x - beat as u32 * state.seq_scale_x;
+        let p = (state.seq_quantize as f32 * pixel as f32 / state.seq_scale_x as f32).floor() / state.seq_quantize as f32;
         let division = (p * song::BEAT_DIVISIONS as f32) as u32;
         song::Time::new(beat, division)
     }
     
-    pub fn t_to_x(&self, t: song::Time) -> u32 {
-        (self.cell_width as f32 * (t.beat as f32 + t.division as f32 / song::BEAT_DIVISIONS as f32)) as u32
+    pub fn t_to_x(&self, t: song::Time, state: &WindowState) -> u32 {
+        (state.seq_scale_x as f32 * (t.beat as f32 + t.division as f32 / song::BEAT_DIVISIONS as f32)) as u32
     }
     
-    pub fn y_to_pitch(&self, y: u32) -> u32 {
-        y / self.cell_height
+    pub fn y_to_pitch(&self, y: u32, state: &WindowState) -> u32 {
+        y / state.seq_scale_y
     }
     
-    fn draw_note(&self, buf: &mut [u8], note: &song::Note, bg: Color) {
+    fn draw_note(&self, buf: &mut [u8], note: &song::Note, bg: Color, state: &WindowState) {
         let safe = safe_area(self.rect);
         
         let mut rect = Rect::new(
-            self.t_to_x(note.start) as i32,
-            ((note.pitch + 1) * self.cell_height) as i32,
-            self.t_to_x(song::Time::new(0, note.duration)),
-            self.cell_height,
+            self.t_to_x(note.start, state) as i32,
+            ((note.pitch + 1) * state.seq_scale_y) as i32,
+            self.t_to_x(song::Time::new(0, note.duration), state),
+            state.seq_scale_y,
         );
         
         rect.x = rect.x + safe.x - self.scroll_x as i32;
@@ -262,14 +262,14 @@ impl Element for Sequencer {
         
         for real_y in 0..safe.height() {
             let y = real_y + self.scroll_y as u32;
-            let row = (y / self.cell_height) as usize;
+            let row = (y / state.seq_scale_y) as usize;
             
             for real_x in 0..safe.width() {
                 let x = real_x + self.scroll_x as u32;
-                let col = x / self.cell_width;
-                let subdiv = x - col as u32 * self.cell_width;
+                let col = x / state.seq_scale_x;
+                let subdiv = x - col as u32 * state.seq_scale_x;
                 
-                let bg = if subdiv == self.cell_width-1 {
+                let bg = if subdiv == state.seq_scale_x-1 {
                     SEQ_DIVIDER
                 } else {
                     let is_first = state.song.beats_per_bar > 1 && col % state.song.beats_per_bar == 0;
@@ -281,12 +281,12 @@ impl Element for Sequencer {
         }
         
         for note in &state.song.parts[state.selected_instrument] {
-            self.draw_note(buf, note, SEQ_NOTE);
+            self.draw_note(buf, note, SEQ_NOTE, state);
         }
         
         if safe.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
             if let Some(note) = self.temp_note {
-                self.draw_note(buf, &note, SEQ_GHOST_NOTE);
+                self.draw_note(buf, &note, SEQ_GHOST_NOTE, state);
                 
                 draw_tooltip(buf, state.mouse_x, state.mouse_y, Vec::from([
                     format!("\x00 {}:{}, bar {}", note.start.beat, note.start.division, 1 + note.start.beat / state.song.beats_per_bar),
@@ -298,8 +298,8 @@ impl Element for Sequencer {
         if let Some(playhead) = {
             let p = state.player.lock().unwrap();
             let cell_x = p.playhead * p.bps;
-            let div = (cell_x.fract() * self.cell_width as f64) as i32;
-            let head_x = cell_x as i32 * self.cell_width as i32 + div;
+            let div = (cell_x.fract() * state.seq_scale_x as f64) as i32;
+            let head_x = cell_x as i32 * state.seq_scale_x as i32 + div;
             
             clamp_rect(Rect::new(
                 safe.x + head_x - self.scroll_x as i32,
@@ -333,26 +333,26 @@ impl Element for Sequencer {
             Event::MouseWheel { x, y, .. } => {
                 self.scroll_x = (self.scroll_x + x as f32).max(0.0);
                 self.scroll_y = (self.scroll_y + y as f32)
-                    .clamp(0.0, (self.cell_height * 12 * self.num_octaves - (self.rect.height() - 2)) as f32);
+                    .clamp(0.0, (state.seq_scale_y * 12 * self.num_octaves - (self.rect.height() - 2)) as f32);
             },
             Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
                 self.drag_start = Some(point);
-                let t = self.x_to_t(point.x as u32);
-                let pitch = self.y_to_pitch(point.y as u32);
+                let t = self.x_to_t(point.x as u32, state);
+                let pitch = self.y_to_pitch(point.y as u32, state);
                 
                 self.temp_note = Some(song::Note::new(pitch, t.beat, t.division, self.place_dur, 1.0));
             },
             Event::MouseMotion { mousestate, .. } => {
                 self.to_delete = None;
                 
-                let t = self.x_to_t(point.x as u32);
-                let pitch = self.y_to_pitch(point.y as u32);
+                let t = self.x_to_t(point.x as u32, state);
+                let pitch = self.y_to_pitch(point.y as u32, state);
                 
                 if let Some(start) = self.drag_start {
-                    let start_t = self.x_to_t(start.x as u32);
+                    let start_t = self.x_to_t(start.x as u32, state);
                     let dur = t.diff(start_t);
                     
-                    if mousestate.left() && dur >= (song::BEAT_DIVISIONS / self.beat_quantize) as i32 {
+                    if mousestate.left() && dur >= (song::BEAT_DIVISIONS / state.seq_quantize) as i32 {
                         self.drag_end = Some(point);
                         
                         self.temp_note = self.temp_note.map(|mut n| {
@@ -448,7 +448,7 @@ impl Element for Slider {
         draw_rect(buf, handle, handle_colour, None, None);
         
         if input_rect.contains_point(mouse) || self.state == ButtonState::Active {
-            let tooltip = (self.make_tooltip)(self.value, self.min_value, self.max_value);
+            let tooltip = (self.make_tooltip)(self.value, state);
             draw_tooltip(buf, state.mouse_x, state.mouse_y, vec![tooltip]);
         }
     }

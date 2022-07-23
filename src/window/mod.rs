@@ -229,7 +229,7 @@ impl Window {
                         }),
                         Box::new(Button {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 + 33,
+                                SCREEN_WIDTH as i32 / 2 + 20,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 11,
                                 7,
@@ -251,7 +251,7 @@ impl Window {
                         }),
                         Box::new(Slider {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 + 44,
+                                SCREEN_WIDTH as i32 / 2 + 31,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 36,
                                 7,
@@ -269,10 +269,74 @@ impl Window {
                                 let vol = val as f32 / 16.0;
                                 s.player.lock().unwrap().volume = vol;
                             }),
-                            make_tooltip: Box::new(|val, _min, _max| {
+                            make_tooltip: Box::new(|val, _s| {
                                 format!("volume: {}%", (100.0 * val as f32 / 16.0) as u32)
                             }),
                         }),
+                        Box::new(Label {
+                            position: Point::new(
+                                SCREEN_WIDTH as i32 / 2 + 85,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                            ),
+                            text: String::from("\x08"),
+                            tooltip: Some(String::from("vertical scale")),
+                            colour: DIM_LABEL,
+                        }),
+                        Box::new(Slider {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 + 89,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                24,
+                                7,
+                            ),
+                            state: ButtonState::Off,
+                            value: 4,
+                            min_value: 2,
+                            max_value: 12,
+                            background: CONTROL_BG,
+                            track: BORDER,
+                            handle: SLIDER_HANDLE,
+                            handle_hover: CONTROL_HOVER,
+                            handle_active: CONTROL_ACTIVE,
+                            on_change: Box::new(|val, s| {
+                                s.seq_scale_y = val as u32;
+                            }),
+                            make_tooltip: Box::new(|val, s| {
+                                format!("{}", val)
+                            }),
+                        }),
+                        Box::new(Label {
+                            position: Point::new(
+                                SCREEN_WIDTH as i32 / 2 + 117,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                            ),
+                            text: String::from("\x09"),
+                            tooltip: Some(String::from("horizontal scale")),
+                            colour: DIM_LABEL,
+                        }),
+                        Box::new(Slider {
+                            rect: Rect::new(
+                                SCREEN_WIDTH as i32 / 2 + 123,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                24,
+                                7,
+                            ),
+                            state: ButtonState::Off,
+                            value: 4,
+                            min_value: 1,
+                            max_value: 11,
+                            background: CONTROL_BG,
+                            track: BORDER,
+                            handle: SLIDER_HANDLE,
+                            handle_hover: CONTROL_HOVER,
+                            handle_active: CONTROL_ACTIVE,
+                            on_change: Box::new(|val, s| {
+                                s.seq_scale_x = val as u32 * s.seq_quantize;
+                            }),
+                            make_tooltip: Box::new(|_val, s| {
+                                format!("{}", s.seq_scale_x)
+                            }),
+                        })
                     ]),
                     background: PANEL_BG,
                     border: None,
@@ -286,14 +350,11 @@ impl Window {
                         SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
                     scroll_x: 0.0,
                     scroll_y: 160.0,
-                    cell_width: 12,
-                    cell_height: 4,
                     num_octaves: 9,
                     drag_start: None,
                     drag_end: None,
                     temp_note: None,
                     place_dur: song::BEAT_DIVISIONS,
-                    beat_quantize: 4,
                     to_delete: None,
                     on_change: {
                         let chan = note_channel.clone();
@@ -324,6 +385,9 @@ impl Window {
                 selected_instrument: 0,
                 player: player_mutex,
                 song: song::Song::new(4, 60, 4),
+                seq_scale_x: 12,
+                seq_scale_y: 4,
+                seq_quantize: 4,
             }
         })
     }
