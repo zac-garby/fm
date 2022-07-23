@@ -480,7 +480,21 @@ impl Element for Slider {
                     self.value = ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
                         .clamp(self.min_value, self.max_value);
                 }
-            }
+            },
+            Event::MouseWheel { x, y, .. } => {
+                self.value = (self.value + x + y).clamp(self.min_value, self.max_value);
+                (self.on_change)(self.value, state);
+            },
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
+                self.value = (self.value + 1).clamp(self.min_value, self.max_value);
+                (self.on_change)(self.value, state);
+            },
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
+                self.value = (self.value - 1).clamp(self.min_value, self.max_value);
+                (self.on_change)(self.value, state);
+            },
             _ => {},
         }
         
