@@ -302,7 +302,7 @@ impl Window {
                                 s.seq_scale_y = val as u32;
                             }),
                             make_tooltip: Box::new(|val, _s| {
-                                format!("{}", val)
+                                format!("vertical scale: {}", val)
                             }),
                         }),
                         Box::new(Label {
@@ -334,7 +334,7 @@ impl Window {
                                 s.seq_scale_x = val as u32 * s.seq_quantize;
                             }),
                             make_tooltip: Box::new(|_val, s| {
-                                format!("{}", s.seq_scale_x)
+                                format!("horizontal scale: {}", s.seq_scale_x)
                             }),
                         })
                     ]),
