@@ -281,7 +281,7 @@ impl Window {
                         SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
                     scroll_x: 0.0,
                     scroll_y: 160.0,
-                    cell_width: 16,
+                    cell_width: 12,
                     cell_height: 4,
                     num_octaves: 9,
                     drag_start: None,
