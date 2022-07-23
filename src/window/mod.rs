@@ -301,7 +301,7 @@ impl Window {
                             on_change: Box::new(|val, s| {
                                 s.seq_scale_y = val as u32;
                             }),
-                            make_tooltip: Box::new(|val, s| {
+                            make_tooltip: Box::new(|val, _s| {
                                 format!("{}", val)
                             }),
                         }),
