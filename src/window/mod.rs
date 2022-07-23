@@ -145,9 +145,41 @@ impl Window {
                             tooltip: Some(String::from("time signature")),
                             colour: DIM_LABEL,
                         }),
+                        Box::new(Slider {
+                            rect: Rect::new(
+                                62,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                16,
+                                7,
+                            ),
+                            value: 3,
+                            min_value: 0,
+                            max_value: 11,
+                            state: ButtonState::Off,
+                            background: CONTROL_BG,
+                            track: BORDER,
+                            handle: SLIDER_HANDLE,
+                            handle_hover: CONTROL_HOVER,
+                            handle_active: CONTROL_ACTIVE,
+                            on_change: Box::new(|value, s| {
+                                s.seq_quantize = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 96][value as usize];
+                            }),
+                            make_tooltip: Box::new(|_value, s| {
+                                format!("{} per beat", s.seq_quantize)
+                            }),
+                        }) as Box<dyn Element>,
+                        Box::new(Label {
+                            position: Point::new(
+                                80,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                            ),
+                            text: String::from("QZ."),
+                            tooltip: Some(String::from("quanta per beat")),
+                            colour: DIM_LABEL,
+                        }),
                         Box::new(Button {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 - 16,
+                                SCREEN_WIDTH as i32 / 2 - 35,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 11,
                                 7,
@@ -178,7 +210,7 @@ impl Window {
                         }),
                         Box::new(Button {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 - 5,
+                                SCREEN_WIDTH as i32 / 2 - 24,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 11,
                                 7,
@@ -211,7 +243,7 @@ impl Window {
                         }),
                         Box::new(Button {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 + 6,
+                                SCREEN_WIDTH as i32 / 2 - 13,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 11,
                                 7,
@@ -229,7 +261,7 @@ impl Window {
                         }),
                         Box::new(Button {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 + 20,
+                                SCREEN_WIDTH as i32 / 2 + 1,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 11,
                                 7,
@@ -251,7 +283,7 @@ impl Window {
                         }),
                         Box::new(Slider {
                             rect: Rect::new(
-                                SCREEN_WIDTH as i32 / 2 + 31,
+                                SCREEN_WIDTH as i32 / 2 + 12,
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
                                 36,
                                 7,

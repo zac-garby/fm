@@ -483,17 +483,14 @@ impl Element for Slider {
             },
             Event::MouseWheel { x, y, .. } => {
                 self.value = (self.value + x + y).clamp(self.min_value, self.max_value);
-                (self.on_change)(self.value, state);
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
                 self.value = (self.value + 1).clamp(self.min_value, self.max_value);
-                (self.on_change)(self.value, state);
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
                 self.value = (self.value - 1).clamp(self.min_value, self.max_value);
-                (self.on_change)(self.value, state);
             },
             _ => {},
         }
