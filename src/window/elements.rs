@@ -288,7 +288,7 @@ impl Element for Sequencer {
             if let Some(note) = self.temp_note {
                 self.draw_note(buf, &note, SEQ_GHOST_NOTE, state);
                 
-                draw_tooltip(buf, state.mouse_x, state.mouse_y, Vec::from([
+                draw_tooltip(buf, state.mouse_x + 4, state.mouse_y - 4, Vec::from([
                     format!("\x00 {}:{}, bar {}", note.start.beat, note.start.division, 1 + note.start.beat / state.song.beats_per_bar),
                     format!("\x04 {} {}", note.name(), note.octave()),
                 ]));
@@ -449,7 +449,7 @@ impl Element for Slider {
         
         if input_rect.contains_point(mouse) || self.state == ButtonState::Active {
             let tooltip = (self.make_tooltip)(self.value, state);
-            draw_tooltip(buf, state.mouse_x, state.mouse_y, vec![tooltip]);
+            draw_tooltip(buf, handle.right() as u32 - 2, handle.top() as u32, vec![tooltip]);
         }
     }
 
@@ -578,7 +578,7 @@ impl Element for Label {
         
         if let Some(tooltip) = &self.tooltip {
             if self.rect().contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
-                draw_tooltip(buf, state.mouse_x, state.mouse_y, vec![tooltip.clone()]);
+                draw_tooltip(buf, state.mouse_x + 4, state.mouse_y - 4, vec![tooltip.clone()]);
             }
         }
     }
@@ -673,8 +673,8 @@ pub(crate) fn draw_tooltip(buf: &mut [u8], x: u32, y: u32, text: Vec<String>) {
         let text_height = (text.len() * (font::FONT_HEIGHT + 2) - 2) as u32;
         
         let mut rect = Rect::new(
-            x as i32 + 4,
-            y as i32 - text_height as i32 - 8,
+            x as i32,
+            y as i32 - text_height as i32 - 4,
             text_width + 4,
             text_height + 4
         );
