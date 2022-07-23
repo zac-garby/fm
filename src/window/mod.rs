@@ -116,6 +116,7 @@ impl Window {
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
                             ),
                             text: String::from("bpm"),
+                            tooltip: Some(String::from("beats per minute")),
                             colour: DIM_LABEL,
                         }),
                         Box::new(Stepper {
@@ -141,6 +142,7 @@ impl Window {
                                 (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
                             ),
                             text: String::from("/4"),
+                            tooltip: Some(String::from("time signature")),
                             colour: DIM_LABEL,
                         }),
                         Box::new(Button {

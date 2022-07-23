@@ -105,6 +105,7 @@ pub struct Button {
 pub struct Label {
     pub position: Point,
     pub text: String,
+    pub tooltip: Option<String>,
     pub colour: Color,
 }
 
@@ -552,8 +553,14 @@ impl Element for Button {
 }
 
 impl Element for Label {
-    fn render(&mut self, buf: &mut [u8], _state: &WindowState) {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
         draw_text(buf, self.position.x as u32, self.position.y as u32, self.colour, &self.text[..]);
+        
+        if let Some(tooltip) = &self.tooltip {
+            if self.rect().contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
+                draw_tooltip(buf, state.mouse_x, state.mouse_y, vec![tooltip.clone()]);
+            }
+        }
     }
     
     fn rect(&self) -> Rect {
