@@ -322,7 +322,7 @@ impl Window {
                                 7,
                             ),
                             state: ButtonState::Off,
-                            value: 4,
+                            value: 3,
                             min_value: 1,
                             max_value: 11,
                             background: CONTROL_BG,

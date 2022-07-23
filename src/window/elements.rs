@@ -658,12 +658,17 @@ pub(crate) fn draw_tooltip(buf: &mut [u8], x: u32, y: u32, text: Vec<String>) {
     if let Some(text_width) = text.iter().map(|s| measure_text(&s[..])).max() {
         let text_height = (text.len() * (font::FONT_HEIGHT + 2) - 2) as u32;
         
-        let rect = Rect::new(
+        let mut rect = Rect::new(
             x as i32 + 4,
             y as i32 - text_height as i32 - 8,
             text_width + 4,
             text_height + 4
         );
+        
+        let dx = (rect.right() as i32 + 2) - SCREEN_WIDTH as i32;
+        if dx > 0 {
+            rect.x -= dx;
+        }
         
         draw_rect(buf, rect, TOOLTIP_BG, None, Some(TRANSPARENT));
         
