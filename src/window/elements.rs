@@ -71,6 +71,7 @@ pub struct Slider {
     pub handle_hover: Color,
     pub handle_active: Color,
     pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
+    pub make_tooltip: Box<dyn Fn(i32, i32, i32) -> String>,
 }
 
 pub enum ButtonType {
@@ -445,6 +446,11 @@ impl Element for Slider {
         };
         
         draw_rect(buf, handle, handle_colour, None, None);
+        
+        if input_rect.contains_point(mouse) || self.state == ButtonState::Active {
+            let tooltip = (self.make_tooltip)(self.value, self.min_value, self.max_value);
+            draw_tooltip(buf, state.mouse_x, state.mouse_y, vec![tooltip]);
+        }
     }
 
     fn rect(&self) -> Rect {

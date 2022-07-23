@@ -269,6 +269,9 @@ impl Window {
                                 let vol = val as f32 / 16.0;
                                 s.player.lock().unwrap().volume = vol;
                             }),
+                            make_tooltip: Box::new(|val, _min, _max| {
+                                format!("volume: {}%", (100.0 * val as f32 / 16.0) as u32)
+                            }),
                         }),
                     ]),
                     background: PANEL_BG,
