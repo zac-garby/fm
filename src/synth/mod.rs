@@ -1,6 +1,7 @@
 mod effect;
 
 use std::f32::consts::PI;
+use std::f64::consts::SQRT_2;
 
 use crate::song;
 
@@ -127,7 +128,9 @@ impl Instrument {
         Instrument {
             voices: vec![Voice::new(); num_voices],
             operators: Vec::new(),
-            effects: vec![Box::new(effect::Echo::new(44100, 0.7))],
+            effects: vec![
+                Box::new(effect::Biquad::lowpass(1000.0, 1.0 / SQRT_2, 1.0 / 44100.0))
+            ],
             
             hold_buf: [0.0; HOLD_BUFFER_SIZE],
             hold_buf_back: [0.0; HOLD_BUFFER_SIZE],

@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 /// an effect, used to process a signal sample-by-sample.
 pub trait Effect : Send {
     /// processes a single audio sample, and updates the internal state.
@@ -21,6 +23,64 @@ impl Echo {
 impl Effect for Echo {
     fn process(&mut self, sample: f32) -> f32 {
         self.delay.push(sample * self.amount) + sample
+    }
+}
+
+/// a biquad filter, able to take the form of many LTI filters including
+/// the filters required for EQ (low-pass, high-pass, etc.)
+#[derive(Clone, Copy)]
+pub struct Biquad {
+    a: [f64; 3],
+    b: [f64; 3],
+    x: [f64; 3],
+    y: [f64; 3],
+}
+
+impl Biquad {
+    fn from(a0: f64, a1: f64, a2: f64, b0: f64, b1: f64, b2: f64) -> Biquad {
+        Biquad {
+            a: [a0, a1 / a0, a2 / a0],
+            b: [b0 / a0, b1 / a0, b2 / a0],
+            x: [0.0, 0.0, 0.0],
+            y: [0.0, 0.0, 0.0],
+        }
+    }
+    
+    pub fn lowpass(hz: f64, q: f64, dt: f64) -> Biquad {
+        let w = 2.0 * PI * hz * dt;
+        let alpha = w.sin() / (2.0 * q);
+        let cos_w = w.cos();
+        
+        Biquad::from(
+            1.0 + alpha,
+            -2.0 * cos_w,
+            1.0 - alpha,
+            
+            (1.0 - cos_w) / 2.0,
+            1.0 - cos_w,
+            (1.0 - cos_w) / 2.0,
+        )
+    }
+}
+
+impl Effect for Biquad {
+    fn process(&mut self, sample: f32) -> f32 {
+        self.x[2] = self.x[1];
+        self.x[1] = self.x[0];
+        self.x[0] = sample as f64;
+        
+        let y0
+            = self.b[0] * self.x[0]
+            + self.b[1] * self.x[1]
+            + self.b[2] * self.x[2]
+            - self.a[1] * self.y[0]
+            - self.a[2] * self.y[1];
+        
+        self.y[2] = self.y[1];
+        self.y[1] = self.y[0];
+        self.y[0] = y0;
+        
+        y0 as f32
     }
 }
 
