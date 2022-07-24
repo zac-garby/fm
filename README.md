@@ -13,3 +13,7 @@ Once this rewrite is complete, the features will include:
  - A nice-looking GUI
  - `.wav` file export
  - Filters and effects
+ 
+## why the name?
+
+[https://www.merriam-webster.com/dictionary/cancrizans](cancrizans) describes a canon where the theme is played backwards against itself. the most famous example of this is Bach's [crab canon](https://en.wikipedia.org/wiki/The_Musical_Offering#Structure_and_instrumentation), and Rust's logo is a crab, sooo...
