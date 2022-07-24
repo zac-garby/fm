@@ -66,6 +66,10 @@ impl Biquad {
         }
     }
     
+    pub fn allpass() -> Biquad {
+        Biquad::from(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+    }
+    
     pub fn lowpass(hz: f64, q: f64, dt: f64) -> Biquad {
         let w = 2.0 * PI * hz * dt;
         let alpha = w.sin() / (2.0 * q);
@@ -138,6 +142,119 @@ impl Effect for Biquad {
     }
 }
 
+pub struct Reverb {
+    fdn: FeedbackDelayNetwork,
+    pub in_gain: [f32; 4],
+    pub out_gain: [f32; 4],
+    pub mix: f32,
+}
+
+impl Reverb {
+    pub fn new(mix: f32, gain: f32) -> Reverb {
+        Reverb {
+            fdn: {
+                let mut fdn = FeedbackDelayNetwork::new(3041, 3385, 4481, 5477);
+                
+                for i in 0..4 {
+                    fdn.feedback_filter[i] = Biquad::lowpass(5600.0, 0.707, 1.0 / 44100.0);
+                    fdn.feedback_gain[i] = gain;
+                }
+                
+                fdn
+            },
+            in_gain: [ 0.4, 0.3, 0.2, 0.2 ],
+            out_gain: [ 0.5, 0.5, 0.3, 0.1 ],
+            mix,
+        }
+    }
+}
+
+impl Effect for Reverb {
+    fn process(&mut self, sample: f32) -> f32 {
+        self.fdn.run([
+            sample * self.in_gain[0],
+            sample * self.in_gain[1],
+            sample * self.in_gain[2],
+            sample * self.in_gain[3],
+        ]);
+        
+        let out: f32 = (0..4)
+            .map(|i| self.fdn.output[i] * self.out_gain[i])
+            .sum();
+        
+        self.mix * out + (1.0 - self.mix) * sample
+    }
+}
+
+/// a four-channel feedback-delay-network. four inputs are given at each frame,
+/// and are delayed by different amounts. feedback from these delays is taken and
+/// added to the inputs before feeding into the delay lines.
+struct FeedbackDelayNetwork {
+    /// the final gain of the four feedback lines, before adding with the new samples.
+    feedback_gain: [f32; 4],
+    
+    /// the FDN's feedback matrix, aka "Q" in literature. used to mix channels together.
+    feedback_matrix: [[f32; 4]; 4],
+    
+    /// the filters to process each sample before feeding back into the delay lines.
+    feedback_filter: [Biquad; 4],
+    
+    /// the four delay lines.
+    delays: [Delay; 4],
+    
+    /// the latest output from each FDN channel.
+    output: [f32; 4],
+}
+
+impl FeedbackDelayNetwork {
+    fn new(l0: usize, l1: usize, l2: usize, l3: usize) -> FeedbackDelayNetwork {
+        FeedbackDelayNetwork {
+            feedback_gain: [1.0, 1.0, 1.0, 1.0],
+            feedback_matrix: FeedbackDelayNetwork::hadamard(),
+            feedback_filter: [Biquad::lowpass(10000.0, 0.517, 1.0 / 44100.0); 4],
+            delays: [
+                Delay::new(l0, 0.0),
+                Delay::new(l1, 0.0),
+                Delay::new(l2, 0.0),
+                Delay::new(l3, 0.0),
+            ],
+            output: [0.0, 0.0, 0.0, 0.0],
+        }
+    }
+    
+    fn run(&mut self, x: [f32; 4]) {
+        let mut fb: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
+        
+        for i in 0..4 {
+            self.output[i] = self.delays[i].peek();
+        }
+        
+        for i in 0..4 {
+            fb[i] =
+                ( self.feedback_matrix[i][0] * self.output[0]
+                + self.feedback_matrix[i][1] * self.output[1]
+                + self.feedback_matrix[i][2] * self.output[2]
+                + self.feedback_matrix[i][3] * self.output[3] )
+                * self.feedback_gain[i];
+            
+            fb[i] = self.feedback_filter[i].process(fb[i]);
+        }
+        
+        for i in 0..4 {
+            self.delays[i].push(fb[i] + x[i]);
+        }
+    }
+    
+    fn hadamard() -> [[f32; 4]; 4] {
+        [
+            [ 0.5,  0.5,  0.5,  0.5],
+            [-0.5,  0.5, -0.5,  0.5],
+            [-0.5, -0.5,  0.5,  0.5],
+            [ 0.5, -0.5, -0.5,  0.5],
+        ]
+    }
+}
+
 /// a delay line, used for numerous effects
 struct Delay {
     /// the internal state of the delay line, implemented as a circular buffer.
@@ -162,14 +279,18 @@ impl Delay {
         }
     }
     
-    fn len(&self) -> usize {
-        self.line.len()
-    }
-    
     fn push(&mut self, sample: f32) -> f32 {
         let out = self.line[self.head];
-        self.line[self.head] = out * (1.0 - self.ratio) + sample * self.ratio;
+        self.line[self.head] = out * self.ratio + sample;
         self.head = (self.head + self.len() - 1) % self.len();
         out
+    }
+    
+    fn peek(&self) -> f32 {
+        self.line[self.head]
+    }
+    
+    fn len(&self) -> usize {
+        self.line.len()
     }
 }
