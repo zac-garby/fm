@@ -1,3 +1,5 @@
+mod effect;
+
 use std::f32::consts::PI;
 
 use crate::song;
@@ -82,6 +84,7 @@ pub struct Voice {
 pub struct Instrument {
     voices: Vec<Voice>,
     operators: Vec<Operator>,
+    effects: Vec<Box<dyn effect::Effect>>,
     
     pub hold_buf: [f32; HOLD_BUFFER_SIZE],
     hold_buf_back: [f32; HOLD_BUFFER_SIZE],
@@ -124,6 +127,7 @@ impl Instrument {
         Instrument {
             voices: vec![Voice::new(); num_voices],
             operators: Vec::new(),
+            effects: vec![Box::new(effect::Echo::new(44100, 0.7))],
             
             hold_buf: [0.0; HOLD_BUFFER_SIZE],
             hold_buf_back: [0.0; HOLD_BUFFER_SIZE],
@@ -191,6 +195,12 @@ impl Instrument {
             voice.fill_hold_buffer(time, dt, &mut self.hold_buf_back, &self.operators);
         }
         
+        for i in 0..HOLD_BUFFER_SIZE {
+            self.hold_buf_back[i] = self.effects
+                .iter_mut()
+                .fold(self.hold_buf_back[i], |s, eff| eff.process(s));
+        }
+        
         self.swap_buffers();
         self.hold_index = 0;
     }
@@ -218,7 +228,7 @@ impl Voice {
     
     #[inline]
     fn fill_hold_buffer(&mut self, time: f64, dt: f64,
-                        buf: &mut [f32; HOLD_BUFFER_SIZE], ops: &Vec<Operator>) {
+        buf: &mut [f32; HOLD_BUFFER_SIZE], ops: &Vec<Operator>) {
         let mut t = time;
         
         for frame in 0..HOLD_BUFFER_SIZE {
@@ -227,16 +237,16 @@ impl Voice {
             t += dt;
         }
     }
-    
+        
     #[inline]
     fn frame(&mut self, time: f64, dt: f64, ops: &Vec<Operator>) {
         for (i, op) in ops.iter().enumerate() {
             for recv in &op.receives {
                 let modulation = match recv.kind {
                     ReceiveKind::Normal | ReceiveKind::Vibrato
-                      => self.channels[recv.channel] * recv.level * dt as f32,
+                    => self.channels[recv.channel] * recv.level * dt as f32,
                     ReceiveKind::Modulate
-                      => self.channels[recv.channel] * recv.level * dt as f32 * self.note.freq
+                    => self.channels[recv.channel] * recv.level * dt as f32 * self.note.freq
                 };
                 
                 self.phases[i] += modulation;
@@ -273,7 +283,7 @@ impl Voice {
                 self.channels_back[send.channel] += send.level * sample;
             }
         }
-           
+        
         self.swap_buffers();
     }
     
