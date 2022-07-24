@@ -71,7 +71,27 @@ impl Window {
         root.children.push(Box::new(Panel {
             rect: Rect::new((SPECTRUM_WIDTH + 2) as i32 + 6, 1,
                 SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 7, (SPECTRUM_HEIGHT + 2) * 4 + 7),
-            children: Vec::new(),
+            children: Vec::from([
+                Box::new(EQ {
+                    rect: Rect::new(
+                        (SPECTRUM_WIDTH + 2) as i32 + 8,
+                        3,
+                        SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 11,
+                        18,
+                    ),
+                    nodes: vec![
+                        EQNode::Lowpass { hz: 2000.0, q: 1.70710678 },
+                        EQNode::Highpass { hz: 10.0, q: 0.70710678 },
+                        EQNode::Peak { hz: 220.0, q: 2.0, a: 1.0 },
+                    ],
+                    background: CONTROL_BG,
+                    fg: EQ_FG,
+                    border: BORDER,
+                    corner: TRANSPARENT,
+                    response: Box::new([0.0; (SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 13) as usize]),
+                    is_dirty: true,
+                }) as Box<dyn Element>
+            ]),
             background: PANEL_BG,
             border: Some(BORDER),
             corner: Some(CORNER),

@@ -45,12 +45,13 @@ impl Effect for EQ {
             .fold(sample, |s, eff| eff.process(s))
     }
 }
+
 /// a biquad filter, able to take the form of many LTI filters including
 /// the filters required for EQ (low-pass, high-pass, etc.)
 #[derive(Clone, Copy)]
 pub struct Biquad {
-    a: [f64; 3],
-    b: [f64; 3],
+    pub a: [f64; 3],
+    pub b: [f64; 3],
     x: [f64; 3],
     y: [f64; 3],
 }
@@ -58,7 +59,7 @@ pub struct Biquad {
 impl Biquad {
     fn from(a0: f64, a1: f64, a2: f64, b0: f64, b1: f64, b2: f64) -> Biquad {
         Biquad {
-            a: [a0, a1 / a0, a2 / a0],
+            a: [1.0, a1 / a0, a2 / a0],
             b: [b0 / a0, b1 / a0, b2 / a0],
             x: [0.0, 0.0, 0.0],
             y: [0.0, 0.0, 0.0],
@@ -97,19 +98,21 @@ impl Biquad {
         )
     }
     
-    pub fn peak(hz: f64, q: f64, a: f64, dt: f64) -> Biquad {
+    pub fn peak(hz: f64, g: f64, scale: f64, dt: f64) -> Biquad {
+        let sqrt_gain = g.sqrt();
         let w = 2.0 * PI * hz * dt;
-        let alpha = w.sin() / (2.0 * q);
         let cos_w = w.cos();
+        let bandwidth = scale * w / (if sqrt_gain >= 1.0 { sqrt_gain } else { 1.0 / sqrt_gain });
+        let alpha = (bandwidth / 2.0).tan();
         
         Biquad::from(
-            1.0 + alpha / a,
+            1.0 + alpha / sqrt_gain,
             -2.0 * cos_w,
-            1.0 - alpha / a,
+            1.0 - alpha / sqrt_gain,
             
-            1.0 + alpha * a,
+            1.0 + alpha * sqrt_gain,
             -2.0 * cos_w,
-            1.0 - alpha * a,
+            1.0 - alpha * sqrt_gain,
         )
     }
 }

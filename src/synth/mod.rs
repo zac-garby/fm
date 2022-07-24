@@ -1,4 +1,4 @@
-mod effect;
+pub mod effect;
 
 use std::f32::consts::PI;
 use std::f64::consts::SQRT_2;

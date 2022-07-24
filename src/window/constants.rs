@@ -10,7 +10,7 @@ pub const SPECTRUM_WIDTH: u32 = 128;
 pub const SPECTRUM_HEIGHT: u32 = 32;
 
 pub const FG: Color = Color { r: 210, g: 210, b: 210, a: 255 };
-pub const FG2: Color = Color { r: 139, g: 139, b: 139, a: 139 };
+pub const FG2: Color = Color { r: 139, g: 139, b: 139, a: 255 };
 pub const PANEL_BG: Color = Color { r: 29, g: 24, b: 30, a: 255 };
 pub const WIN_BG: Color = Color { r: 21, g: 20, b: 18, a: 255 };
 pub const EMPTY_SPECTRUM_BG: Color = Color { r: 22, g: 18, b: 23, a: 255 };
@@ -27,6 +27,8 @@ pub const CONTROL_HOVER: Color = Color { r: 53, g: 24, b: 51, a: 255 };
 pub const CONTROL_ACTIVE: Color = Color { r: 109, g: 73, b: 106, a: 255 };
 pub const SLIDER_HANDLE: Color = Color { r: 200, g: 200, b: 200, a: 255 };
 pub const DIM_LABEL: Color = Color { r: 72, g: 62, b: 74, a: 255 };
+
+pub const EQ_FG: Color = Color { r: 156, g: 121, b: 133, a: 255 };
 
 pub const TOOLTIP_BG: Color = Color { r: 8, g: 2, b: 8, a: 255 };
 

@@ -1,3 +1,5 @@
+use std::f32::consts;
+
 use std::sync::{Arc, Mutex};
 
 use sdl2::{mouse, keyboard};
@@ -5,7 +7,7 @@ use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
 
-use crate::player::*;
+use crate::{player::*, synth};
 use crate::song;
 
 use super::font;
@@ -105,6 +107,23 @@ pub struct Label {
     pub text: String,
     pub tooltip: Option<String>,
     pub colour: Color,
+}
+
+pub enum EQNode {
+    Lowpass { hz: f64, q: f64 },
+    Highpass { hz: f64, q: f64 },
+    Peak { hz: f64, q: f64, a: f64 },
+}
+
+pub struct EQ {
+    pub rect: Rect,
+    pub nodes: Vec<EQNode>,
+    pub response: Box<[f32]>,
+    pub is_dirty: bool,
+    pub background: Color,
+    pub fg: Color,
+    pub border: Color,
+    pub corner: Color,
 }
 
 pub struct WindowState {
@@ -592,6 +611,141 @@ impl Element for Label {
     fn handle(&mut self, _event: InputEvent, _state: &mut WindowState) {}
 }
 
+impl EQNode {
+    fn hz(&self) -> f64 {
+        match self {
+            EQNode::Lowpass { hz, .. } => *hz,
+            EQNode::Highpass { hz, .. } => *hz,
+            EQNode::Peak { hz, .. } => *hz,
+        }
+    }
+}
+
+impl EQ {
+    fn x_to_hz(&self, x: u32, sample_rate: u32) -> f32 {
+        let width = self.rect.w - 2;
+        let p = (x as f32 + 1.0) / width as f32;
+        (sample_rate as f32 / 2.0).powf(p)
+    }
+    
+    fn hz_to_x(&self, hz: f32, sample_rate: u32) -> u32 {
+        let p = hz.log(sample_rate as f32 / 2.0);
+        (p * self.rect.w as f32 - 2.0) as u32
+    }
+    
+    fn compute_response(&mut self, sample_rate: u32) {
+        let dt = 1.0 / sample_rate as f64;
+        let mut eq = synth::effect::EQ::new();
+        let width = self.rect.w as usize - 2;
+        
+        self.nodes.iter().for_each(|n| eq.biquads.push(match n {
+            EQNode::Lowpass { hz, q } => synth::effect::Biquad::lowpass(*hz, *q, dt),
+            EQNode::Highpass { hz, q } => synth::effect::Biquad::highpass(*hz, *q, dt),
+            EQNode::Peak { hz, q, a } => synth::effect::Biquad::peak(*hz, *q, *a, dt),
+        }));
+        
+        for x in 0..width {
+            let f = self.x_to_hz(x as u32, sample_rate);
+            let w = f * consts::PI / (sample_rate as f32 / 2.0);
+            let phi = (w / 2.0).sin().powi(2);
+            let mut h = 0.0;
+            
+            for bq in &eq.biquads {
+                let a1 = bq.a[1] as f32;
+                let a2 = bq.a[2] as f32;
+                let b0 = bq.b[0] as f32;
+                let b1 = bq.b[1] as f32;
+                let b2 = bq.b[2] as f32;
+                
+                let mut r = 
+                    f32::log(
+                        (b0+b1+b2).powi(2) - 4.0*(b0*b1 + 4.0*b0*b2 + b1*b2)*phi + 16.0*b0*b2*phi*phi,
+                        consts::E
+                    ) - f32::log(
+                        (1.0+a1+a2).powi(2) - 4.0*(a1 + 4.0*a2 + a1*a2)*phi + 16.0*a2*phi*phi,
+                        consts::E);
+                
+                if r.is_infinite() {
+                    r = -20.0;
+                }
+                
+                h += r * 10.0 / consts::LN_10;
+            }
+            
+            self.response[x] = h;
+        }
+        
+        self.is_dirty = false;
+    }
+}
+
+impl Element for EQ {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        let safe = safe_area(self.rect);
+        
+        draw_rect(buf, self.rect, self.background, Some(self.border), Some(self.corner));
+        
+        if self.is_dirty {
+            self.compute_response(44100);
+        }
+        
+        for x in 0..safe.w as usize {
+            let h = (self.response[x] as i32 + safe.h / 2 - 1).clamp(0, safe.h as i32);
+            
+            if h > 0 {
+                let rect = Rect::new(
+                    x as i32 + safe.x,
+                    safe.y + (safe.h - h as i32),
+                    1,
+                    h as u32,
+                );
+                
+                draw_rect(buf, rect, self.fg, None, None);
+            }
+        }
+        
+        if safe.contains_point(mouse) {
+            let hz = self.x_to_hz((mouse.x - safe.x) as u32, 44100).round() as u32;
+            
+            let mut nodes = self.nodes
+                .iter()
+                .enumerate()
+                .map(|(i, n)| {
+                    let x = self.hz_to_x(n.hz() as f32, 44100);
+                    (i, (x as i32 - (mouse.x - safe.x)).abs() as u32)
+                })
+                .collect::<Vec<(usize, u32)>>();
+            
+            nodes.sort_unstable_by_key(|(_, x)| *x);
+            
+            if let Some((closest, _)) = nodes.iter().filter(|(_, d)| *d < 8).next() {
+                let node = &self.nodes[*closest];
+                let x = self.hz_to_x(node.hz() as f32, 44100);
+                let h = (self.response[x as usize] as i32 + safe.h / 2 - 1).clamp(0, safe.h as i32);
+                
+                draw_rect(buf, Rect::new(
+                    safe.x + x as i32 - 1,
+                    safe.y + safe.h - h - 2,
+                    3, 3,
+                ), SLIDER_HANDLE, None, None);
+            } else {
+                draw_tooltip(buf, mouse.x as u32 + 5, mouse.y as u32 - 5, vec![
+                    format!("{}Hz", hz),
+                ]);
+            }
+        }
+    }
+
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    fn handle(&mut self, _event: InputEvent, _state: &mut WindowState) {
+        
+    }
+}
+
 impl WindowState {
     fn add_note(&mut self, part: usize, note: song::Note) {
         let mut overlaps = Vec::new();
@@ -679,6 +833,11 @@ pub(crate) fn draw_tooltip(buf: &mut [u8], x: u32, y: u32, text: Vec<String>) {
         let dx = (rect.right() as i32 + 2) - SCREEN_WIDTH as i32;
         if dx > 0 {
             rect.x -= dx;
+        }
+        
+        let dy = rect.top() as i32 - 2;
+        if dy < 0 {
+            rect.y -= dy;
         }
         
         draw_rect(buf, rect, TOOLTIP_BG, None, Some(TRANSPARENT));
