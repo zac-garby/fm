@@ -61,6 +61,38 @@ impl Biquad {
             (1.0 - cos_w) / 2.0,
         )
     }
+    
+    pub fn highpass(hz: f64, q: f64, dt: f64) -> Biquad {
+        let w = 2.0 * PI * hz * dt;
+        let alpha = w.sin() / (2.0 * q);
+        let cos_w = w.cos();
+        
+        Biquad::from(
+            1.0 + alpha,
+            -2.0 * cos_w,
+            1.0 - alpha,
+            
+            (1.0 + cos_w) / 2.0,
+            -1.0 - cos_w,
+            (1.0 + cos_w) / 2.0,
+        )
+    }
+    
+    pub fn peak(hz: f64, q: f64, a: f64, dt: f64) -> Biquad {
+        let w = 2.0 * PI * hz * dt;
+        let alpha = w.sin() / (2.0 * q);
+        let cos_w = w.cos();
+        
+        Biquad::from(
+            1.0 + alpha / a,
+            -2.0 * cos_w,
+            1.0 - alpha / a,
+            
+            1.0 + alpha * a,
+            -2.0 * cos_w,
+            1.0 - alpha * a,
+        )
+    }
 }
 
 impl Effect for Biquad {
