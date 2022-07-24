@@ -26,6 +26,25 @@ impl Effect for Echo {
     }
 }
 
+pub struct EQ {
+    pub biquads: Vec<Biquad>,
+}
+
+impl EQ {
+    pub fn new() -> EQ {
+        EQ {
+            biquads: Vec::new(),
+        }
+    }
+}
+
+impl Effect for EQ {
+    fn process(&mut self, sample: f32) -> f32 {
+        self.biquads
+            .iter_mut()
+            .fold(sample, |s, eff| eff.process(s))
+    }
+}
 /// a biquad filter, able to take the form of many LTI filters including
 /// the filters required for EQ (low-pass, high-pass, etc.)
 #[derive(Clone, Copy)]
