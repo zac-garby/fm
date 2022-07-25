@@ -30,6 +30,11 @@ pub const DIM_LABEL: Color = Color { r: 72, g: 62, b: 74, a: 255 };
 
 pub const EQ_FG: Color = Color { r: 156, g: 121, b: 133, a: 255 };
 
+pub const KNOB_BG: Color = Color { r: 90, g: 82, b: 94, a: 255 };
+pub const KNOB_BORDER: Color = Color { r: 68, g: 56, b: 73, a: 255 };
+pub const KNOB_TICK: Color = Color { r: 85, g: 78, b: 89, a: 255 };
+pub const KNOB_POINTER: Color = Color { r: 196, g: 20, b: 74, a: 255 };
+
 pub const TOOLTIP_BG: Color = Color { r: 8, g: 2, b: 8, a: 255 };
 
 pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };

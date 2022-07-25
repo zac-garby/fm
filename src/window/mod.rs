@@ -90,7 +90,25 @@ impl Window {
                     corner: TRANSPARENT,
                     response: Box::new([0.0; (SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 13) as usize]),
                     is_dirty: true,
-                }) as Box<dyn Element>
+                }) as Box<dyn Element>,
+                Box::new(Knob {
+                    center: Point::new(
+                        (SPECTRUM_WIDTH + 2) as i32 + 18,
+                        40,
+                    ),
+                    radius: 7,
+                    border_width: 2,
+                    background: KNOB_BG,
+                    border: KNOB_BORDER,
+                    state: ButtonState::Off,
+                    min_value: 0.0,
+                    max_value: 1.0,
+                    value: 1.0,
+                    on_change: Box::new(|_x, _s| {}),
+                    make_tooltip: Box::new(|x, _s| {
+                        format!("{:.2}", x)
+                    }),
+                })
             ]),
             background: PANEL_BG,
             border: Some(BORDER),

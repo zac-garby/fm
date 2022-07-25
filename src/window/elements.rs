@@ -126,6 +126,20 @@ pub struct EQ {
     pub corner: Color,
 }
 
+pub struct Knob {
+    pub center: Point,
+    pub radius: u32,
+    pub border_width: u32,
+    pub background: Color,
+    pub border: Color,
+    pub state: ButtonState,
+    pub min_value: f32,
+    pub max_value: f32,
+    pub value: f32,
+    pub on_change: Box<dyn Fn(f32, &mut WindowState)>,
+    pub make_tooltip: Box<dyn Fn(f32, &WindowState) -> String>,
+}
+
 pub struct WindowState {
     pub player: Arc<Mutex<Player>>,
     pub song: song::Song,
@@ -746,6 +760,90 @@ impl Element for EQ {
     }
 }
 
+impl Element for Knob {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {        
+        let rect = self.rect();
+        
+        draw_circle(buf, self.center.x as u32, self.center.y as u32,
+            self.radius, self.border);
+        draw_circle(buf, self.center.x as u32, self.center.y as u32,
+            self.radius - self.border_width, self.background);
+        set_pixel(buf, rect.right() as u32, rect.bottom() as u32, KNOB_TICK);
+        set_pixel(buf, rect.left() as u32, rect.bottom() as u32, KNOB_TICK);
+        
+        let min_angle = -1.25 * consts::PI;
+        let max_angle = 0.25 * consts::PI;
+        let p = (self.value - self.min_value) / (self.max_value - self.min_value);
+        let angle = p * (max_angle - min_angle) + min_angle;
+        let dx = angle.cos();
+        let dy = angle.sin();
+        
+        draw_line(buf,
+            (self.center.x + (dx * (self.radius - self.border_width) as f32) as i32) as u32,
+            (self.center.y + (dy * (self.radius - self.border_width) as f32) as i32) as u32,
+            (self.center.x + (dx * (self.radius + 1) as f32) as i32) as u32,
+            (self.center.y + (dy * (self.radius + 1) as f32) as i32) as u32,
+            KNOB_POINTER);
+        
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        let dx = mouse.x - self.center.x;
+        let dy = mouse.y - self.center.y;
+        
+        if (dx*dx + dy*dy) as u32 <= (self.radius + 1).pow(2) {
+            draw_tooltip(buf, state.mouse_x + 5, state.mouse_y - 5, vec![
+                (self.make_tooltip)(self.value, state),
+            ])
+        }
+    }
+
+    fn rect(&self) -> Rect {
+        Rect::new(
+            self.center.x - self.radius as i32,
+            self.center.y - self.radius as i32,
+            self.radius * 2,
+            self.radius * 2,
+        )
+    }
+
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        let step = (self.max_value - self.min_value) / 64.0;
+        
+        match event.event {
+            Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
+                let dx = mouse.x - self.center.x;
+                let dy = mouse.y - self.center.y;
+                
+                if (dx*dx + dy*dy) as u32 <= self.radius * self.radius {
+                    self.state = ButtonState::Active;
+                }
+            },
+            Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
+                self.state = ButtonState::Off;
+            },
+            Event::MouseMotion { xrel, yrel, .. } => {
+                if self.state == ButtonState::Active {
+                    self.value = (self.value + (xrel - yrel) as f32 * step).clamp(self.min_value, self.max_value);
+                }
+            },
+            Event::MouseWheel { x, y, .. } => {
+                self.value = (self.value + (x + y) as f32 * step).clamp(self.min_value, self.max_value);
+            },
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
+                self.value = (self.value + step).clamp(self.min_value, self.max_value);
+            },
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
+            Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
+                self.value = (self.value - step).clamp(self.min_value, self.max_value);
+            },
+            _ => {},
+        }
+        
+        (self.on_change)(self.value, state);
+    }
+}
+
 impl WindowState {
     fn add_note(&mut self, part: usize, note: song::Note) {
         let mut overlaps = Vec::new();
@@ -799,6 +897,103 @@ pub(crate) fn draw_rect(buf: &mut [u8], rect: Rect,
                     buf[i0 + x * 4 + 3] = color.a;
                 }
             }
+        }
+    }
+}
+
+fn draw_line_low(buf: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, colour: Color) {
+    let dx = x1 as i32 - x0 as i32;
+    let mut dy = y1 as i32 - y0 as i32;
+    let mut yi = 1;
+    
+    if dy < 0 {
+        yi = -1;
+        dy = -dy;
+    }
+    
+    let mut d = (2 * dy) - dx;
+    let mut y = y0 as i32;
+    
+    for x in x0..x1 + 1 {
+        set_pixel(buf, x as u32, y as u32, colour);
+        if d > 0 {
+            y += yi;
+            d += 2 * (dy - dx);
+        } else {
+            d += 2 * dy;
+        }
+    }
+}
+
+fn draw_line_high(buf: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, colour: Color) {
+    let mut dx = x1 as i32 - x0 as i32;
+    let dy = y1 as i32 - y0 as i32;
+    let mut xi = 1;
+    
+    if dx < 0 {
+        xi = -1;
+        dx = -dx;
+    }
+    
+    let mut d = (2 * dx) - dy;
+    let mut x = x0 as i32;
+    
+    for y in y0..y1 + 1 {
+        set_pixel(buf, x as u32, y as u32, colour);
+        if d > 0 {
+            x += xi;
+            d += 2 * (dx - dy);
+        } else {
+            d += 2 * dx;
+        }
+    }
+}
+
+pub(crate) fn draw_line(buf: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, colour: Color) {
+    if y1.abs_diff(y0) < x1.abs_diff(x0) {
+        if x0 > x1 {
+            draw_line_low(buf, x1, y1, x0, y0, colour);
+        } else {
+            draw_line_low(buf, x0, y0, x1, y1, colour);
+        }
+    } else {
+        if y0 > y1 {
+            draw_line_high(buf, x1, y1, x0, y0, colour);
+        } else {
+            draw_line_high(buf, x0, y0, x1, y1, colour);
+        }
+    }
+}
+
+pub(crate) fn draw_circle(buf: &mut [u8], x_mid: u32, y_mid: u32, r: u32, colour: Color) {
+    let mut x = r as i32;
+    let mut y = 0;
+    let mut xchange = 1 - r as i32 * 2;
+    let mut ychange = 1;
+    let mut re = 0;
+    
+    while x >= y {
+        for i in 0..x+1 {
+            set_pixel(buf, x_mid + i as u32, y_mid + y as u32, colour);
+            set_pixel(buf, x_mid - i as u32, y_mid + y as u32, colour);
+            set_pixel(buf, x_mid + i as u32, y_mid - y as u32, colour);
+            set_pixel(buf, x_mid - i as u32, y_mid - y as u32, colour);
+        }
+        
+        for i in 0..y+1 {
+            set_pixel(buf, x_mid + i as u32, y_mid + x as u32, colour);
+            set_pixel(buf, x_mid - i as u32, y_mid + x as u32, colour);
+            set_pixel(buf, x_mid + i as u32, y_mid - x as u32, colour);
+            set_pixel(buf, x_mid - i as u32, y_mid - x as u32, colour);
+        }
+        
+        y += 1;
+        re += ychange;
+        ychange += 2;
+        if re * 2 + xchange > 0 {
+            x -= 1;
+            re += xchange;
+            xchange += 2;
         }
     }
 }
