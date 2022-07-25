@@ -31,7 +31,7 @@ pub const FONT_DATA: [Option<CharData>; 256] = [
     None,
     None,
     None,
-    None,
+    Some(CharData { width: 4, data: [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0] }),
     None,
     None,
     None,

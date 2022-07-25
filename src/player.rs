@@ -82,6 +82,16 @@ impl Player {
         }
     }
     
+    /// resets the player to a default state.
+    pub fn reset(&mut self) {
+        self.playhead = 0.0;
+        self.paused = true;
+        self.volume = 1.0;
+        self.mute = false;
+        self.bps = 1.0;
+        self.flush_notes();
+    }
+    
     /// empties the note input stream, so a new song can be started
     /// without interference.
     pub fn flush_notes(&mut self) {

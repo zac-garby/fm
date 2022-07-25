@@ -109,6 +109,13 @@ pub struct Label {
     pub colour: Color,
 }
 
+pub struct DynamicLabel {
+    pub rect: Rect,
+    pub tooltip: Option<String>,
+    pub colour: Color,
+    pub get_text: Box<dyn Fn(&WindowState) -> String>,
+}
+
 pub enum EQNode {
     Lowpass { hz: f64, q: f64 },
     Highpass { hz: f64, q: f64 },
@@ -143,6 +150,7 @@ pub struct Knob {
 pub struct WindowState {
     pub player: Arc<Mutex<Player>>,
     pub song: song::Song,
+    pub filename: Option<String>,
     pub selected_instrument: usize,
     pub mouse_x: u32,
     pub mouse_y: u32,
@@ -620,6 +628,25 @@ impl Element for Label {
             measure_text(&self.text[..]),
             5,
         )
+    }
+    
+    fn handle(&mut self, _event: InputEvent, _state: &mut WindowState) {}
+}
+
+impl Element for DynamicLabel {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
+        let text = (self.get_text)(state);
+        draw_text(buf, self.rect.x as u32, self.rect.y as u32, self.colour, &text[..]);
+        
+        if let Some(tooltip) = &self.tooltip {
+            if self.rect().contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32)) {
+                draw_tooltip(buf, state.mouse_x + 4, state.mouse_y - 4, vec![tooltip.clone()]);
+            }
+        }
+    }
+    
+    fn rect(&self) -> Rect {
+        self.rect
     }
     
     fn handle(&mut self, _event: InputEvent, _state: &mut WindowState) {}

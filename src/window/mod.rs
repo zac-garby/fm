@@ -1,4 +1,5 @@
 extern crate sdl2;
+extern crate nfd;
 
 mod font;
 mod constants;
@@ -10,6 +11,7 @@ use sdl2::render;
 
 use std::sync::{Arc, Mutex, mpsc};
 
+use crate::song::Song;
 use crate::{player::Player, song};
 
 use constants::*;
@@ -52,11 +54,74 @@ impl Window {
         };
         
         root.children.push(Box::new(Panel {
-            rect: Rect::new(1, 1, (SPECTRUM_WIDTH + 2) + 4, (SPECTRUM_HEIGHT + 2) * 4 + 7),
+            rect: Rect::new(
+                0, 0, SCREEN_WIDTH, 10,
+            ),
+            children: Vec::from([
+                Box::new(DynamicLabel {
+                    rect: Rect::new(3, 3, 48, 5),
+                    tooltip: None,
+                    colour: FG2,
+                    get_text: Box::new(|state| {
+                        let filename = state.filename.clone().unwrap_or(String::from("unnamed.crz"));
+                        format!("\x10 {}", filename)
+                    }),
+                }) as Box<dyn Element>,
+                Box::new(Button {
+                    rect: Rect::new(
+                        SCREEN_WIDTH as i32 - 88, 2,
+                        38, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from("new song") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|pressed, state| {
+                        if !pressed {
+                            state.filename = None;
+                            state.song = Song::new(4, 60, 4);
+                            state.player.lock().unwrap().reset();
+                        }
+                    }),
+                }) as Box<dyn Element>,
+                Box::new(Button {
+                    rect: Rect::new(
+                        SCREEN_WIDTH as i32 - 48, 2,
+                        46, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from("open song...") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|pressed, _state| {
+                        if !pressed {
+                            match nfd::open_file_dialog(None, None) {
+                                Ok(nfd::Response::Okay(_f)) => {},
+                                Ok(nfd::Response::OkayMultiple(_fs)) => {},
+                                Ok(nfd::Response::Cancel) => {},
+                                Err(_) => todo!(),
+                            }
+                        }
+                    }),
+                })
+            ]),
+            background: PANEL_BG,
+            border: None,
+            corner: None,
+        }) as Box<dyn Element>);
+        
+        root.children.push(Box::new(Panel {
+            rect: Rect::new(1, 11, (SPECTRUM_WIDTH + 2) + 4, (SPECTRUM_HEIGHT + 2) * 4 + 7),
             children: (0..4).map(|i| {
                 Box::new(Spectrum {
                     rect: Rect::new(
-                        3, 3 + i * (SPECTRUM_HEIGHT + 3) as i32,
+                        3, 13 + i * (SPECTRUM_HEIGHT + 3) as i32,
                         SPECTRUM_WIDTH + 2, SPECTRUM_HEIGHT + 2),
                     player: player_mutex.clone(),
                     index: i as usize,
@@ -69,13 +134,13 @@ impl Window {
         }));
         
         root.children.push(Box::new(Panel {
-            rect: Rect::new((SPECTRUM_WIDTH + 2) as i32 + 6, 1,
+            rect: Rect::new((SPECTRUM_WIDTH + 2) as i32 + 6, 11,
                 SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 7, (SPECTRUM_HEIGHT + 2) * 4 + 7),
             children: Vec::from([
                 Box::new(EQ {
                     rect: Rect::new(
                         (SPECTRUM_WIDTH + 2) as i32 + 8,
-                        3,
+                        13,
                         SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 11,
                         18,
                     ),
@@ -116,20 +181,20 @@ impl Window {
         }));
         
         root.children.push(Box::new(Panel {
-            rect: Rect::new(1, (SPECTRUM_HEIGHT + 2) as i32 * 4 + 9,
-                SCREEN_WIDTH - 2, SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 10),
+            rect: Rect::new(1, (SPECTRUM_HEIGHT + 2) as i32 * 4 + 19,
+                SCREEN_WIDTH - 2, SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
             children: Vec::from([
                 Box::new(Panel {
                     rect: Rect::new(
                         2,
-                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 10,
+                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 20,
                         SCREEN_WIDTH - 4,
                         8),
                     children: Vec::from([
                         Box::new(Stepper {
                             rect: Rect::new(
                                 3,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 15,
                                 7,
                             ),
@@ -151,7 +216,7 @@ impl Window {
                         Box::new(Label {
                             position: Point::new(
                                 20,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 22,
                             ),
                             text: String::from("bpm"),
                             tooltip: Some(String::from("beats per minute")),
@@ -160,7 +225,7 @@ impl Window {
                         Box::new(Stepper {
                             rect: Rect::new(
                                 38,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 11,
                                 7,
                             ),
@@ -177,7 +242,7 @@ impl Window {
                         Box::new(Label {
                             position: Point::new(
                                 50,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 22,
                             ),
                             text: String::from("/4"),
                             tooltip: Some(String::from("time signature")),
@@ -186,7 +251,7 @@ impl Window {
                         Box::new(Slider {
                             rect: Rect::new(
                                 62,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 16,
                                 7,
                             ),
@@ -209,7 +274,7 @@ impl Window {
                         Box::new(Label {
                             position: Point::new(
                                 80,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 22,
                             ),
                             text: String::from("QZ."),
                             tooltip: Some(String::from("quanta per beat")),
@@ -218,7 +283,7 @@ impl Window {
                         Box::new(Button {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 - 35,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 11,
                                 7,
                             ),
@@ -249,7 +314,7 @@ impl Window {
                         Box::new(Button {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 - 24,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 11,
                                 7,
                             ),
@@ -282,7 +347,7 @@ impl Window {
                         Box::new(Button {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 - 13,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 11,
                                 7,
                             ),
@@ -300,7 +365,7 @@ impl Window {
                         Box::new(Button {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 + 1,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 11,
                                 7,
                             ),
@@ -322,7 +387,7 @@ impl Window {
                         Box::new(Slider {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 + 12,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 36,
                                 7,
                             ),
@@ -346,7 +411,7 @@ impl Window {
                         Box::new(Label {
                             position: Point::new(
                                 SCREEN_WIDTH as i32 / 2 + 85,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 22,
                             ),
                             text: String::from("\x08"),
                             tooltip: Some(String::from("vertical scale")),
@@ -355,7 +420,7 @@ impl Window {
                         Box::new(Slider {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 + 89,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 24,
                                 7,
                             ),
@@ -378,7 +443,7 @@ impl Window {
                         Box::new(Label {
                             position: Point::new(
                                 SCREEN_WIDTH as i32 / 2 + 117,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 12,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 22,
                             ),
                             text: String::from("\x09"),
                             tooltip: Some(String::from("horizontal scale")),
@@ -387,7 +452,7 @@ impl Window {
                         Box::new(Slider {
                             rect: Rect::new(
                                 SCREEN_WIDTH as i32 / 2 + 123,
-                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 11,
+                                (SPECTRUM_HEIGHT + 2) as i32 * 4 + 21,
                                 24,
                                 7,
                             ),
@@ -415,9 +480,9 @@ impl Window {
                 Box::new(Sequencer {
                     rect: Rect::new(
                         1,
-                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 19,
+                        (SPECTRUM_HEIGHT + 2) as i32 * 4 + 29,
                         SCREEN_WIDTH - 2,
-                        SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 20),
+                        SCREEN_HEIGHT - (SPECTRUM_HEIGHT + 2) * 4 - 30),
                     scroll_x: 0.0,
                     scroll_y: 160.0,
                     num_octaves: 9,
@@ -458,6 +523,7 @@ impl Window {
                 seq_scale_x: 12,
                 seq_scale_y: 4,
                 seq_quantize: 4,
+                filename: None,
             }
         })
     }

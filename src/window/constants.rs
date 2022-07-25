@@ -1,7 +1,7 @@
 use sdl2::pixels::Color;
 
 pub const SCREEN_WIDTH: u32 = 300;
-pub const SCREEN_HEIGHT: u32 = 250;
+pub const SCREEN_HEIGHT: u32 = 260;
 pub const SCREEN_SCALE: u32 = 4;
 pub const REAL_WIDTH: u32 = SCREEN_WIDTH * SCREEN_SCALE;
 pub const REAL_HEIGHT: u32 = SCREEN_HEIGHT * SCREEN_SCALE;
