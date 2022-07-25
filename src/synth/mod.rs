@@ -172,6 +172,10 @@ impl Instrument {
             voice.note.start = -0.0;
             voice.note.velocity = 0.0;
         }
+        
+        for effect in self.effects.iter_mut() {
+            effect.reset();
+        }
     }
     
     pub fn add_operator(&mut self, op: Operator) {

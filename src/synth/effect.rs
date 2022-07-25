@@ -4,6 +4,9 @@ use std::f64::consts::PI;
 pub trait Effect : Send {
     /// processes a single audio sample, and updates the internal state.
     fn process(&mut self, sample: f32) -> f32;
+    
+    /// resets an effect's internal state.
+    fn reset(&mut self);
 }
 
 pub struct Echo {
@@ -24,6 +27,10 @@ impl Effect for Echo {
     fn process(&mut self, sample: f32) -> f32 {
         self.delay.push(sample * self.amount) + sample
     }
+
+    fn reset(&mut self) {
+        self.delay.reset();
+    }
 }
 
 pub struct EQ {
@@ -43,6 +50,10 @@ impl Effect for EQ {
         self.biquads
             .iter_mut()
             .fold(sample, |s, eff| eff.process(s))
+    }
+
+    fn reset(&mut self) {
+        self.biquads.iter_mut().for_each(|b| b.reset());
     }
 }
 
@@ -140,6 +151,11 @@ impl Effect for Biquad {
         
         y0 as f32
     }
+
+    fn reset(&mut self) {
+        self.x = [0.0, 0.0, 0.0];
+        self.y = [0.0, 0.0, 0.0];
+    }
 }
 
 pub struct Reverb {
@@ -183,6 +199,10 @@ impl Effect for Reverb {
             .sum();
         
         self.mix * out + (1.0 - self.mix) * sample
+    }
+
+    fn reset(&mut self) {
+        self.fdn.reset();
     }
 }
 
@@ -253,6 +273,11 @@ impl FeedbackDelayNetwork {
             [ 0.5, -0.5, -0.5,  0.5],
         ]
     }
+    
+    fn reset(&mut self) {
+        self.delays.iter_mut().for_each(|d| d.reset());
+        self.output = [0.0; 4];
+    }
 }
 
 /// a delay line, used for numerous effects
@@ -292,5 +317,16 @@ impl Delay {
     
     fn len(&self) -> usize {
         self.line.len()
+    }
+}
+
+impl Effect for Delay {
+    fn process(&mut self, sample: f32) -> f32 {
+        self.push(sample)
+    }
+
+    fn reset(&mut self) {
+        self.line.iter_mut().for_each(|x| *x = 0.0);
+        self.head = 0;
     }
 }
