@@ -789,7 +789,7 @@ impl Element for Knob {
         let dx = mouse.x - self.center.x;
         let dy = mouse.y - self.center.y;
         
-        if (dx*dx + dy*dy) as u32 <= (self.radius + 1).pow(2) {
+        if (dx*dx + dy*dy) as u32 <= (self.radius + 1).pow(2) || self.state == ButtonState::Active {
             draw_tooltip(buf, state.mouse_x + 5, state.mouse_y - 5, vec![
                 (self.make_tooltip)(self.value, state),
             ])
