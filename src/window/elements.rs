@@ -13,6 +13,33 @@ use crate::song;
 use super::font;
 use super::constants::*;
 
+pub struct DynVar<T> {
+    get: Box<dyn Fn(&WindowState) -> T>,
+    set: Box<dyn FnMut(&mut WindowState, T)>,
+}
+
+impl<T> DynVar<T> {
+    pub fn new<F, G>(get: F, set: G) -> DynVar<T>
+    where F: Fn(&WindowState) -> T + 'static, G: Fn(&mut WindowState, T) + 'static {
+        DynVar {
+            get: Box::new(get),
+            set: Box::new(set),
+        }
+    }
+    
+    pub fn get(&self, s: &WindowState) -> T {
+        (self.get)(s)
+    }
+    
+    pub fn set(&mut self, s: &mut WindowState, val: T) {
+        (self.set)(s, val);
+    }
+    
+    pub fn modify<F>(&mut self, s: &mut WindowState, f: F) where F: Fn(T) -> T {
+        self.set(s, f(self.get(s)));
+    }
+}
+
 pub trait Element {
     fn render(&mut self, buf: &mut [u8], state: &WindowState);
     fn rect(&self) -> Rect;
@@ -49,13 +76,12 @@ pub struct Sequencer {
 
 pub struct Stepper {
     pub rect: Rect,
-    pub value: i32,
+    pub value: DynVar<i32>,
     pub min_value: i32,
     pub max_value: i32,
     pub background: Color,
     pub background_hover: Color,
     pub foreground: Color,
-    pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
 }
 
 pub struct Slider {
@@ -434,7 +460,7 @@ impl Element for Sequencer {
 impl Element for Stepper {
     fn render(&mut self, buf: &mut [u8], state: &WindowState) {
         let hover = self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32));
-        let text = &format!("{}", self.value)[..];
+        let text = &format!("{}", self.value.get(state))[..];
         let text_width = measure_text(text);
         let text_offset = self.rect.w as u32 - 2 - text_width;
         
@@ -449,18 +475,15 @@ impl Element for Stepper {
     fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
         match event.event {
             Event::MouseWheel { x, y, .. } => {
-                self.value = (self.value + x + y).clamp(self.min_value, self.max_value);
-                (self.on_change)(self.value, state);
+                self.value.modify(state, |v| (v + x + y).clamp(self.min_value, self.max_value));
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
-                self.value = (self.value + 1).clamp(self.min_value, self.max_value);
-                (self.on_change)(self.value, state);
+                self.value.modify(state, |v| (v + 1).clamp(self.min_value, self.max_value));
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
-                self.value = (self.value - 1).clamp(self.min_value, self.max_value);
-                (self.on_change)(self.value, state);
+                self.value.modify(state, |v| (v - 1).clamp(self.min_value, self.max_value));
             }
             _ => {},
         }

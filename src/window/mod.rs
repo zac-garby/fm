@@ -218,10 +218,22 @@ impl Window {
                     background_hover: CONTROL_HOVER,
                     background_active: CONTROL_ACTIVE,
                     foreground: FG2,
-                    on_change: Box::new(|pressed, _state| {
+                    on_change: Box::new(|pressed, state| {
                         if !pressed {
                             match nfd::open_file_dialog(None, None) {
-                                Ok(nfd::Response::Okay(_f)) => {},
+                                Ok(nfd::Response::Okay(f)) => {
+                                    match OpenOptions::new().read(true).open(f) {
+                                        Ok(file) => {
+                                            match serde_json::from_reader(file) {
+                                                Ok(s) => {
+                                                    state.song = s;
+                                                },
+                                                Err(err) => eprintln!("error reading file: {}", err),
+                                            }
+                                        },
+                                        Err(err) => eprintln!("could not open file: {}", err),
+                                    }
+                                },
                                 Ok(nfd::Response::OkayMultiple(_fs)) => {},
                                 Ok(nfd::Response::Cancel) => {},
                                 Err(_) => todo!(),
@@ -317,20 +329,22 @@ impl Window {
                                 15,
                                 7,
                             ),
-                            value: self.state.song.bpm as i32,
+                            value: DynVar::new(
+                                |s| s.song.bpm as i32,
+                                |s, v| {
+                                    s.song.bpm = v as u32;
+                                    let mut player = s.player.lock().unwrap();
+                                    let old_bps = player.bps;
+                                    let new_bps = v as f64 / 60.0;
+                                    player.bps = new_bps;
+                                    player.playhead /= new_bps / old_bps;
+                                },
+                            ),
                             min_value: 1,
                             max_value: 999,
                             background: CONTROL_BG,
                             background_hover: CONTROL_HOVER,
                             foreground: FG2,
-                            on_change: Box::new(|x, s| {
-                                s.song.bpm = x as u32;
-                                let mut player = s.player.lock().unwrap();
-                                let old_bps = player.bps;
-                                let new_bps = x as f64 / 60.0;
-                                player.bps = new_bps;
-                                player.playhead /= new_bps / old_bps;
-                            }),
                         }) as Box<dyn Element>,
                         Box::new(Label {
                             position: Point::new(
@@ -348,15 +362,15 @@ impl Window {
                                 11,
                                 7,
                             ),
-                            value: self.state.song.beats_per_bar as i32,
+                            value: DynVar::new(
+                                |s| s.song.beats_per_bar as i32,
+                                |s, v| s.song.beats_per_bar = v as u32,
+                            ),
                             min_value: 1,
                             max_value: 64,
                             background: CONTROL_BG,
                             background_hover: CONTROL_HOVER,
                             foreground: FG2,
-                            on_change: Box::new(|x, s| {
-                                s.song.beats_per_bar = x as u32;
-                            }),
                         }) as Box<dyn Element>,
                         Box::new(Label {
                             position: Point::new(
