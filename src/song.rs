@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 use std::sync::mpsc;
 
 pub const BEAT_DIVISIONS: u32 = 96;
@@ -9,7 +10,7 @@ pub const NOTE_NAMES: [&str; 12] = [
 ];
 
 /// a particular point of time, quantized as a moment in a song.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Time {
     pub beat: u32,
     pub division: u32,
@@ -37,7 +38,7 @@ impl Time {
 }
 
 /// an individual note in a song.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Note {
     /// the pitch of the note. C0 is represented as 0, and each successive
     /// pitch goes up by one semitone.
@@ -57,7 +58,7 @@ pub struct Note {
 
 /// a song, consisting of NUM_PARTS parts, each of which are a list of
 /// notes to be played.
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Song {
     /// the beats-per-minute of the song.
     pub bpm: u32,
