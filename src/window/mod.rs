@@ -388,7 +388,15 @@ impl Window {
                                 16,
                                 7,
                             ),
-                            value: 3,
+                            value: DynVar::new(
+                                |s|  [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 96]
+                                    .iter()
+                                    .position(|x| *x == s.seq_quantize)
+                                    .unwrap() as i32,
+                                |s, v| {
+                                    s.seq_quantize =  [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 96][v as usize];
+                                },
+                            ),
                             min_value: 0,
                             max_value: 11,
                             state: ButtonState::Off,
@@ -397,9 +405,6 @@ impl Window {
                             handle: SLIDER_HANDLE,
                             handle_hover: CONTROL_HOVER,
                             handle_active: CONTROL_ACTIVE,
-                            on_change: Box::new(|value, s| {
-                                s.seq_quantize = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 96][value as usize];
-                            }),
                             make_tooltip: Box::new(|_value, s| {
                                 format!("{} per beat", s.seq_quantize)
                             }),
@@ -525,7 +530,10 @@ impl Window {
                                 7,
                             ),
                             state: ButtonState::Off,
-                            value: (self.state.player.lock().unwrap().volume * 16.0) as i32,
+                            value: DynVar::new(
+                                |s| (s.player.lock().unwrap().volume * 16.0) as i32,
+                                |s, v| s.player.lock().unwrap().volume = v as f32 / 16.0,
+                            ),
                             min_value: 0,
                             max_value: 32,
                             background: CONTROL_BG,
@@ -533,10 +541,6 @@ impl Window {
                             handle: SLIDER_HANDLE,
                             handle_hover: CONTROL_HOVER,
                             handle_active: CONTROL_ACTIVE,
-                            on_change: Box::new(|val, s| {
-                                let vol = val as f32 / 16.0;
-                                s.player.lock().unwrap().volume = vol;
-                            }),
                             make_tooltip: Box::new(|val, _s| {
                                 format!("volume: {}%", (100.0 * val as f32 / 16.0) as u32)
                             }),
@@ -558,7 +562,10 @@ impl Window {
                                 7,
                             ),
                             state: ButtonState::Off,
-                            value: self.state.seq_scale_y as i32,
+                            value: DynVar::new(
+                                |s| s.seq_scale_y as i32,
+                                |s, v| s.seq_scale_y = v as u32,
+                            ),
                             min_value: 2,
                             max_value: 12,
                             background: CONTROL_BG,
@@ -566,9 +573,6 @@ impl Window {
                             handle: SLIDER_HANDLE,
                             handle_hover: CONTROL_HOVER,
                             handle_active: CONTROL_ACTIVE,
-                            on_change: Box::new(|val, s| {
-                                s.seq_scale_y = val as u32;
-                            }),
                             make_tooltip: Box::new(|val, _s| {
                                 format!("vertical scale: {}", val)
                             }),
@@ -590,7 +594,10 @@ impl Window {
                                 7,
                             ),
                             state: ButtonState::Off,
-                            value: (self.state.seq_scale_x / self.state.seq_quantize) as i32,
+                            value: DynVar::new(
+                                |s| (s.seq_scale_x / s.seq_quantize) as i32,
+                                |s, v| s.seq_scale_x = v as u32 * s.seq_quantize,
+                            ),
                             min_value: 1,
                             max_value: 11,
                             background: CONTROL_BG,
@@ -598,9 +605,6 @@ impl Window {
                             handle: SLIDER_HANDLE,
                             handle_hover: CONTROL_HOVER,
                             handle_active: CONTROL_ACTIVE,
-                            on_change: Box::new(|val, s| {
-                                s.seq_scale_x = val as u32 * s.seq_quantize;
-                            }),
                             make_tooltip: Box::new(|_val, s| {
                                 format!("horizontal scale: {}", s.seq_scale_x)
                             }),

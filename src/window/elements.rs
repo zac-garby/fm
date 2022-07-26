@@ -20,7 +20,8 @@ pub struct DynVar<T> {
 
 impl<T> DynVar<T> {
     pub fn new<F, G>(get: F, set: G) -> DynVar<T>
-    where F: Fn(&WindowState) -> T + 'static, G: Fn(&mut WindowState, T) + 'static {
+    where F: Fn(&WindowState) -> T + 'static,
+          G: Fn(&mut WindowState, T) + 'static {
         DynVar {
             get: Box::new(get),
             set: Box::new(set),
@@ -87,7 +88,7 @@ pub struct Stepper {
 pub struct Slider {
     pub rect: Rect,
     pub state: ButtonState,
-    pub value: i32,
+    pub value: DynVar<i32>,
     pub min_value: i32,
     pub max_value: i32,
     pub background: Color,
@@ -95,7 +96,6 @@ pub struct Slider {
     pub handle: Color,
     pub handle_hover: Color,
     pub handle_active: Color,
-    pub on_change: Box<dyn FnMut(i32, &mut WindowState) -> ()>,
     pub make_tooltip: Box<dyn Fn(i32, &WindowState) -> String>,
 }
 
@@ -499,7 +499,7 @@ impl Element for Slider {
         draw_rect(buf, self.rect, self.background, None, Some(TRANSPARENT));
         draw_rect(buf, track, self.track, None, None);
         
-        let p = (self.value as f32 - self.min_value as f32) / (self.max_value as f32 - self.min_value as f32);
+        let p = (self.value.get(state) as f32 - self.min_value as f32) / (self.max_value as f32 - self.min_value as f32);
         let handle = Rect::new(track.x + (p * track.w as f32) as i32 - 1, input_rect.y, 2, input_rect.height());
         let handle_colour = match self.state {
             ButtonState::Off => if handle.contains_point(mouse) {
@@ -513,7 +513,7 @@ impl Element for Slider {
         draw_rect(buf, handle, handle_colour, None, None);
         
         if input_rect.contains_point(mouse) || self.state == ButtonState::Active {
-            let tooltip = (self.make_tooltip)(self.value, state);
+            let tooltip = (self.make_tooltip)(self.value.get(state), state);
             draw_tooltip(buf, handle.right() as u32 - 2, handle.top() as u32, vec![tooltip]);
         }
     }
@@ -532,8 +532,8 @@ impl Element for Slider {
                 if input_rect.contains_point(mouse) {
                     self.state = ButtonState::Active;
                     let p_new = (mouse.x as f32 - track.left() as f32) / (track.width() as f32);
-                    self.value = ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
-                        .clamp(self.min_value, self.max_value);
+                    self.value.set(state, ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
+                        .clamp(self.min_value, self.max_value));
                 }
             },
             Event::MouseButtonUp { mouse_btn: mouse::MouseButton::Left, .. } => {
@@ -542,25 +542,23 @@ impl Element for Slider {
             Event::MouseMotion { .. } => {
                 if self.state == ButtonState::Active {
                     let p_new = (mouse.x as f32 - track.left() as f32) / (track.width() as f32);
-                    self.value = ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
-                        .clamp(self.min_value, self.max_value);
+                    self.value.set(state, ((p_new * (self.max_value as f32 - self.min_value as f32)) as i32 + self.min_value)
+                        .clamp(self.min_value, self.max_value));
                 }
             },
             Event::MouseWheel { x, y, .. } => {
-                self.value = (self.value + x + y).clamp(self.min_value, self.max_value);
+                self.value.modify(state, |v| (v + x + y).clamp(self.min_value, self.max_value));
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
-                self.value = (self.value + 1).clamp(self.min_value, self.max_value);
+                self.value.modify(state, |v| (v + 1).clamp(self.min_value, self.max_value));
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
-                self.value = (self.value - 1).clamp(self.min_value, self.max_value);
+                self.value.modify(state, |v| (v - 1).clamp(self.min_value, self.max_value));
             },
             _ => {},
         }
-        
-        (self.on_change)(self.value, state);
     }
 }
 
