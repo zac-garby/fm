@@ -27,7 +27,8 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(video: sdl2::VideoSubsystem, player_mutex: Arc<Mutex<Player>>,
+    pub fn new(video: sdl2::VideoSubsystem,
+        player_mutex: Arc<Mutex<Player>>,
         note_channel: mpsc::Sender<(usize, song::Note)>)
     -> Result<Window, String> {
         let win = video
@@ -47,6 +48,80 @@ impl Window {
             .create_texture_streaming(None, SCREEN_WIDTH, SCREEN_HEIGHT)
             .map_err(|e| e.to_string())?;
         
+        let mut win = Window {
+            canvas,
+            texture,
+            root: Box::new(Label {
+                position: Point::new(2, 2),
+                text: String::from("loading..."),
+                tooltip: None,
+                colour: FG2,
+            }),
+            state: WindowState {
+                mouse_x: 0,
+                mouse_y: 0,
+                selected_instrument: 0,
+                player: player_mutex,
+                song: song::Song::new(4, 60, 4),
+                seq_scale_x: 12,
+                seq_scale_y: 4,
+                seq_quantize: 4,
+                filename: None,
+                note_channel,
+            }
+        };
+        
+        win.load_elements();
+        
+        Ok(win)
+    }
+    
+    pub fn start(&mut self, sdl: sdl2::Sdl) -> Result<(), String> {
+        let mut events = sdl.event_pump()?;
+        
+        self.canvas.window().grab();
+        
+        'run:
+        loop {
+            for e in events.poll_iter() {
+                match e {
+                    Event::Quit { .. } => break 'run,
+                    Event::MouseMotion { x, y, .. } => {
+                        self.state.mouse_x = x as u32 / SCREEN_SCALE;
+                        self.state.mouse_y = y as u32 / SCREEN_SCALE;
+                    },
+                    _ => {}
+                }
+                
+                match e {
+                    Event::MouseMotion { .. } |
+                    Event::MouseButtonUp { .. } |
+                    Event::MouseButtonDown { .. } |
+                    Event::MouseWheel { .. } |
+                    Event::KeyDown { .. } |
+                    Event::KeyUp { .. } => self.send_event(InputEvent {
+                        real_x: self.state.mouse_x as i32,
+                        real_y: self.state.mouse_y as i32,
+                        x: self.state.mouse_x as i32 - self.root.rect().x,
+                        y: self.state.mouse_y as i32 - self.root.rect().y,
+                        event: e }),
+                    _ => {}
+                }
+            }
+            
+            self.texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
+                self.root.render(buf, &self.state);
+            })?;
+            
+            self.canvas.clear();
+            self.canvas.copy(&self.texture, None, None)?;
+            self.canvas.present();
+        }
+        
+        Ok(())
+    }
+    
+    fn load_elements(&mut self) {
         let mut root = Panel {
             rect: Rect::new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
             children: Vec::new(),
@@ -167,7 +242,7 @@ impl Window {
                     rect: Rect::new(
                         3, 13 + i * (SPECTRUM_HEIGHT + 3) as i32,
                         SPECTRUM_WIDTH + 2, SPECTRUM_HEIGHT + 2),
-                    player: player_mutex.clone(),
+                    player: self.state.player.clone(),
                     index: i as usize,
                     wave_scale: 12.0,
                 }) as Box<dyn Element>
@@ -339,7 +414,7 @@ impl Window {
                             background_active: CONTROL_ACTIVE,
                             foreground: FG,
                             on_change: {
-                                let chan = note_channel.clone();
+                                let chan = self.state.note_channel.clone();
                                 
                                 Box::new(move |pressed, s| {
                                     if !pressed {
@@ -374,7 +449,7 @@ impl Window {
                             background_active: CONTROL_ACTIVE,
                             foreground: FG,
                             on_change: {
-                                let chan = note_channel.clone();
+                                let chan = self.state.note_channel.clone();
                                 
                                 Box::new(move |playing, s| {
                                     let mut player = s.player.lock().unwrap();
@@ -536,7 +611,7 @@ impl Window {
                     place_dur: song::BEAT_DIVISIONS,
                     to_delete: None,
                     on_change: {
-                        let chan = note_channel.clone();
+                        let chan = self.state.note_channel.clone();
                         
                         Box::new(move |s| {
                             let mut player = s.player.lock().unwrap();
@@ -554,67 +629,7 @@ impl Window {
             corner: Some(CORNER),
         }));
         
-        Ok(Window {
-            canvas,
-            texture,
-            root: Box::new(root),
-            state: WindowState {
-                mouse_x: 0,
-                mouse_y: 0,
-                selected_instrument: 0,
-                player: player_mutex,
-                song: song::Song::new(4, 60, 4),
-                seq_scale_x: 12,
-                seq_scale_y: 4,
-                seq_quantize: 4,
-                filename: None,
-            }
-        })
-    }
-    
-    pub fn start(&mut self, sdl: sdl2::Sdl) -> Result<(), String> {
-        let mut events = sdl.event_pump()?;
-        
-        self.canvas.window().grab();
-        
-        'run:
-        loop {
-            for e in events.poll_iter() {
-                match e {
-                    Event::Quit { .. } => break 'run,
-                    Event::MouseMotion { x, y, .. } => {
-                        self.state.mouse_x = x as u32 / SCREEN_SCALE;
-                        self.state.mouse_y = y as u32 / SCREEN_SCALE;
-                    },
-                    _ => {}
-                }
-                
-                match e {
-                    Event::MouseMotion { .. } |
-                    Event::MouseButtonUp { .. } |
-                    Event::MouseButtonDown { .. } |
-                    Event::MouseWheel { .. } |
-                    Event::KeyDown { .. } |
-                    Event::KeyUp { .. } => self.send_event(InputEvent {
-                        real_x: self.state.mouse_x as i32,
-                        real_y: self.state.mouse_y as i32,
-                        x: self.state.mouse_x as i32 - self.root.rect().x,
-                        y: self.state.mouse_y as i32 - self.root.rect().y,
-                        event: e }),
-                    _ => {}
-                }
-            }
-            
-            self.texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
-                self.root.render(buf, &self.state);
-            })?;
-            
-            self.canvas.clear();
-            self.canvas.copy(&self.texture, None, None)?;
-            self.canvas.present();
-        }
-        
-        Ok(())
+        self.root = Box::new(root);
     }
     
     fn send_event(&mut self, e: InputEvent) {

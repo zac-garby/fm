@@ -1,6 +1,6 @@
 use std::f32::consts;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 
 use sdl2::{mouse, keyboard};
 use sdl2::event::Event;
@@ -149,6 +149,7 @@ pub struct Knob {
 
 pub struct WindowState {
     pub player: Arc<Mutex<Player>>,
+    pub note_channel: mpsc::Sender<(usize, song::Note)>,
     pub song: song::Song,
     pub filename: Option<String>,
     pub selected_instrument: usize,
