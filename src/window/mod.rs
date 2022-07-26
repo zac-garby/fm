@@ -175,6 +175,8 @@ impl Window {
                             } {                                
                                 match OpenOptions::new().read(false).write(true).create(true).open(&path) {
                                     Ok(file) => {
+                                        file.set_len(0).unwrap();
+                                        
                                         match serde_json::to_writer_pretty(file, &state.song) {
                                             Ok(_) => state.filename = Some(path),
                                             Err(err) => eprintln!("couldn't write to file: {}", err),
@@ -222,12 +224,13 @@ impl Window {
                         if !pressed {
                             match nfd::open_file_dialog(None, None) {
                                 Ok(nfd::Response::Okay(f)) => {
-                                    match OpenOptions::new().read(true).open(f) {
+                                    match OpenOptions::new().read(true).open(f.clone()) {
                                         Ok(file) => {
                                             match serde_json::from_reader(file) {
                                                 Ok(s) => {
                                                     state.song = s;
                                                     state.player.lock().unwrap().bps = state.song.get_bps();
+                                                    state.filename = Some(f);
                                                 },
                                                 Err(err) => eprintln!("error reading file: {}", err),
                                             }
