@@ -9,6 +9,8 @@ use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::render;
 
+use std::fs::OpenOptions;
+use std::path::Path;
 use std::sync::{Arc, Mutex, mpsc};
 
 use crate::song::Song;
@@ -64,7 +66,49 @@ impl Window {
                     colour: FG2,
                     get_text: Box::new(|state| {
                         let filename = state.filename.clone().unwrap_or(String::from("unnamed.crz"));
-                        format!("\x10 {}", filename)
+                        let path = Path::new(&filename[..]);
+                        format!("\x10 {}", path.file_name().and_then(|f| f.to_str()).unwrap_or("unnamed.crz"))
+                    }),
+                }) as Box<dyn Element>,
+                Box::new(Button {
+                    rect: Rect::new(
+                        SCREEN_WIDTH as i32 - 110, 2,
+                        20, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from("save") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|pressed, state| {
+                        if !pressed {
+                            if let Some(path) = match &state.filename {
+                                Some(f) => Some(f.clone()),
+                                None => {
+                                    match nfd::open_save_dialog(Some("crz"), Some("crz")) {
+                                        Ok(nfd::Response::Okay(f)) => Some(f),
+                                        Ok(nfd::Response::OkayMultiple(fs)) => Some(fs[0].clone()),
+                                        Ok(nfd::Response::Cancel) => None,
+                                        Err(_) => {
+                                            eprintln!("could not open file dialog");
+                                            None
+                                        },
+                                    }
+                                },
+                            } {                                
+                                match OpenOptions::new().read(false).write(true).create(true).open(&path) {
+                                    Ok(file) => {
+                                        match serde_json::to_writer_pretty(file, &state.song) {
+                                            Ok(_) => state.filename = Some(path),
+                                            Err(err) => eprintln!("couldn't write to file: {}", err),
+                                        }
+                                    },
+                                    Err(err) => eprintln!("could not open file: {}", err),
+                                }
+                            }
+                        }
                     }),
                 }) as Box<dyn Element>,
                 Box::new(Button {
