@@ -19,4 +19,4 @@ once this rewrite is complete, the features will include:
 
 ["cancrizans"](https://www.merriam-webster.com/dictionary/cancrizans) describes a canon where the theme is played backwards against itself. the most famous example of this is Bach's [crab canon](https://en.wikipedia.org/wiki/The_Musical_Offering#Structure_and_instrumentation), and Rust's logo is a crab, sooo...
 
-(this is also my excuse for only supporting four instruments in the GUI (a purely UI limitation), since that is the number of parts in the largest canon in his Music Offering. though arguably it should be six, for his six-part fugue. oh well.)
+(this is also my excuse for only supporting four instruments in the GUI (a purely UI limitation), since that is the number of parts in the largest canon in his Music Offering. though arguably it should be six, for his six-part fugue. oh well. the real reason is that my GUI library doesn't yet support scrollbars :))
