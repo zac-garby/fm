@@ -227,6 +227,7 @@ impl Window {
                                             match serde_json::from_reader(file) {
                                                 Ok(s) => {
                                                     state.song = s;
+                                                    state.player.lock().unwrap().bps = state.song.get_bps();
                                                 },
                                                 Err(err) => eprintln!("error reading file: {}", err),
                                             }
