@@ -62,7 +62,6 @@ pub struct Note {
 pub struct Song {
     /// the beats-per-minute of the song.
     pub bpm: u32,
-    bps: f64,
     
     /// the amount of beats in a bar (e.g. 4 for a 4/4 piece, or 3 for a 3/4.) a
     /// beat is always a quarter note.
@@ -132,7 +131,6 @@ impl Song {
         
         Song {
             bpm,
-            bps: bpm as f64 / 60.0,
             beats_per_bar,
             parts,
         }
@@ -150,7 +148,7 @@ impl Song {
     
     /// gets the song's BPS, or beats per second.
     pub fn get_bps(&self) -> f64 {
-        self.bps
+        self.bpm as f64 / 60.0
     }
     
     /// sends all of the notes in a song to a player's note channel.
@@ -160,7 +158,7 @@ impl Song {
         let mut notes = self.parts
             .iter()
             .enumerate()
-            .map(|(i, part)| part.iter().map(move |n| (i, n, n.start_time(self.bps))))
+            .map(|(i, part)| part.iter().map(move |n| (i, n, n.start_time(self.get_bps()))))
             .flatten()
             .collect::<Vec<(usize, &Note, f64)>>();
         
