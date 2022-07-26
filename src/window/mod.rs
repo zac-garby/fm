@@ -398,7 +398,9 @@ impl Window {
                                     .position(|x| *x == s.seq_quantize)
                                     .unwrap() as i32,
                                 |s, v| {
+                                    let old_v = s.seq_scale_x / s.seq_quantize;
                                     s.seq_quantize =  [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 96][v as usize];
+                                    s.seq_scale_x = old_v * s.seq_quantize;
                                 },
                             ),
                             min_value: 0,
