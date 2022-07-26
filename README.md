@@ -8,11 +8,12 @@ a synthesiser, early WIP. I'm currently in the process of porting the [old](http
 
 once this rewrite is complete, the features will include:
 
- - FM instruments with arbitrary custom algorithms and feedback loops etc
- - songs, loadable and storable in a human-readable and human-editable format
- - an aesthetic GUI (I had to make a whole GUI library to make it look how I want--I hope you're happy.)
- - `.wav` file export
- - filters and effects
+ - [X] FM instruments with arbitrary custom algorithms and feedback loops etc
+ - [X] songs, loadable and storable in a human-readable and human-editable format
+ - [X] an aesthetic GUI (I had to make a whole GUI library to make it look how I want--I hope you're happy.)
+ - [ ] `.wav` file export
+ - [X] filters and effects
+ - [ ] more than this hopefully
  
 ## why the name?
 
