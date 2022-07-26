@@ -10,7 +10,7 @@ once this rewrite is complete, the features will include:
 
  - FM instruments with arbitrary custom algorithms and feedback loops etc
  - songs, loadable and storable in a human-readable and human-editable format
- - a nice-looking GUI
+ - an aesthetic GUI (I had to make a whole GUI library to make it look how I want--I hope you're happy.)
  - `.wav` file export
  - filters and effects
  
