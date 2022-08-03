@@ -18,12 +18,15 @@ pub enum WaveType {
     Sawtooth,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 /// the way in which a receipt from a channel should be computed.
 /// normally, the channel is simply added to the phase (after being
 /// multiplied by the delta time), but for modulation, it is also
 /// multiplied by the note's base frequency.
 pub enum ReceiveKind {
+    /// do not receive from this channel
+    None,
+    
     /// normal receiving (e.g. for feedback, or combining signals.)
     Normal,
     
@@ -32,6 +35,27 @@ pub enum ReceiveKind {
     
     /// vibrato. functionally identical to normal.
     Vibrato,
+}
+
+impl ReceiveKind {
+    pub fn from(i: u32) -> ReceiveKind {
+        match i % 4 {
+            0 => Self::None,
+            1 => Self::Normal,
+            2 => Self::Modulate,
+            3 => Self::Vibrato,
+            _ => Self::None,
+        }
+    }
+    
+    pub fn to_u32(self) -> u32 {
+        match self {
+            ReceiveKind::None => 0,
+            ReceiveKind::Normal => 1,
+            ReceiveKind::Modulate => 2,
+            ReceiveKind::Vibrato => 3,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -57,17 +81,11 @@ impl PlayedNote {
     }
 }
 
-#[derive(Clone)]
-pub struct Receive {
-    channel: usize,
-    level: f32,
-    kind: ReceiveKind,
-}
-
-#[derive(Clone)]
-pub struct Send {
-    channel: usize,
-    level: f32,
+#[derive(Clone, Copy)]
+pub struct Connection {
+    pub kind: ReceiveKind,
+    pub receive: f32,
+    pub send: f32,
 }
 
 /// a synthesiser for a single voice in an instrument.
@@ -83,8 +101,8 @@ pub struct Voice {
 /// notes between them. each voice acts upon the same hold buffer.
 pub struct Instrument {
     voices: Vec<Voice>,
-    operators: Vec<Operator>,
-    effects: Vec<Box<dyn effect::Effect>>,
+    pub operators: Vec<Operator>,
+    pub effects: Vec<Box<dyn effect::Effect>>,
     
     pub hold_buf: [f32; HOLD_BUFFER_SIZE],
     hold_buf_back: [f32; HOLD_BUFFER_SIZE],
@@ -94,11 +112,7 @@ pub struct Instrument {
 /// an FM operator, which sends to and receives from channels, and outputs a frequency.
 #[derive(Clone)]
 pub struct Operator {
-    /// the recieves into the operator.
-    pub receives: Vec<Receive>,
-    
-    /// the sends from the operator.
-    pub sends: Vec<Send>,
+    pub connections: [Connection; NUM_CHANNELS],
     
     /// whether the frequency is fixed, or dependent upon the note being played.
     pub fixed: bool,
@@ -250,12 +264,13 @@ impl Voice {
     #[inline]
     fn frame(&mut self, time: f64, dt: f64, ops: &Vec<Operator>) {
         for (i, op) in ops.iter().enumerate() {
-            for recv in &op.receives {
-                let modulation = match recv.kind {
+            for (i, conn) in op.connections.iter().enumerate() {
+                let modulation = match conn.kind {
                     ReceiveKind::Normal | ReceiveKind::Vibrato
-                    => self.channels[recv.channel] * recv.level * dt as f32,
+                        => self.channels[i] * conn.receive * dt as f32,
                     ReceiveKind::Modulate
-                    => self.channels[recv.channel] * recv.level * dt as f32 * self.note.freq
+                        => self.channels[i] * conn.receive * dt as f32 * self.note.freq,
+                    ReceiveKind::None => 0.0,
                 };
                 
                 self.phases[i] += modulation;
@@ -288,8 +303,10 @@ impl Voice {
                 0.0
             };
             
-            for send in &op.sends {
-                self.channels_back[send.channel] += send.level * sample;
+            for (i, conn) in op.connections.iter().enumerate() {
+                if conn.kind != ReceiveKind::None {
+                    self.channels_back[i] += conn.send * sample;
+                }
             }
         }
         
@@ -305,8 +322,11 @@ impl Voice {
 impl Operator {
     pub fn new(wave: WaveType, fixed: bool, transpose: f32) -> Operator {
         Operator {
-            receives: Vec::new(),
-            sends: Vec::new(),
+            connections: [Connection {
+                kind: ReceiveKind::None,
+                receive: 0.0,
+                send: 0.0,
+            }; NUM_CHANNELS],
             fixed,
             wave,
             transpose,
@@ -320,12 +340,16 @@ impl Operator {
     }
     
     pub fn send(&mut self, channel: usize, level: f32) -> &mut Operator {
-        self.sends.push(Send { channel, level });
+        self.connections[channel].send = level;
+        if self.connections[channel].kind == ReceiveKind::None {
+            self.connections[channel].kind = ReceiveKind::Normal;
+        }
         self
     }
     
     pub fn recv(&mut self, channel: usize, level: f32, kind: ReceiveKind) -> &mut Operator {
-        self.receives.push(Receive { channel, level, kind });
+        self.connections[channel].receive = level;
+        self.connections[channel].kind = kind;
         self
     }
     

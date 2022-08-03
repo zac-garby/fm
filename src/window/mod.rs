@@ -14,6 +14,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex, mpsc};
 
 use crate::song::Song;
+use crate::synth;
 use crate::{player::Player, song};
 
 use constants::*;
@@ -271,45 +272,115 @@ impl Window {
         root.children.push(Box::new(Panel {
             rect: Rect::new((SPECTRUM_WIDTH + 2) as i32 + 6, 11,
                 SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 7, (SPECTRUM_HEIGHT + 2) * 4 + 7),
-            children: Vec::from([
-                Box::new(EQ {
-                    rect: Rect::new(
-                        (SPECTRUM_WIDTH + 2) as i32 + 8,
-                        13,
-                        SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 11,
-                        18,
-                    ),
-                    nodes: vec![
-                        EQNode::Lowpass { hz: 2000.0, q: 1.70710678 },
-                        EQNode::Highpass { hz: 10.0, q: 0.70710678 },
-                        EQNode::Peak { hz: 220.0, q: 2.0, a: 1.0 },
-                    ],
-                    background: CONTROL_BG,
-                    fg: EQ_FG,
-                    border: BORDER,
-                    corner: TRANSPARENT,
-                    response: Box::new([0.0; (SCREEN_WIDTH - (SPECTRUM_WIDTH + 2) - 13) as usize]),
-                    is_dirty: true,
-                }) as Box<dyn Element>,
-                Box::new(Knob {
-                    center: Point::new(
-                        (SPECTRUM_WIDTH + 2) as i32 + 18,
-                        40,
-                    ),
-                    radius: 7,
-                    border_width: 2,
-                    background: KNOB_BG,
-                    border: KNOB_BORDER,
-                    state: ButtonState::Off,
-                    min_value: 0.0,
-                    max_value: 1.0,
-                    value: 1.0,
-                    on_change: Box::new(|_x, _s| {}),
-                    make_tooltip: Box::new(|x, _s| {
-                        format!("{:.2}", x)
-                    }),
-                })
-            ]),
+            children: {
+                let mut elems: Vec<Box<dyn Element>> = Vec::new();
+                
+                for i in 0..8 {
+                    let left = SPECTRUM_WIDTH as i32 + 10;
+                    let top = 37 + i * 15;
+                    
+                    elems.push(Box::new(Choice {
+                        rect: Rect::new(
+                            left, top,
+                            46, 7,
+                        ),
+                        value: DynVar::new(
+                            move |s| {
+                                let p = s.player.lock().unwrap();
+                                p.instruments[s.selected_instrument]
+                                    .operators[0]
+                                    .connections[i as usize]
+                                    .kind
+                                    .to_u32()
+                            },
+                            move |s, n| {
+                                let mut p = s.player.lock().unwrap();
+                                p.instruments[s.selected_instrument]
+                                    .operators[0]
+                                    .connections[i as usize]
+                                    .kind = synth::ReceiveKind::from(n);
+                            },
+                        ),
+                        num_values: 4,
+                        background: CONTROL_BG,
+                        background_hover: CONTROL_HOVER,
+                        foreground: FG2,
+                        make_label: Box::new(move |n| match n {
+                            0 => format!("{}. -", i + 1),
+                            1 => format!("{}. normal", i + 1),
+                            2 => format!("{}. modulate", i + 1),
+                            3 => format!("{}. vibrato", i + 1),
+                            _ => format!("{}. <error>", i + 1),
+                        }),
+                    }));
+                    
+                    elems.push(Box::new(Knob {
+                        center: Point::new(
+                            left + 53,
+                            top + 3,
+                        ),
+                        radius: 5,
+                        border_width: 1,
+                        background: KNOB_BG,
+                        border: KNOB_BORDER,
+                        state: ButtonState::Off,
+                        min_value: 0.0,
+                        max_value: 4.0,
+                        value: DynVar::new(
+                            move |s| {
+                                let p = s.player.lock().unwrap();
+                                p.instruments[s.selected_instrument]
+                                    .operators[0]
+                                    .connections[i as usize]
+                                    .receive
+                            },
+                            move |s, n| {
+                                let mut p = s.player.lock().unwrap();
+                                p.instruments[s.selected_instrument]
+                                    .operators[0]
+                                    .connections[i as usize]
+                                    .receive = n;
+                            }),
+                        make_tooltip: Box::new(move |x, _s| {
+                            format!("recv {:.2}", x)
+                        }),
+                    }));
+                    
+                    elems.push(Box::new(Knob {
+                        center: Point::new(
+                            left + 67,
+                            top + 3,
+                        ),
+                        radius: 5,
+                        border_width: 1,
+                        background: KNOB_BG,
+                        border: KNOB_BORDER,
+                        state: ButtonState::Off,
+                        min_value: 0.0,
+                        max_value: 4.0,
+                        value: DynVar::new(
+                            move |s| {
+                                let p = s.player.lock().unwrap();
+                                p.instruments[s.selected_instrument]
+                                    .operators[0]
+                                    .connections[i as usize]
+                                    .send
+                            },
+                            move |s, n| {
+                                let mut p = s.player.lock().unwrap();
+                                p.instruments[s.selected_instrument]
+                                    .operators[0]
+                                    .connections[i as usize]
+                                    .send = n;
+                            }),
+                        make_tooltip: Box::new(move |x, _s| {
+                            format!("send {:.2}", x)
+                        }),
+                    }));
+                }
+                
+                elems
+            },
             background: PANEL_BG,
             border: Some(BORDER),
             corner: Some(CORNER),

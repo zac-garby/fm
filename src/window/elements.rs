@@ -85,6 +85,16 @@ pub struct Stepper {
     pub foreground: Color,
 }
 
+pub struct Choice {
+    pub rect: Rect,
+    pub value: DynVar<u32>,
+    pub num_values: u32,
+    pub background: Color,
+    pub background_hover: Color,
+    pub foreground: Color,
+    pub make_label: Box<dyn Fn(u32) -> String>,
+}
+
 pub struct Slider {
     pub rect: Rect,
     pub state: ButtonState,
@@ -168,8 +178,7 @@ pub struct Knob {
     pub state: ButtonState,
     pub min_value: f32,
     pub max_value: f32,
-    pub value: f32,
-    pub on_change: Box<dyn Fn(f32, &mut WindowState)>,
+    pub value: DynVar<f32>,
     pub make_tooltip: Box<dyn Fn(f32, &WindowState) -> String>,
 }
 
@@ -486,6 +495,47 @@ impl Element for Stepper {
                 self.value.modify(state, |v| (v - 1).clamp(self.min_value, self.max_value));
             }
             _ => {},
+        }
+    }
+}
+
+impl Element for Choice {
+    fn render(&mut self, buf: &mut [u8], state: &WindowState) {
+        let hover = self.rect.contains_point(Point::new(state.mouse_x as i32, state.mouse_y as i32));
+        let text = &(self.make_label)(self.value.get(state))[..];
+        
+        draw_rect(buf, self.rect, if hover { self.background_hover } else { self.background }, None, Some(TRANSPARENT));
+        draw_text(buf, self.rect.x as u32 + 2, self.rect.y as u32 + 1, self.foreground, text);
+    }
+    
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+    
+    fn handle(&mut self, event: InputEvent, state: &mut WindowState) {
+        let mouse = Point::new(state.mouse_x as i32, state.mouse_y as i32);
+        
+        if self.rect.contains_point(mouse) {
+            match event.event {
+                Event::MouseWheel { x, y, .. } => {
+                    self.value.modify(state, |v| ((v as i32 + (x + y).signum()) as u32 % self.num_values));
+                },
+                Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
+                Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
+                    self.value.modify(state, |v| (v + 1) % self.num_values);
+                },
+                Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
+                Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
+                    self.value.modify(state, |v| (v + self.num_values - 1) % self.num_values);
+                },
+                Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Left, .. } => {
+                    self.value.modify(state, |v| (v + 1) % self.num_values);
+                },
+                Event::MouseButtonDown { mouse_btn: mouse::MouseButton::Right, .. } => {
+                    self.value.modify(state, |v| (v + self.num_values - 1) % self.num_values);
+                },
+                _ => {},
+            }
         }
     }
 }
@@ -813,16 +863,25 @@ impl Element for Knob {
     fn render(&mut self, buf: &mut [u8], state: &WindowState) {        
         let rect = self.rect();
         
-        draw_circle(buf, self.center.x as u32, self.center.y as u32,
-            self.radius, self.border);
-        draw_circle(buf, self.center.x as u32, self.center.y as u32,
-            self.radius - self.border_width, self.background);
-        set_pixel(buf, rect.right() as u32, rect.bottom() as u32, KNOB_TICK);
-        set_pixel(buf, rect.left() as u32, rect.bottom() as u32, KNOB_TICK);
+        if self.border_width > 1 {
+            fill_circle(buf, self.center.x as u32, self.center.y as u32,
+                self.radius, self.border);
+            fill_circle(buf, self.center.x as u32, self.center.y as u32,
+                self.radius - self.border_width, self.background);
+        } else {
+            fill_circle(buf, self.center.x as u32, self.center.y as u32,
+                self.radius, self.background);
+            
+            draw_circle(buf, self.center.x as u32, self.center.y as u32,
+                self.radius, self.border);
+        }
+        
+        set_pixel(buf, rect.right() as u32 - 1, rect.bottom() as u32, KNOB_TICK);
+        set_pixel(buf, rect.left() as u32 + 1, rect.bottom() as u32, KNOB_TICK);
         
         let min_angle = -1.25 * consts::PI;
         let max_angle = 0.25 * consts::PI;
-        let p = (self.value - self.min_value) / (self.max_value - self.min_value);
+        let p = (self.value.get(state) - self.min_value) / (self.max_value - self.min_value);
         let angle = p * (max_angle - min_angle) + min_angle;
         let dx = angle.cos();
         let dy = angle.sin();
@@ -840,7 +899,7 @@ impl Element for Knob {
         
         if (dx*dx + dy*dy) as u32 <= (self.radius + 1).pow(2) || self.state == ButtonState::Active {
             draw_tooltip(buf, state.mouse_x + 5, state.mouse_y - 5, vec![
-                (self.make_tooltip)(self.value, state),
+                (self.make_tooltip)(self.value.get(state), state),
             ])
         }
     }
@@ -872,24 +931,22 @@ impl Element for Knob {
             },
             Event::MouseMotion { xrel, yrel, .. } => {
                 if self.state == ButtonState::Active {
-                    self.value = (self.value + (xrel - yrel) as f32 * step).clamp(self.min_value, self.max_value);
+                    self.value.modify(state, |v| (v + (xrel - yrel) as f32 * step).clamp(self.min_value, self.max_value));
                 }
             },
             Event::MouseWheel { x, y, .. } => {
-                self.value = (self.value + (x + y) as f32 * step).clamp(self.min_value, self.max_value);
+                self.value.modify(state, |v| (v - (x - y) as f32 * step).clamp(self.min_value, self.max_value));
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {
-                self.value = (self.value + step).clamp(self.min_value, self.max_value);
+                self.value.modify(state, |v| (v + step).clamp(self.min_value, self.max_value));
             },
             Event::KeyDown { keycode: Some(keyboard::Keycode::Down), .. } |
             Event::KeyDown { keycode: Some(keyboard::Keycode::Left), .. } => {
-                self.value = (self.value - step).clamp(self.min_value, self.max_value);
+                self.value.modify(state, |v| (v + step).clamp(self.min_value, self.max_value));
             },
             _ => {},
         }
-        
-        (self.on_change)(self.value, state);
     }
 }
 
@@ -1014,7 +1071,7 @@ pub(crate) fn draw_line(buf: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, colo
     }
 }
 
-pub(crate) fn draw_circle(buf: &mut [u8], x_mid: u32, y_mid: u32, r: u32, colour: Color) {
+pub(crate) fn fill_circle(buf: &mut [u8], x_mid: u32, y_mid: u32, r: u32, colour: Color) {
     let mut x = r as i32;
     let mut y = 0;
     let mut xchange = 1 - r as i32 * 2;
@@ -1035,6 +1092,34 @@ pub(crate) fn draw_circle(buf: &mut [u8], x_mid: u32, y_mid: u32, r: u32, colour
             set_pixel(buf, x_mid + i as u32, y_mid - x as u32, colour);
             set_pixel(buf, x_mid - i as u32, y_mid - x as u32, colour);
         }
+        
+        y += 1;
+        re += ychange;
+        ychange += 2;
+        if re * 2 + xchange > 0 {
+            x -= 1;
+            re += xchange;
+            xchange += 2;
+        }
+    }
+}
+
+pub(crate) fn draw_circle(buf: &mut [u8], x_mid: u32, y_mid: u32, r: u32, colour: Color) {
+    let mut x = r as i32;
+    let mut y = 0;
+    let mut xchange = 1 - r as i32 * 2;
+    let mut ychange = 1;
+    let mut re = 0;
+    
+    while x >= y {
+        set_pixel(buf, x_mid + x as u32, y_mid + y as u32, colour);
+        set_pixel(buf, x_mid - x as u32, y_mid + y as u32, colour);
+        set_pixel(buf, x_mid + x as u32, y_mid - y as u32, colour);
+        set_pixel(buf, x_mid - x as u32, y_mid - y as u32, colour);
+        set_pixel(buf, x_mid + y as u32, y_mid + x as u32, colour);
+        set_pixel(buf, x_mid - y as u32, y_mid + x as u32, colour);
+        set_pixel(buf, x_mid + y as u32, y_mid - x as u32, colour);
+        set_pixel(buf, x_mid - y as u32, y_mid - x as u32, colour);
         
         y += 1;
         re += ychange;
