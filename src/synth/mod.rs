@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 
 use crate::song;
 
-pub const NUM_CHANNELS: usize = 8;
+pub const NUM_CHANNELS: usize = 6;
 pub const MAX_OPERATORS: usize = 8;
 pub const HOLD_BUFFER_SIZE: usize = 256;
 
@@ -24,9 +24,6 @@ pub enum WaveType {
 /// multiplied by the delta time), but for modulation, it is also
 /// multiplied by the note's base frequency.
 pub enum ReceiveKind {
-    /// do not receive from this channel
-    None,
-    
     /// normal receiving (e.g. for feedback, or combining signals.)
     Normal,
     
@@ -39,21 +36,19 @@ pub enum ReceiveKind {
 
 impl ReceiveKind {
     pub fn from(i: u32) -> ReceiveKind {
-        match i % 4 {
-            0 => Self::None,
-            1 => Self::Normal,
-            2 => Self::Modulate,
-            3 => Self::Vibrato,
-            _ => Self::None,
+        match i % 3 {
+            0 => Self::Normal,
+            1 => Self::Modulate,
+            2 => Self::Vibrato,
+            _ => Self::Normal,
         }
     }
     
     pub fn to_u32(self) -> u32 {
         match self {
-            ReceiveKind::None => 0,
-            ReceiveKind::Normal => 1,
-            ReceiveKind::Modulate => 2,
-            ReceiveKind::Vibrato => 3,
+            ReceiveKind::Normal => 0,
+            ReceiveKind::Modulate => 1,
+            ReceiveKind::Vibrato => 2,
         }
     }
 }
@@ -142,7 +137,7 @@ impl Instrument {
             voices: vec![Voice::new(); num_voices],
             operators: Vec::new(),
             effects: vec![
-                Box::new(effect::Reverb::new(0.8, 0.95)),
+                // Box::new(effect::Reverb::new(0.8, 0.95)),
                 // Box::new(effect::Biquad::lowpass(1000.0, 1.0 / SQRT_2, 1.0 / 44100.0)),
                 // Box::new(effect::Biquad::highpass(250.0, 1.0 / SQRT_2, 1.0 / 44100.0)),
                 // Box::new(effect::Biquad::peak(440.0, 1.0 / SQRT_2, 3.0, 1.0 / 44100.0))
@@ -270,7 +265,6 @@ impl Voice {
                         => self.channels[i] * conn.receive * dt as f32,
                     ReceiveKind::Modulate
                         => self.channels[i] * conn.receive * dt as f32 * self.note.freq,
-                    ReceiveKind::None => 0.0,
                 };
                 
                 self.phases[i] += modulation;
@@ -304,9 +298,7 @@ impl Voice {
             };
             
             for (i, conn) in op.connections.iter().enumerate() {
-                if conn.kind != ReceiveKind::None {
-                    self.channels_back[i] += conn.send * sample;
-                }
+                self.channels_back[i] += conn.send * sample;
             }
         }
         
@@ -323,7 +315,7 @@ impl Operator {
     pub fn new(wave: WaveType, fixed: bool, transpose: f32) -> Operator {
         Operator {
             connections: [Connection {
-                kind: ReceiveKind::None,
+                kind: ReceiveKind::Normal,
                 receive: 0.0,
                 send: 0.0,
             }; NUM_CHANNELS],
@@ -341,9 +333,7 @@ impl Operator {
     
     pub fn send(&mut self, channel: usize, level: f32) -> &mut Operator {
         self.connections[channel].send = level;
-        if self.connections[channel].kind == ReceiveKind::None {
-            self.connections[channel].kind = ReceiveKind::Normal;
-        }
+        self.connections[channel].kind = ReceiveKind::Normal;
         self
     }
     

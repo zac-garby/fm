@@ -193,6 +193,7 @@ pub struct WindowState {
     pub seq_scale_x: u32,
     pub seq_scale_y: u32,
     pub seq_quantize: u32,
+    pub current_op: usize,
 }
 
 #[derive(Clone)]
@@ -518,7 +519,7 @@ impl Element for Choice {
         if self.rect.contains_point(mouse) {
             match event.event {
                 Event::MouseWheel { x, y, .. } => {
-                    self.value.modify(state, |v| ((v as i32 + (x + y).signum()) as u32 % self.num_values));
+                    self.value.modify(state, |v| ((v as i32 + (x + y).signum() + self.num_values as i32) as u32 % self.num_values));
                 },
                 Event::KeyDown { keycode: Some(keyboard::Keycode::Up), .. } |
                 Event::KeyDown { keycode: Some(keyboard::Keycode::Right), .. } => {

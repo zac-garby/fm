@@ -9,7 +9,7 @@
 import sys
 from PIL import Image
 
-CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,()[]{}<>/\\|!-_+=;:?'\"%#~*\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x10"
+CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,()[]{}<>/\\|!-_+=;:?'\"%#~*\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x10\x11\x12\x13\x14\x15\x16"
 SPACE_WIDTH = 2
 
 TEMPLATE = """// font.rs
@@ -20,7 +20,7 @@ TEMPLATE = """// font.rs
 pub const FONT_HEIGHT: usize = 5;
 
 /// the maximum width of a character in the font.
-pub const FONT_WIDTH: usize = 5;
+pub const FONT_WIDTH: usize = 12;
 
 /// stores the raw pixel data for one character in a font.
 pub struct CharData {
@@ -80,7 +80,7 @@ for i in range(256):
     
     if d != None:
         l = [ e for ds in d for e in ds ]
-        l += [0] * (25 - len(l))
+        l += [0] * (5 * 12 - len(l))
         
         s += "    Some(CharData { width: %d, data: [%s] }),\n" % (
             len(d[0]),

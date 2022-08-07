@@ -69,6 +69,7 @@ impl Window {
                 seq_quantize: 4,
                 filename: None,
                 note_channel,
+                current_op: 0,
             }
         };
         
@@ -275,20 +276,102 @@ impl Window {
             children: {
                 let mut elems: Vec<Box<dyn Element>> = Vec::new();
                 
-                for i in 0..8 {
-                    let left = SPECTRUM_WIDTH as i32 + 10;
-                    let top = 37 + i * 15;
+                elems.push(Box::new(Button {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 11,
+                        14, 7, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from("<") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|pressed, s| {
+                        if !pressed {
+                            let p = s.player.lock().unwrap();
+                            let num_ops = p.instruments[s.selected_instrument].operators.len();
+                            s.current_op = (s.current_op + num_ops - 1) % num_ops;
+                        }
+                    }),
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(DynamicLabel {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 20,
+                        15, 22, 5,
+                    ),
+                    tooltip: None,
+                    colour: FG2,
+                    get_text: Box::new(|s| {
+                        let p = s.player.lock().unwrap();
+                        let num_ops = p.instruments[s.selected_instrument].operators.len();
+                        format!("operator {}/{}", s.current_op + 1, num_ops)
+                    }),
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Button {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 69,
+                        14, 7, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from(">") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|pressed, s| {
+                        if !pressed {
+                            let p = s.player.lock().unwrap();
+                            let num_ops = p.instruments[s.selected_instrument].operators.len();
+                            s.current_op = (s.current_op + 1) % num_ops;
+                        }
+                    }),
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Button {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 77,
+                        14, 7, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from("\x16") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|_, _| {
+                        
+                    }),
+                }) as Box<dyn Element>);
+                
+                for i in 0..synth::NUM_CHANNELS as i32 {
+                    let left = SPECTRUM_WIDTH as i32 + 12;
+                    let top = ((SPECTRUM_HEIGHT + 2) * 4 + 7) as i32 - 15 * (synth::NUM_CHANNELS as i32 - i - 1) - 1;
+                    
+                    elems.push(Box::new(Label {
+                        position: Point::new(
+                            left, top + 1,
+                        ),
+                        text: format!("{}", i + 1),
+                        tooltip: None,
+                        colour: FG2,
+                    }) as Box<dyn Element>);
                     
                     elems.push(Box::new(Choice {
                         rect: Rect::new(
-                            left, top,
-                            46, 7,
+                            left + 6, top,
+                            38, 7,
                         ),
                         value: DynVar::new(
                             move |s| {
                                 let p = s.player.lock().unwrap();
                                 p.instruments[s.selected_instrument]
-                                    .operators[0]
+                                    .operators[s.current_op]
                                     .connections[i as usize]
                                     .kind
                                     .to_u32()
@@ -296,21 +379,20 @@ impl Window {
                             move |s, n| {
                                 let mut p = s.player.lock().unwrap();
                                 p.instruments[s.selected_instrument]
-                                    .operators[0]
+                                    .operators[s.current_op]
                                     .connections[i as usize]
                                     .kind = synth::ReceiveKind::from(n);
                             },
                         ),
-                        num_values: 4,
+                        num_values: 3,
                         background: CONTROL_BG,
                         background_hover: CONTROL_HOVER,
                         foreground: FG2,
                         make_label: Box::new(move |n| match n {
-                            0 => format!("{}. -", i + 1),
-                            1 => format!("{}. normal", i + 1),
-                            2 => format!("{}. modulate", i + 1),
-                            3 => format!("{}. vibrato", i + 1),
-                            _ => format!("{}. <error>", i + 1),
+                            0 => format!("normal"),
+                            1 => format!("modulate"),
+                            2 => format!("vibrato"),
+                            _ => format!("<error>"),
                         }),
                     }));
                     
@@ -330,14 +412,14 @@ impl Window {
                             move |s| {
                                 let p = s.player.lock().unwrap();
                                 p.instruments[s.selected_instrument]
-                                    .operators[0]
+                                    .operators[s.current_op]
                                     .connections[i as usize]
                                     .receive
                             },
                             move |s, n| {
                                 let mut p = s.player.lock().unwrap();
                                 p.instruments[s.selected_instrument]
-                                    .operators[0]
+                                    .operators[s.current_op]
                                     .connections[i as usize]
                                     .receive = n;
                             }),
@@ -362,14 +444,14 @@ impl Window {
                             move |s| {
                                 let p = s.player.lock().unwrap();
                                 p.instruments[s.selected_instrument]
-                                    .operators[0]
+                                    .operators[s.current_op]
                                     .connections[i as usize]
                                     .send
                             },
                             move |s, n| {
                                 let mut p = s.player.lock().unwrap();
                                 p.instruments[s.selected_instrument]
-                                    .operators[0]
+                                    .operators[s.current_op]
                                     .connections[i as usize]
                                     .send = n;
                             }),
