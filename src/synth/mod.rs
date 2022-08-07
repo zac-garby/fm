@@ -8,7 +8,7 @@ pub const NUM_CHANNELS: usize = 6;
 pub const MAX_OPERATORS: usize = 8;
 pub const HOLD_BUFFER_SIZE: usize = 256;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 /// the type of wave for a synth to play. the default and most
 /// common is a sine wave, but others are available.
 pub enum WaveType {
@@ -16,6 +16,26 @@ pub enum WaveType {
     Square,
     Triangle,
     Sawtooth,
+}
+
+impl WaveType {
+    pub fn from(i: u32) -> WaveType {
+        match i % 4 {
+            0 => Self::Sine,
+            1 => Self::Square,
+            2 => Self::Triangle,
+            _ => Self::Sawtooth,
+        }
+    }
+    
+    pub fn to_u32(self) -> u32 {
+        match self {
+            WaveType::Sine => 0,
+            WaveType::Square => 1,
+            WaveType::Triangle => 2,
+            WaveType::Sawtooth => 3,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]

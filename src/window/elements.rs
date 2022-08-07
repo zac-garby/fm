@@ -182,6 +182,11 @@ pub struct Knob {
     pub make_tooltip: Box<dyn Fn(f32, &WindowState) -> String>,
 }
 
+pub struct Rectangle {
+    pub rect: Rect,
+    pub bg: Color,
+}
+
 pub struct WindowState {
     pub player: Arc<Mutex<Player>>,
     pub note_channel: mpsc::Sender<(usize, song::Note)>,
@@ -235,6 +240,20 @@ impl Element for Panel {
                 child.handle(e, state);
             }
         }
+    }
+}
+
+impl Element for Rectangle {
+    fn render(&mut self, buf: &mut [u8], _state: &WindowState) {
+        draw_rect(buf, self.rect, self.bg, None, None);
+    }
+
+    fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    fn handle(&mut self, _event: InputEvent, _state: &mut WindowState) {
+        
     }
 }
 

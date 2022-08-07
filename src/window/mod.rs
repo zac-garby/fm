@@ -307,13 +307,13 @@ impl Window {
                     get_text: Box::new(|s| {
                         let p = s.player.lock().unwrap();
                         let num_ops = p.instruments[s.selected_instrument].operators.len();
-                        format!("operator {}/{}", s.current_op + 1, num_ops)
+                        format!("op: {}/{}", s.current_op + 1, num_ops)
                     }),
                 }) as Box<dyn Element>);
                 
                 elems.push(Box::new(Button {
                     rect: Rect::new(
-                        SPECTRUM_WIDTH as i32 + 69,
+                        SPECTRUM_WIDTH as i32 + 61,
                         14, 7, 7,
                     ),
                     kind: ButtonType::Momentary { label: String::from(">") },
@@ -334,7 +334,7 @@ impl Window {
                 
                 elems.push(Box::new(Button {
                     rect: Rect::new(
-                        SPECTRUM_WIDTH as i32 + 77,
+                        SPECTRUM_WIDTH as i32 + 69,
                         14, 7, 7,
                     ),
                     kind: ButtonType::Momentary { label: String::from("\x16") },
@@ -346,6 +346,120 @@ impl Window {
                     foreground: FG2,
                     on_change: Box::new(|_, _| {
                         
+                    }),
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Button {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 77,
+                        14, 7, 7,
+                    ),
+                    kind: ButtonType::Momentary { label: String::from("+") },
+                    state: ButtonState::Off,
+                    value: false,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    background_active: CONTROL_ACTIVE,
+                    foreground: FG2,
+                    on_change: Box::new(|_, _| {
+                        
+                    }),
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Label {
+                    position: Point::new(
+                        SPECTRUM_WIDTH as i32 + 11, 24,
+                    ),
+                    text: String::from("wave:"),
+                    tooltip: None,
+                    colour: FG2,
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Stepper {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 33, 23, 24, 7,
+                    ),
+                    value: DynVar::new(
+                        |s| {
+                            let p = s.player.lock().unwrap();
+                            p.instruments[s.selected_instrument]
+                                .operators[s.current_op]
+                                .transpose as i32
+                        },
+                        |s, x| {
+                            let mut p = s.player.lock().unwrap();
+                            p.instruments[s.selected_instrument]
+                                .operators[s.current_op]
+                                .transpose = x as f32;
+                        }
+                    ),
+                    min_value: 1,
+                    max_value: 48000,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    foreground: FG,
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Choice {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 58, 23, 12, 7,
+                    ),
+                    value: DynVar::new(
+                        |s| {
+                            let p = s.player.lock().unwrap();
+                            p.instruments[s.selected_instrument]
+                                .operators[s.current_op]
+                                .fixed.into()
+                        },
+                        |s, x| {
+                            let mut p = s.player.lock().unwrap();
+                            p.instruments[s.selected_instrument]
+                                .operators[s.current_op]
+                                .fixed = x == 1;
+                        }
+                    ),
+                    num_values: 2,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    foreground: FG,
+                    make_label: Box::new(|x| {
+                        match x {
+                            0 => format!("*"),
+                            _ => format!("\x17"),
+                        }
+                    }),
+                }) as Box<dyn Element>);
+                
+                elems.push(Box::new(Choice {
+                    rect: Rect::new(
+                        SPECTRUM_WIDTH as i32 + 72, 23, 15, 7,
+                    ),
+                    value: DynVar::new(
+                        |s| {
+                            let p = s.player.lock().unwrap();
+                            p.instruments[s.selected_instrument]
+                                .operators[s.current_op]
+                                .wave
+                                .to_u32()
+                        },
+                        |s, x| {
+                            let mut p = s.player.lock().unwrap();
+                            p.instruments[s.selected_instrument]
+                                .operators[s.current_op]
+                                .wave = synth::WaveType::from(x);
+                        }
+                    ),
+                    num_values: 4,
+                    background: CONTROL_BG,
+                    background_hover: CONTROL_HOVER,
+                    foreground: FG,
+                    make_label: Box::new(|x| {
+                        match x {
+                            0 => format!("\x11"),
+                            1 => format!("\x13"),
+                            2 => format!("\x12"),
+                            _ => format!("\x14"),
+                        }
                     }),
                 }) as Box<dyn Element>);
                 
